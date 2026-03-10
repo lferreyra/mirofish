@@ -18,6 +18,11 @@ export function setStoredLocale(locale) {
   } catch (_) {}
 }
 
+/** Get locale for API requests (en or zh) */
+export function getApiLocale() {
+  return getStoredLocale()
+}
+
 const i18n = createI18n({
   legacy: false, // Use Composition API mode
   locale: getStoredLocale(),

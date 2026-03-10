@@ -633,6 +633,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { 
   prepareSimulation, 
   getPrepareStatus, 
@@ -649,6 +650,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
+const { t } = useI18n()
 
 // State
 const phase = ref(0) // 0: 初始化, 1: 生成人设, 2: 生成配置, 3: 完成
@@ -768,7 +770,7 @@ const selectProfile = (profile) => {
 // 自动开始准备模拟
 const startPrepareSimulation = async () => {
   if (!props.simulationId) {
-    addLog('错误：缺少 simulationId')
+    addLog(t('errors.missingSimulationId'))
     emit('update-status', 'error')
     return
   }
@@ -812,7 +814,7 @@ const startPrepareSimulation = async () => {
       // 开始实时获取 Profiles
       startProfilesPolling()
     } else {
-      addLog(`准备失败: ${res.error || '未知错误'}`)
+      addLog(`${t('errors.prepareFailed')}: ${res.error || t('errors.unknown')}`)
       emit('update-status', 'error')
     }
   } catch (err) {
@@ -895,7 +897,7 @@ const pollPrepareStatus = async () => {
         stopProfilesPolling()
         await loadPreparedData()
       } else if (data.status === 'failed') {
-        addLog(`✗ 准备失败: ${data.error || '未知错误'}`)
+        addLog(`✗ ${t('errors.prepareFailed')}: ${data.error || t('errors.unknown')}`)
         stopPolling()
         stopProfilesPolling()
       }
@@ -1050,7 +1052,7 @@ const loadPreparedData = async () => {
       }
     }
   } catch (err) {
-    addLog(`加载配置失败: ${err.message}`)
+    addLog(`${t('errors.loadFailed')}: ${err.message}`)
     emit('update-status', 'error')
   }
 }

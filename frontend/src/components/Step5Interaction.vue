@@ -412,6 +412,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { chatWithReport, getReport, getAgentLog } from '../api/report'
 import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
 
@@ -421,6 +422,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['add-log', 'update-status'])
+const { t } = useI18n()
 
 // State
 const activeTab = ref('chat')
@@ -662,7 +664,7 @@ const sendMessage = async () => {
       await sendToAgent(message)
     }
   } catch (err) {
-    addLog(`发送失败: ${err.message}`)
+    addLog(`${t('errors.sendFailed')}: ${err.message}`)
     chatHistory.value.push({
       role: 'assistant',
       content: `抱歉，发生了错误: ${err.message}`,
@@ -862,7 +864,7 @@ const submitSurvey = async () => {
       throw new Error(res.error || '请求失败')
     }
   } catch (err) {
-    addLog(`问卷发送失败: ${err.message}`)
+    addLog(`${t('errors.surveySendFailed')}: ${err.message}`)
   } finally {
     isSurveying.value = false
   }
@@ -882,7 +884,7 @@ const loadReportData = async () => {
       await loadAgentLogs()
     }
   } catch (err) {
-    addLog(`加载报告失败: ${err.message}`)
+    addLog(`${t('errors.loadReportFailed')}: ${err.message}`)
   }
 }
 
@@ -907,7 +909,7 @@ const loadAgentLogs = async () => {
       addLog('报告数据加载完成')
     }
   } catch (err) {
-    addLog(`加载报告日志失败: ${err.message}`)
+    addLog(`${t('errors.loadReportLogFailed')}: ${err.message}`)
   }
 }
 
@@ -921,7 +923,7 @@ const loadProfiles = async () => {
       addLog(`加载了 ${profiles.value.length} 个模拟个体`)
     }
   } catch (err) {
-    addLog(`加载模拟个体失败: ${err.message}`)
+    addLog(`${t('errors.loadProfilesFailed')}: ${err.message}`)
   }
 }
 
