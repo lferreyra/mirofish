@@ -566,13 +566,13 @@
 
           <!-- 简介 -->
           <div class="modal-section">
-            <span class="section-label">人设简介</span>
-            <p class="section-bio">{{ selectedProfile.bio || '暂无简介' }}</p>
+            <span class="section-label">{{ $t('step2Profile.bioLabel') }}</span>
+            <p class="section-bio">{{ selectedProfile.bio || $t('step2.noBio') }}</p>
           </div>
 
           <!-- 关注话题 -->
           <div class="modal-section" v-if="selectedProfile.interested_topics?.length">
-            <span class="section-label">现实种子关联话题</span>
+            <span class="section-label">{{ $t('step2Profile.relatedTopics') }}</span>
             <div class="topics-grid">
               <span 
                 v-for="topic in selectedProfile.interested_topics" 
@@ -584,25 +584,25 @@
 
           <!-- 详细人设 -->
           <div class="modal-section" v-if="selectedProfile.persona">
-            <span class="section-label">详细人设背景</span>
+            <span class="section-label">{{ $t('step2Profile.personaBg') }}</span>
             
             <!-- 人设维度概览 -->
             <div class="persona-dimensions">
               <div class="dimension-card">
-                <span class="dim-title">事件全景经历</span>
-                <span class="dim-desc">在此事件中的完整行为轨迹</span>
+                <span class="dim-title">{{ $t('step2Profile.eventTrajectory') }}</span>
+                <span class="dim-desc">{{ $t('step2Profile.eventTrajectoryDesc') }}</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">行为模式侧写</span>
-                <span class="dim-desc">经验总结与行事风格偏好</span>
+                <span class="dim-title">{{ $t('step2Profile.behaviorProfile') }}</span>
+                <span class="dim-desc">{{ $t('step2Profile.behaviorProfileDesc') }}</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">独特记忆印记</span>
-                <span class="dim-desc">基于现实种子形成的记忆</span>
+                <span class="dim-title">{{ $t('step2Profile.memoryImprint') }}</span>
+                <span class="dim-desc">{{ $t('step2Profile.memoryImprintDesc') }}</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">社会关系网络</span>
-                <span class="dim-desc">个体链接与交互图谱</span>
+                <span class="dim-title">{{ $t('step2Profile.socialNetwork') }}</span>
+                <span class="dim-desc">{{ $t('step2Profile.socialNetworkDesc') }}</span>
               </div>
             </div>
 
