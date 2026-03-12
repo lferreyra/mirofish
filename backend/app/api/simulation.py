@@ -2478,7 +2478,7 @@ def interview_all_agents():
         simulation_id = data.get('simulation_id')
         prompt = data.get('prompt')
         platform = data.get('platform')  # 可选：twitter/reddit/None
-        timeout = data.get('timeout', 180)
+        timeout = data.get('timeout', 240)
 
         if not simulation_id:
             return jsonify({
