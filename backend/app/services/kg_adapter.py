@@ -110,35 +110,22 @@ class ZepCloudAdapter(KnowledgeGraphAdapter):
         return self.client.graph.episode.get(uuid_=episode_uuid)
 
     def search(self, graph_id: str, query: str, limit: int = 10, scope: str = "all", reranker: str = None):
-        """搜索图谱，返回兼容对象格式
+        """搜索图谱
 
-        返回格式与 GraphitiAdapter 一致：
-        - scope="edges": 返回带 .edges 属性的对象
-        - scope="nodes": 返回带 .nodes 属性的对象
-        - scope="all": 返回带 .edges 和 .nodes 属性的对象
+        返回 GraphSearchResults 对象：
+        - scope="edges": 结果在 .edges 中
+        - scope="nodes": 结果在 .nodes 中
+        - scope="all": 结果同时在 .edges 和 .nodes 中
         """
-        from dataclasses import dataclass, field
-
-        @dataclass
-        class SearchResult:
-            edges: list = field(default_factory=list)
-            nodes: list = field(default_factory=list)
-
-        result = self.client.graph.search(graph_id=graph_id, query=query, limit=limit, scope=scope, reranker=reranker)
-
-        search_result = SearchResult()
-
-        if hasattr(result, 'results') and result.results:
-            for r in result.results:
-                item = r.model_dump() if hasattr(r, 'model_dump') else r
-
-                # 根据 scope 将结果分配到 edges 或 nodes
-                if scope in ['all', 'edges']:
-                    search_result.edges.append(item)
-                if scope in ['all', 'nodes']:
-                    search_result.nodes.append(item)
-
-        return search_result
+        try:
+            result = self.client.graph.search(graph_id=graph_id, query=query, limit=limit, scope=scope, reranker=reranker)
+            logger.info(f"[ZepCloud search] query={query}, edges={len(result.edges) if hasattr(result, 'edges') and result.edges else 0}, nodes={len(result.nodes) if hasattr(result, 'nodes') and result.nodes else 0}")
+            return result
+        except Exception as e:
+            logger.error(f"[ZepCloud search] API调用失败: {e}")
+            # 返回空的 GraphSearchResults
+            from zep_cloud.types.graph_search_results import GraphSearchResults
+            return GraphSearchResults(edges=[], nodes=[], episodes=[])
 
     def get_nodes(self, graph_id: str, limit: int = 100, cursor: str = None) -> List[Any]:
         kwargs = {"limit": limit}
@@ -456,6 +443,7 @@ class GraphitiAdapter(KnowledgeGraphAdapter):
             return None
 
     def search(self, graph_id: str, query: str, limit: int = 10, scope: str = "all", reranker: str = None):
+        logger.info(f"[GraphitiAdapter.search] 调用")
         """使用同步驱动搜索
 
         返回兼容对象格式：
@@ -708,7 +696,7 @@ class GraphitiAdapter(KnowledgeGraphAdapter):
 _adapter_cache: Optional[KnowledgeGraphAdapter] = None
 
 
-def get_knowledge_graph_adapter(force_refresh: bool = False) -> KnowledgeGraphAdapter:
+def get_knowledge_graph_adapter(force_refresh: bool = True) -> KnowledgeGraphAdapter:
     """
     获取知识图谱适配器实例
 
@@ -724,6 +712,7 @@ def get_knowledge_graph_adapter(force_refresh: bool = False) -> KnowledgeGraphAd
         return _adapter_cache
 
     mode = Config.KNOWLEDGE_GRAPH_MODE
+    logger.info(f"[kg_adapter] 使用模式: {mode}")
 
     if mode == 'local':
         _adapter_cache = GraphitiAdapter()
