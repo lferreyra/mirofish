@@ -5,6 +5,8 @@
 import json
 from typing import Any
 
+from flask import Response
+
 
 def sanitize_error_payload(payload: Any, status_code: int, debug_mode: bool = False) -> Any:
     """在非调试模式下移除 5xx JSON 响应中的 traceback 详情"""
@@ -16,15 +18,15 @@ def sanitize_error_payload(payload: Any, status_code: int, debug_mode: bool = Fa
     return sanitized_payload
 
 
-def sanitize_json_error_response(response, debug_mode: bool = False):
+def sanitize_json_error_response(response: Response, debug_mode: bool = False) -> Response:
     """对 Flask JSON 响应做统一脱敏，避免向客户端泄露内部栈信息"""
-    if not getattr(response, 'is_json', False):
+    if not response.is_json:
         return response
 
     payload = response.get_json(silent=True)
     sanitized_payload = sanitize_error_payload(
         payload,
-        status_code=getattr(response, 'status_code', 200),
+        status_code=response.status_code,
         debug_mode=debug_mode
     )
 
@@ -32,5 +34,4 @@ def sanitize_json_error_response(response, debug_mode: bool = False):
         return response
 
     response.set_data(json.dumps(sanitized_payload, ensure_ascii=False))
-    response.content_length = len(response.get_data())
     return response

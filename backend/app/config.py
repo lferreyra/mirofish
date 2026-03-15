@@ -19,13 +19,13 @@ else:
 
 
 def get_secret_key(environ=None) -> str:
-    """获取安全的 SECRET_KEY，未配置时生成进程级随机值"""
+    """获取安全的 SECRET_KEY，未配置时生成进程级随机值（重启后会变化）"""
     env = os.environ if environ is None else environ
     return env.get('SECRET_KEY') or secrets.token_hex(32)
 
 
 def get_debug_mode(environ=None) -> bool:
-    """解析调试模式环境变量，默认关闭"""
+    """解析调试模式环境变量，默认关闭；支持 1/true/yes/on"""
     env = os.environ if environ is None else environ
     value = env.get('FLASK_DEBUG')
     if value is None:

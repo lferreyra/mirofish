@@ -61,7 +61,7 @@ def create_app(config_class=Config):
     def log_response(response):
         logger = get_logger('mirofish.request')
         logger.debug(f"响应: {response.status_code}")
-        return sanitize_json_error_response(response, debug_mode=debug_mode)
+        return sanitize_json_error_response(response, debug_mode=app.debug)
     
     # 注册蓝图
     from .api import graph_bp, simulation_bp, report_bp

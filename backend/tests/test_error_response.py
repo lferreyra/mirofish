@@ -1,19 +1,9 @@
-import importlib.util
-from pathlib import Path
-
 from flask import Flask, jsonify
 
-
-def load_module(module_name: str, relative_path: str):
-    module_path = Path(__file__).resolve().parents[1] / relative_path
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+from test_utils import load_module
 
 
-error_response_module = load_module('mirofish_error_response_for_test', 'app/utils/error_response.py')
+error_response_module = load_module('error_response_test', 'app/utils/error_response.py')
 sanitize_error_payload = error_response_module.sanitize_error_payload
 sanitize_json_error_response = error_response_module.sanitize_json_error_response
 
