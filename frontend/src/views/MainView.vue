@@ -9,13 +9,13 @@
       <div class="header-center">
         <div class="view-switcher">
           <button 
-            v-for="mode in ['graph', 'split', 'workbench']" 
+            v-for="mode in viewModes" 
             :key="mode"
             class="switch-btn"
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ viewModeLabels[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step {{ currentStep }}/5</span>
-          <span class="step-name">{{ stepNames[currentStep - 1] }}</span>
+          <span class="step-name">{{ stepNames.value[currentStep - 1] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -82,16 +82,30 @@ import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import { useI18n } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // Layout State
 const viewMode = ref('split') // graph | split | workbench
+const viewModes = ['graph', 'split', 'workbench']
+const viewModeLabels = computed(() => ({
+  graph: t('workflow.viewModes.graph'),
+  split: t('workflow.viewModes.split'),
+  workbench: t('workflow.viewModes.workbench')
+}))
 
 // Step State
 const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
-const stepNames = ['图谱构建', '环境搭建', '开始模拟', '报告生成', '深度互动']
+const stepNames = computed(() => [
+  t('workflow.steps.graphBuild'),
+  t('workflow.steps.envSetup'),
+  t('workflow.steps.runSimulation'),
+  t('workflow.steps.reportGeneration'),
+  t('workflow.steps.deepInteraction')
+])
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -130,11 +144,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  if (error.value) return t('workflow.status.error')
+  if (currentPhase.value >= 2) return t('workflow.status.ready')
+  if (currentPhase.value === 1) return t('workflow.status.buildingGraph')
+  if (currentPhase.value === 0) return t('workflow.status.generatingOntology')
+  return t('workflow.status.initializing')
 })
 
 // --- Helpers ---
@@ -159,11 +173,13 @@ const toggleMaximize = (target) => {
 const handleNextStep = (params = {}) => {
   if (currentStep.value < 5) {
     currentStep.value++
-    addLog(`进入 Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('workflow.logs.enterStep', {
+      step: currentStep.value,
+      name: stepNames.value[currentStep.value - 1]
+    }))
     
-    // 如果是从 Step 2 进入 Step 3，记录模拟轮数配置
     if (currentStep.value === 3 && params.maxRounds) {
-      addLog(`自定义模拟轮数: ${params.maxRounds} 轮`)
+      addLog(t('workflow.logs.customRounds', { count: params.maxRounds }))
     }
   }
 }
@@ -171,7 +187,10 @@ const handleNextStep = (params = {}) => {
 const handleGoBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--
-    addLog(`返回 Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('workflow.logs.returnStep', {
+      step: currentStep.value,
+      name: stepNames.value[currentStep.value - 1]
+    }))
   }
 }
 

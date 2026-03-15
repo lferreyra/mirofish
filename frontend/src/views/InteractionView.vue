@@ -9,13 +9,13 @@
       <div class="header-center">
         <div class="view-switcher">
           <button 
-            v-for="mode in ['graph', 'split', 'workbench']" 
+            v-for="mode in viewModes" 
             :key="mode"
             class="switch-btn"
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ viewModeLabels[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 5/5</span>
-          <span class="step-name">深度互动</span>
+          <span class="step-name">{{ t('workflow.steps.deepInteraction') }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -69,9 +69,11 @@ import Step5Interaction from '../components/Step5Interaction.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
 import { getReport } from '../api/report'
+import { useI18n } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // Props
 const props = defineProps({
@@ -80,6 +82,12 @@ const props = defineProps({
 
 // Layout State - 默认切换到工作台视角
 const viewMode = ref('workbench')
+const viewModes = ['graph', 'split', 'workbench']
+const viewModeLabels = computed(() => ({
+  graph: t('workflow.viewModes.graph'),
+  split: t('workflow.viewModes.split'),
+  workbench: t('workflow.viewModes.workbench')
+}))
 
 // Data State
 const currentReportId = ref(route.params.reportId)
@@ -109,10 +117,10 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return 'Error'
-  if (currentStatus.value === 'completed') return 'Completed'
-  if (currentStatus.value === 'processing') return 'Processing'
-  return 'Ready'
+  if (currentStatus.value === 'error') return t('workflow.status.error')
+  if (currentStatus.value === 'completed') return t('workflow.status.completed')
+  if (currentStatus.value === 'processing') return t('workflow.status.processing')
+  return t('workflow.status.ready')
 })
 
 // --- Helpers ---
@@ -140,7 +148,7 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`加载报告数据: ${currentReportId.value}`)
+    addLog(t('workflow.interactionView.logs.loadReportData', { id: currentReportId.value }))
     
     // 获取 report 信息以获取 simulation_id
     const reportRes = await getReport(currentReportId.value)
@@ -154,14 +162,12 @@ const loadReportData = async () => {
         if (simRes.success && simRes.data) {
           const simData = simRes.data
           
-          // 获取 project 信息
           if (simData.project_id) {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`项目加载成功: ${projRes.data.project_id}`)
+              addLog(t('workflow.interactionView.logs.projectLoaded', { id: projRes.data.project_id }))
               
-              // 获取 graph 数据
               if (projRes.data.graph_id) {
                 await loadGraph(projRes.data.graph_id)
               }
@@ -170,10 +176,12 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`获取报告信息失败: ${reportRes.error || '未知错误'}`)
+      addLog(t('workflow.interactionView.logs.loadReportFailed', {
+        error: reportRes.error || t('common.unknownError')
+      }))
     }
   } catch (err) {
-    addLog(`加载异常: ${err.message}`)
+    addLog(t('workflow.interactionView.logs.loadException', { error: err.message }))
   }
 }
 
@@ -184,10 +192,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('图谱数据加载成功')
+      addLog(t('workflow.interactionView.logs.graphLoaded'))
     }
   } catch (err) {
-    addLog(`图谱加载失败: ${err.message}`)
+    addLog(t('workflow.interactionView.logs.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -208,7 +216,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('InteractionView 初始化')
+  addLog(t('workflow.interactionView.logs.initialized'))
   loadReportData()
 })
 </script>
