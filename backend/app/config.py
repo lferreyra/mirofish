@@ -4,6 +4,7 @@
 """
 
 import os
+import secrets
 from dotenv import load_dotenv
 
 # 加载项目根目录的 .env 文件
@@ -17,12 +18,27 @@ else:
     load_dotenv(override=True)
 
 
+def get_secret_key(environ=None) -> str:
+    """获取安全的 SECRET_KEY，未配置时生成进程级随机值（重启后会变化）"""
+    env = os.environ if environ is None else environ
+    return env.get('SECRET_KEY') or secrets.token_hex(32)
+
+
+def get_debug_mode(environ=None) -> bool:
+    """解析调试模式环境变量，默认关闭；支持 1/true/yes/on"""
+    env = os.environ if environ is None else environ
+    value = env.get('FLASK_DEBUG')
+    if value is None:
+        return False
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
 class Config:
     """Flask配置类"""
     
     # Flask配置
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'mirofish-secret-key')
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    SECRET_KEY = get_secret_key()
+    DEBUG = get_debug_mode()
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
