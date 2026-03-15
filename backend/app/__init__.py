@@ -14,6 +14,7 @@ from flask_cors import CORS
 
 from .config import Config
 from .utils.logger import setup_logger, get_logger
+from .utils.error_response import sanitize_json_error_response
 
 
 def create_app(config_class=Config):
@@ -60,7 +61,7 @@ def create_app(config_class=Config):
     def log_response(response):
         logger = get_logger('mirofish.request')
         logger.debug(f"响应: {response.status_code}")
-        return response
+        return sanitize_json_error_response(response, debug_mode=debug_mode)
     
     # 注册蓝图
     from .api import graph_bp, simulation_bp, report_bp
@@ -77,4 +78,3 @@ def create_app(config_class=Config):
         logger.info("MiroFish Backend 启动完成")
     
     return app
-
