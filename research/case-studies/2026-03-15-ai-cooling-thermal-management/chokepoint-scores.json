@@ -1,0 +1,204 @@
+[
+  {
+    "candidate": {
+      "name": "Coolant distribution and facility-side thermal chain",
+      "layer": "facility / distribution",
+      "description": "Facility-side coolant distribution, heat rejection, fluid management, and thermal-chain execution for liquid-cooled AI infrastructure.",
+      "signals": {
+        "supplier_concentration": 4.0,
+        "qualification_friction": 5.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 2.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 4.0
+      },
+      "public_companies": [
+        "VRT",
+        "SBGSY"
+      ],
+      "source_urls": [
+        "https://www.se.com/ww/en/about-us/newsroom/news/press-releases/schneider-electric-unveils-liquid-cooling-portfolio-with-motivair-featuring-dedicated-solutions-and-services-for-hpc-and-ai-workloads-68d69e595c9dbb622505caf3/",
+        "https://www.se.com/us/en/about-us/newsroom/news/press-releases/Motivair-by-Schneider-Electric-announces-new-CDU-with-capability-to-scale-to-10MW-and-beyond-for-nextgen-AI-Factories-69705c3655f8517e99086bbd/",
+        "https://www.vertiv.com/en-emea/about/news-and-insights/news-releases/vertiv-announces-intent-to-acquire-purgerite-a-leading-provider-of-specialized-fluid-management-services-to-expand-liquid-cooling-services-portfolio/"
+      ],
+      "notes": [
+        "This layer combines hardware scale, commissioning, and ongoing fluid-management execution.",
+        "The need for end-to-end thermal-chain deployment looks increasingly like the primary bottleneck."
+      ]
+    },
+    "score": {
+      "candidate_name": "Coolant distribution and facility-side thermal chain",
+      "score_0_to_100": 88.8,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 0.88,
+        "qualification_friction": 0.8,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.28,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.24
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          0.88
+        ],
+        [
+          "qualification_friction",
+          0.8
+        ],
+        [
+          "demand_acceleration",
+          0.7
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.24
+        ],
+        [
+          "geopolitical_exposure",
+          0.28
+        ]
+      ],
+      "explanation": "Coolant distribution and facility-side thermal chain scores 88.8/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, demand acceleration. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "Direct-to-chip liquid cooling rack integration",
+      "layer": "system / rack",
+      "description": "Direct-to-chip liquid cooling deployment, rack integration, and liquid-cooled AI system architecture.",
+      "signals": {
+        "supplier_concentration": 4.0,
+        "qualification_friction": 4.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 2.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 4.0
+      },
+      "public_companies": [
+        "SMCI",
+        "DELL"
+      ],
+      "source_urls": [
+        "https://blogs.nvidia.com/blog/blackwell-platform-water-efficiency-liquid-cooling-data-centers-ai-factories/",
+        "https://ir.supermicro.com/news/news-details/2025/Supermicros-DLC-2-the-Next-Generation-Direct-Liquid-Cooling-Solutions-Aims-to-Reduce-Data-Center-Power-Water-Noise-and-Space-Saving-on-Electricity-Cost-by-up-to-40-and-Lowering-TCO-by-up-to-20/default.aspx",
+        "https://nvidianews.nvidia.com/news/nvidia-contributes-blackwell-platform-design-to-open-hardware-ecosystem-accelerating-ai-infrastructure-innovation"
+      ],
+      "notes": [
+        "Rack-level liquid cooling is becoming standard for the highest-density AI systems.",
+        "This layer is critical, but the scaling gate may still sit slightly further downstream in facility thermal-chain execution."
+      ]
+    },
+    "score": {
+      "candidate_name": "Direct-to-chip liquid cooling rack integration",
+      "score_0_to_100": 87.2,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 0.88,
+        "qualification_friction": 0.64,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.28,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.24
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          0.88
+        ],
+        [
+          "demand_acceleration",
+          0.7
+        ],
+        [
+          "qualification_friction",
+          0.64
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.24
+        ],
+        [
+          "geopolitical_exposure",
+          0.28
+        ]
+      ],
+      "explanation": "Direct-to-chip liquid cooling rack integration scores 87.2/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, demand acceleration, qualification friction. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "Chip-level thermal interfaces and cold plates",
+      "layer": "component",
+      "description": "Chip-level thermal interfaces, cold plates, and related component innovations needed for high-density AI cooling.",
+      "signals": {
+        "supplier_concentration": 3.0,
+        "qualification_friction": 4.0,
+        "capacity_lead_time": 3.0,
+        "geopolitical_exposure": 2.0,
+        "demand_acceleration": 4.0,
+        "substitutability_inverse": 3.0,
+        "pricing_power_evidence": 2.0
+      },
+      "public_companies": [
+        "component ecosystem"
+      ],
+      "source_urls": [
+        "https://www.energy.gov/articles/doe-announces-40-million-more-efficient-cooling-data-centers",
+        "https://ir.supermicro.com/news/news-details/2025/Supermicros-DLC-2-the-Next-Generation-Direct-Liquid-Cooling-Solutions-Aims-to-Reduce-Data-Center-Power-Water-Noise-and-Space-Saving-on-Electricity-Cost-by-up-to-40-and-Lowering-TCO-by-up-to-20/default.aspx"
+      ],
+      "notes": [
+        "This layer is technologically important, but current evidence does not yet show it as the single tightest bottleneck.",
+        "The stronger deployment gate appears to sit at scalable thermal-chain integration."
+      ]
+    },
+    "score": {
+      "candidate_name": "Chip-level thermal interfaces and cold plates",
+      "score_0_to_100": 69.2,
+      "band": "high",
+      "weighted_signals": {
+        "supplier_concentration": 0.66,
+        "qualification_friction": 0.64,
+        "capacity_lead_time": 0.48,
+        "geopolitical_exposure": 0.28,
+        "demand_acceleration": 0.56,
+        "substitutability_inverse": 0.36,
+        "pricing_power_evidence": 0.12
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          0.66
+        ],
+        [
+          "qualification_friction",
+          0.64
+        ],
+        [
+          "demand_acceleration",
+          0.56
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.12
+        ],
+        [
+          "geopolitical_exposure",
+          0.28
+        ]
+      ],
+      "explanation": "Chip-level thermal interfaces and cold plates scores 69.2/100 (high) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, demand acceleration. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  }
+]

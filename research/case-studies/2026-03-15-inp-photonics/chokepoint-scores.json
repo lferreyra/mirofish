@@ -1,0 +1,207 @@
+[
+  {
+    "candidate": {
+      "name": "InP substrates",
+      "layer": "substrate",
+      "description": "Qualified upstream indium phosphide substrate supply for AI photonics and optical networking.",
+      "signals": {
+        "supplier_concentration": 5.0,
+        "qualification_friction": 4.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 5.0,
+        "demand_acceleration": 4.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 3.0
+      },
+      "public_companies": [
+        "AXTI",
+        "SMTOY",
+        "JX"
+      ],
+      "source_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1051627/000155837022011572/axti-20220801xex99d1.htm",
+        "https://www.sec.gov/Archives/edgar/data/1051627/000155837025007751/axti-20250331x10q.htm",
+        "https://www.sec.gov/Archives/edgar/data/1051627/000155837025003004/axti-20241231x10k.htm"
+      ],
+      "notes": [
+        "Highest concentration and geopolitical-exposure profile in the chain.",
+        "Important as a fragility node, but not necessarily the best value-capture layer."
+      ]
+    },
+    "score": {
+      "candidate_name": "InP substrates",
+      "score_0_to_100": 86.0,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 1.1,
+        "qualification_friction": 0.64,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.7,
+        "demand_acceleration": 0.56,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.18
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          1.1
+        ],
+        [
+          "geopolitical_exposure",
+          0.7
+        ],
+        [
+          "qualification_friction",
+          0.64
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.18
+        ],
+        [
+          "substitutability_inverse",
+          0.48
+        ]
+      ],
+      "explanation": "InP substrates scores 86.0/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, geopolitical exposure, qualification friction. The least supportive signals are pricing power evidence, substitutability inverse. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "InP laser and external light source capacity",
+      "layer": "device",
+      "description": "Qualified InP laser and external light source capacity for co-packaged optics and silicon photonics.",
+      "signals": {
+        "supplier_concentration": 4.0,
+        "qualification_friction": 5.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 3.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 4.0
+      },
+      "public_companies": [
+        "LITE",
+        "COHR"
+      ],
+      "source_urls": [
+        "https://investor.lumentum.com/financial-news-releases/news-details/2025/Lumentum-Expands-U-S--Manufacturing-for-AI-Driven-Co-Packaged-Optics/",
+        "https://www.lumentum.com/en/products/data-center/cw-lasers/uhp-lasers-cpo",
+        "https://www.coherent.com/news/press-releases/coherent-samples-low-noise-400mw-cw-lasers.html"
+      ],
+      "notes": [
+        "This layer scores nearly as high as raw substrates.",
+        "A better value-capture candidate is plausible here because customer qualification and device economics may matter more than upstream scarcity purity."
+      ]
+    },
+    "score": {
+      "candidate_name": "InP laser and external light source capacity",
+      "score_0_to_100": 83.2,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 0.88,
+        "qualification_friction": 0.8,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.42,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.24
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          0.88
+        ],
+        [
+          "qualification_friction",
+          0.8
+        ],
+        [
+          "demand_acceleration",
+          0.7
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.24
+        ],
+        [
+          "geopolitical_exposure",
+          0.42
+        ]
+      ],
+      "explanation": "InP laser and external light source capacity scores 83.2/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, demand acceleration. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "Optical module and CPO integration",
+      "layer": "module/system",
+      "description": "System-level co-packaged optics and optical module integration for hyperscaler AI networks.",
+      "signals": {
+        "supplier_concentration": 3.0,
+        "qualification_friction": 5.0,
+        "capacity_lead_time": 3.0,
+        "geopolitical_exposure": 2.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 3.0,
+        "pricing_power_evidence": 3.0
+      },
+      "public_companies": [
+        "AVGO",
+        "LITE",
+        "COHR"
+      ],
+      "source_urls": [
+        "https://investors.broadcom.com/news-releases/news-release-details/broadcom-announces-third-generation-co-packaged-optics-cpo",
+        "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Spectrum-X-Photonics-Co-Packaged-Optics-Networking-Switches-to-Scale-AI-Factories-to-Millions-of-GPUs/default.aspx"
+      ],
+      "notes": [
+        "This layer is important, but less extreme as a pure bottleneck than substrate or qualified laser capacity.",
+        "Value capture may still be strong here even if scarcity is less severe."
+      ]
+    },
+    "score": {
+      "candidate_name": "Optical module and CPO integration",
+      "score_0_to_100": 69.2,
+      "band": "high",
+      "weighted_signals": {
+        "supplier_concentration": 0.66,
+        "qualification_friction": 0.8,
+        "capacity_lead_time": 0.48,
+        "geopolitical_exposure": 0.28,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.36,
+        "pricing_power_evidence": 0.18
+      },
+      "strongest_drivers": [
+        [
+          "qualification_friction",
+          0.8
+        ],
+        [
+          "demand_acceleration",
+          0.7
+        ],
+        [
+          "supplier_concentration",
+          0.66
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.18
+        ],
+        [
+          "geopolitical_exposure",
+          0.28
+        ]
+      ],
+      "explanation": "Optical module and CPO integration scores 69.2/100 (high) as a chokepoint candidate. The strongest weighted drivers are qualification friction, demand acceleration, supplier concentration. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  }
+]

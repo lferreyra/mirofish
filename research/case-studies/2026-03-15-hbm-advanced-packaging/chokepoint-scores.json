@@ -1,0 +1,207 @@
+[
+  {
+    "candidate": {
+      "name": "HBM memory stack supply",
+      "layer": "memory",
+      "description": "Supply of qualified HBM stacks for AI accelerators across the leading memory vendors.",
+      "signals": {
+        "supplier_concentration": 5.0,
+        "qualification_friction": 5.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 3.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 5.0
+      },
+      "public_companies": [
+        "SK hynix",
+        "MU",
+        "Samsung"
+      ],
+      "source_urls": [
+        "https://news.skhynix.com/sk-hynix-announces-3q25-financial-results/",
+        "https://news.skhynix.com/sk-hynix-completes-worlds-first-hbm4-development-and-readies-mass-production/",
+        "https://investors.micron.com/news-releases/news-release-details/maikuronzhuyaogukeheno-hbm4-chuhewokaishicishidai-ai",
+        "https://news.samsung.com/global/samsung-ships-industry-first-commercial-hbm4-with-ultimate-performance-for-ai-computing"
+      ],
+      "notes": [
+        "HBM supply remains concentrated among a very small number of qualified vendors.",
+        "Public releases show strong demand, new HBM4 ramps, and a small set of credible suppliers."
+      ]
+    },
+    "score": {
+      "candidate_name": "HBM memory stack supply",
+      "score_0_to_100": 88.8,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 1.1,
+        "qualification_friction": 0.8,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.42,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.3
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          1.1
+        ],
+        [
+          "qualification_friction",
+          0.8
+        ],
+        [
+          "demand_acceleration",
+          0.7
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.3
+        ],
+        [
+          "geopolitical_exposure",
+          0.42
+        ]
+      ],
+      "explanation": "HBM memory stack supply scores 88.8/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, demand acceleration. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "2.5D and CoWoS-class advanced packaging capacity",
+      "layer": "packaging",
+      "description": "Advanced 2.5D / CoWoS-class packaging capacity needed to integrate AI logic with HBM.",
+      "signals": {
+        "supplier_concentration": 5.0,
+        "qualification_friction": 5.0,
+        "capacity_lead_time": 5.0,
+        "geopolitical_exposure": 3.0,
+        "demand_acceleration": 5.0,
+        "substitutability_inverse": 4.0,
+        "pricing_power_evidence": 4.0
+      },
+      "public_companies": [
+        "TSM",
+        "AMKR"
+      ],
+      "source_urls": [
+        "https://investor.tsmc.com/static/annualReports/2024/english/ebook/files/basic-html/page100.html",
+        "https://investor.tsmc.com/static/annualReports/2024/english/ebook/files/basic-html/page8.html",
+        "https://www.commerce.gov/news/press-releases/2024/07/biden-harris-administration-announces-preliminary-terms-amkor",
+        "https://www.commerce.gov/news/press-releases/2024/12/biden-harris-administration-announces-chips-incentives-award-amkor"
+      ],
+      "notes": [
+        "Official government language explicitly calls 2.5D capacity a significant chokepoint for AI demand.",
+        "This layer may be the more binding gate even when HBM remains a major bottleneck."
+      ]
+    },
+    "score": {
+      "candidate_name": "2.5D and CoWoS-class advanced packaging capacity",
+      "score_0_to_100": 90.8,
+      "band": "critical",
+      "weighted_signals": {
+        "supplier_concentration": 1.1,
+        "qualification_friction": 0.8,
+        "capacity_lead_time": 0.8,
+        "geopolitical_exposure": 0.42,
+        "demand_acceleration": 0.7,
+        "substitutability_inverse": 0.48,
+        "pricing_power_evidence": 0.24
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          1.1
+        ],
+        [
+          "qualification_friction",
+          0.8
+        ],
+        [
+          "capacity_lead_time",
+          0.8
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.24
+        ],
+        [
+          "geopolitical_exposure",
+          0.42
+        ]
+      ],
+      "explanation": "2.5D and CoWoS-class advanced packaging capacity scores 90.8/100 (critical) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, capacity lead time. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  },
+  {
+    "candidate": {
+      "name": "Advanced substrates and packaging materials",
+      "layer": "substrate/materials",
+      "description": "Advanced substrates and packaging materials used to support heterogeneous integration and AI packaging.",
+      "signals": {
+        "supplier_concentration": 3.0,
+        "qualification_friction": 4.0,
+        "capacity_lead_time": 4.0,
+        "geopolitical_exposure": 2.0,
+        "demand_acceleration": 4.0,
+        "substitutability_inverse": 3.0,
+        "pricing_power_evidence": 2.0
+      },
+      "public_companies": [
+        "AMAT"
+      ],
+      "source_urls": [
+        "https://www.commerce.gov/news/press-releases/2024/11/chips-america-announces-300-million-funding-boost-us-semiconductor",
+        "https://www.commerce.gov/news/press-releases/2025/01/us-department-commerce-announces-14-billion-final-awards-support-next"
+      ],
+      "notes": [
+        "Strategic importance is clear from CHIPS/NAPMP funding and substrate-specific support.",
+        "This layer looks more like a scaling enabler than the single most acute constraint today."
+      ]
+    },
+    "score": {
+      "candidate_name": "Advanced substrates and packaging materials",
+      "score_0_to_100": 65.2,
+      "band": "high",
+      "weighted_signals": {
+        "supplier_concentration": 0.66,
+        "qualification_friction": 0.64,
+        "capacity_lead_time": 0.64,
+        "geopolitical_exposure": 0.28,
+        "demand_acceleration": 0.56,
+        "substitutability_inverse": 0.36,
+        "pricing_power_evidence": 0.12
+      },
+      "strongest_drivers": [
+        [
+          "supplier_concentration",
+          0.66
+        ],
+        [
+          "qualification_friction",
+          0.64
+        ],
+        [
+          "capacity_lead_time",
+          0.64
+        ]
+      ],
+      "weakest_drivers": [
+        [
+          "pricing_power_evidence",
+          0.12
+        ],
+        [
+          "geopolitical_exposure",
+          0.28
+        ]
+      ],
+      "explanation": "Advanced substrates and packaging materials scores 65.2/100 (high) as a chokepoint candidate. The strongest weighted drivers are supplier concentration, qualification friction, capacity lead time. The least supportive signals are pricing power evidence, geopolitical exposure. This score should be treated as a ranking aid, not as a trading decision on its own."
+    }
+  }
+]

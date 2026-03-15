@@ -1,0 +1,137 @@
+[
+  {
+    "case": "InP photonics",
+    "candidate": "InP substrates",
+    "layer": "substrate",
+    "severity_score": 86.0,
+    "severity_band": "critical",
+    "value_capture_score": 50.4,
+    "value_capture_band": "moderate"
+  },
+  {
+    "case": "InP photonics",
+    "candidate": "InP laser and external light source capacity",
+    "layer": "device",
+    "severity_score": 83.2,
+    "severity_band": "critical",
+    "value_capture_score": 75.2,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "InP photonics",
+    "candidate": "Optical module and CPO integration",
+    "layer": "module/system",
+    "severity_score": 69.2,
+    "severity_band": "high",
+    "value_capture_score": 61.2,
+    "value_capture_band": "moderate"
+  },
+  {
+    "case": "HBM / advanced packaging",
+    "candidate": "HBM memory stack supply",
+    "layer": "memory",
+    "severity_score": 88.8,
+    "severity_band": "critical",
+    "value_capture_score": 93.0,
+    "value_capture_band": "critical"
+  },
+  {
+    "case": "HBM / advanced packaging",
+    "candidate": "2.5D and CoWoS-class advanced packaging capacity",
+    "layer": "packaging",
+    "severity_score": 90.8,
+    "severity_band": "critical",
+    "value_capture_score": 83.8,
+    "value_capture_band": "critical"
+  },
+  {
+    "case": "HBM / advanced packaging",
+    "candidate": "Advanced substrates and packaging materials",
+    "layer": "substrate/materials",
+    "severity_score": 65.2,
+    "severity_band": "high",
+    "value_capture_score": 57.2,
+    "value_capture_band": "moderate"
+  },
+  {
+    "case": "Transformers / grid equipment",
+    "candidate": "Utility-scale power transformers",
+    "layer": "transmission",
+    "severity_score": 88.8,
+    "severity_band": "critical",
+    "value_capture_score": 76.0,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "Transformers / grid equipment",
+    "candidate": "Distribution transformers",
+    "layer": "distribution",
+    "severity_score": 72.8,
+    "severity_band": "high",
+    "value_capture_score": 69.4,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "Transformers / grid equipment",
+    "candidate": "High-voltage cables and related grid equipment",
+    "layer": "transmission components",
+    "severity_score": 69.2,
+    "severity_band": "high",
+    "value_capture_score": 68.6,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "Rare earth magnets / refining",
+    "candidate": "Magnet rare earth separation and refining",
+    "layer": "refining/separation",
+    "severity_score": 87.2,
+    "severity_band": "critical",
+    "value_capture_score": 70.6,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "Rare earth magnets / refining",
+    "candidate": "Heavy rare earth supply for high-performance magnets",
+    "layer": "heavy rare earths",
+    "severity_score": 89.6,
+    "severity_band": "critical",
+    "value_capture_score": 76.8,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "Rare earth magnets / refining",
+    "candidate": "Sintered NdFeB permanent magnet manufacturing",
+    "layer": "magnet manufacturing",
+    "severity_score": 95.6,
+    "severity_band": "critical",
+    "value_capture_score": 73.0,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "AI cooling / thermal management",
+    "candidate": "Coolant distribution and facility-side thermal chain",
+    "layer": "facility / distribution",
+    "severity_score": 80.4,
+    "severity_band": "critical",
+    "value_capture_score": 79.4,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "AI cooling / thermal management",
+    "candidate": "Direct-to-chip liquid cooling rack integration",
+    "layer": "system / rack",
+    "severity_score": 77.2,
+    "severity_band": "high",
+    "value_capture_score": 73.2,
+    "value_capture_band": "high"
+  },
+  {
+    "case": "AI cooling / thermal management",
+    "candidate": "Chip-level thermal interfaces and cold plates",
+    "layer": "component",
+    "severity_score": 62.0,
+    "severity_band": "moderate",
+    "value_capture_score": 54.0,
+    "value_capture_band": "moderate"
+  }
+]
