@@ -36,6 +36,18 @@ from .simulation_ipc import (
     CommandType,
     CommandStatus
 )
+from .research_ontology import (
+    ONTOLOGY_NAME,
+    ONTOLOGY_VERSION,
+    RESEARCH_ENTITY_TYPES,
+    RESEARCH_RELATIONSHIP_TYPES,
+    RESEARCH_EDGE_TYPES,
+    EVIDENCE_REQUIREMENTS,
+    CASE_STUDY_TO_ONTOLOGY_MAPPING,
+    build_research_ontology_spec,
+    build_research_graph_ontology,
+    validate_research_ontology_spec,
+)
 
 __all__ = [
     'OntologyGenerator', 
@@ -69,5 +81,14 @@ __all__ = [
     'IPCResponse',
     'CommandType',
     'CommandStatus',
+    'ONTOLOGY_NAME',
+    'ONTOLOGY_VERSION',
+    'RESEARCH_ENTITY_TYPES',
+    'RESEARCH_RELATIONSHIP_TYPES',
+    'RESEARCH_EDGE_TYPES',
+    'EVIDENCE_REQUIREMENTS',
+    'CASE_STUDY_TO_ONTOLOGY_MAPPING',
+    'build_research_ontology_spec',
+    'build_research_graph_ontology',
+    'validate_research_ontology_spec',
 ]
-
