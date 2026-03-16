@@ -1,0 +1,614 @@
+{
+  "name": "robotics_actuation_source_bundle_v1",
+  "theme": "robotics_supply_chain",
+  "notes": [
+    "This source bundle captures early AleaBito-style research fragments around robotics BOM concentration and neodymium processing exposure.",
+    "The X posts are hypothesis-seed sources, not final evidence-grade sources.",
+    "The goal is to test MiroFish source ingestion and structural parsing against a real component -> material -> processing -> equity chain."
+  ],
+  "sources": [
+    {
+      "source_id": "src_alea_robotics_bom_2026_03_15",
+      "source_class": "investor_post",
+      "title": "Robotics BOM mapping post",
+      "canonical_url": "https://x.com/aleabitoreddit/status/2033121017598722432",
+      "publisher": "X",
+      "published_at": "2026-03-15T04:59:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "global",
+      "ticker_refs": [
+        "NOVT",
+        "AEVA",
+        "OUST",
+        "AMBA",
+        "MU"
+      ],
+      "theme_refs": [
+        "robotics_supply_chain",
+        "actuation_motion",
+        "perception_compute"
+      ],
+      "source_quality": "exploratory",
+      "source_reliability_score": 0.45,
+      "usage_mode": "hypothesis_seed",
+      "attachment_type": "text",
+      "notes": [
+        "User-supplied transcription from AleaBito's March 15, 2026 post.",
+        "Useful for subsystem ranking and geographic concentration hints."
+      ]
+    },
+    {
+      "source_id": "src_alea_ndpr_guess_2026_03_15",
+      "source_class": "investor_post",
+      "title": "Neodymium processing exposure guess for robotics",
+      "canonical_url": "https://x.com/aleabitoreddit",
+      "publisher": "X",
+      "published_at": "2026-03-15T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "global",
+      "ticker_refs": [
+        "NEO",
+        "MP",
+        "UUUU"
+      ],
+      "theme_refs": [
+        "robotics_supply_chain",
+        "magnet_metals",
+        "ndpr_processing"
+      ],
+      "source_quality": "exploratory",
+      "source_reliability_score": 0.47,
+      "usage_mode": "hypothesis_seed",
+      "attachment_type": "text",
+      "notes": [
+        "User-supplied transcription from AleaBito's follow-up post on processing exposure."
+      ]
+    },
+    {
+      "source_id": "src_robotics_universe_seed_2026_03_16",
+      "source_class": "user_note",
+      "title": "Robotics supply chain universe seed",
+      "canonical_url": "research/analysis/2026-03-16-robotics-supply-chain-universe-v1.json",
+      "publisher": "MiroFish research",
+      "published_at": "2026-03-16T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "global",
+      "ticker_refs": [
+        "MP",
+        "NEO",
+        "ATI",
+        "CRS",
+        "UUUU"
+      ],
+      "theme_refs": [
+        "robotics_supply_chain",
+        "magnet_metals",
+        "structural_metallurgy"
+      ],
+      "source_quality": "medium",
+      "source_reliability_score": 0.62,
+      "usage_mode": "context",
+      "attachment_type": "json",
+      "notes": [
+        "Internal universe-construction artifact built from prior AleaBito-style lists."
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "fragment_id": "frag_robotics_bom_actuation_priority",
+      "source_id": "src_alea_robotics_bom_2026_03_15",
+      "fragment_type": "post_excerpt",
+      "section_label": "BOM priority",
+      "excerpt": "For robotic supply chains BOM mapping, Actuation / Motion is #1. Perception & Compute is #2. Actuation & Motion appears to be the top cost bucket and is concentrated in China with a few Japanese and Korean suppliers.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Robotics Supply Chain"
+        ],
+        "systems": [
+          "Humanoid Robot"
+        ],
+        "subsystems": [
+          "Actuation / Motion",
+          "Perception & Compute"
+        ],
+        "geographies": [
+          "China",
+          "Japan",
+          "Korea",
+          "United States"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Robotics Supply Chain",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "Humanoid Robot",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Subsystem",
+          "canonical_name": "Actuation / Motion",
+          "attributes": {
+            "bom_weight": "highest"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Subsystem",
+          "canonical_name": "Perception & Compute",
+          "attributes": {
+            "bom_weight": "second"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Component",
+          "canonical_name": "Permanent Magnet Motor",
+          "attributes": {
+            "system_role": "actuation_motion"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Component",
+          "canonical_name": "Harmonic Reducer",
+          "attributes": {
+            "system_role": "actuation_motion"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Component",
+          "canonical_name": "Planetary Roller Screw",
+          "attributes": {
+            "system_role": "actuation_motion"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "China",
+          "attributes": {
+            "risk_profile": "concentrated_supplier_base"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "Japan",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "Korea",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "United States",
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "actuation_part_of_humanoid",
+          "relationship_type": "PART_OF",
+          "source_type": "Subsystem",
+          "source_name": "Actuation / Motion",
+          "target_type": "System",
+          "target_name": "Humanoid Robot",
+          "relationship_strength": "high",
+          "causal_role": "top_bom_subsystem",
+          "confidence": "high"
+        },
+        {
+          "key": "perception_part_of_humanoid",
+          "relationship_type": "PART_OF",
+          "source_type": "Subsystem",
+          "source_name": "Perception & Compute",
+          "target_type": "System",
+          "target_name": "Humanoid Robot",
+          "relationship_strength": "medium",
+          "causal_role": "secondary_bom_subsystem",
+          "confidence": "medium"
+        },
+        {
+          "key": "pm_motor_part_of_actuation",
+          "relationship_type": "PART_OF",
+          "source_type": "Component",
+          "source_name": "Permanent Magnet Motor",
+          "target_type": "Subsystem",
+          "target_name": "Actuation / Motion",
+          "relationship_strength": "high",
+          "causal_role": "critical_component",
+          "confidence": "high"
+        },
+        {
+          "key": "harmonic_reducer_part_of_actuation",
+          "relationship_type": "PART_OF",
+          "source_type": "Component",
+          "source_name": "Harmonic Reducer",
+          "target_type": "Subsystem",
+          "target_name": "Actuation / Motion",
+          "relationship_strength": "medium",
+          "causal_role": "supporting_component",
+          "confidence": "medium"
+        },
+        {
+          "key": "roller_screw_part_of_actuation",
+          "relationship_type": "PART_OF",
+          "source_type": "Component",
+          "source_name": "Planetary Roller Screw",
+          "target_type": "Subsystem",
+          "target_name": "Actuation / Motion",
+          "relationship_strength": "medium",
+          "causal_role": "supporting_component",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_actuation_top_bom_bucket",
+          "claim_type": "component_dependency",
+          "claim_text": "Actuation / Motion appears to be the top BOM bucket within humanoid robotics, ahead of perception and compute.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Humanoid Robot",
+            "Actuation / Motion",
+            "Perception & Compute"
+          ],
+          "relationship_keys": [
+            "actuation_part_of_humanoid",
+            "perception_part_of_humanoid"
+          ]
+        },
+        {
+          "claim_key": "claim_actuation_geographic_concentration",
+          "claim_type": "market_share_or_concentration",
+          "claim_text": "Actuation and motion supply is concentrated in China with some Japanese and Korean participation and limited U.S. leadership.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "low",
+          "entity_names": [
+            "Actuation / Motion",
+            "China",
+            "Japan",
+            "Korea",
+            "United States"
+          ],
+          "relationship_keys": []
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_robotics_ndpr_processing_chain",
+      "source_id": "src_alea_ndpr_guess_2026_03_15",
+      "fragment_type": "post_excerpt",
+      "section_label": "Component to material to processing",
+      "excerpt": "A robotic joint is a permanent magnet motor and needs neodymium processing supply chains. Better listed exposure may be rare earth processing rather than Chinese robotics companies. NEO, MP, and UUUU were highlighted as possible exposure names.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Robotics Supply Chain"
+        ],
+        "systems": [
+          "Humanoid Robot"
+        ],
+        "subsystems": [
+          "Actuation / Motion"
+        ],
+        "components": [
+          "Permanent Magnet Motor"
+        ],
+        "materials": [
+          "Neodymium"
+        ],
+        "process_layers": [
+          "Neodymium Processing"
+        ],
+        "public_companies": [
+          "NEO",
+          "MP",
+          "UUUU"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "MaterialInput",
+          "canonical_name": "Neodymium",
+          "attributes": {
+            "processing_stage": "refined_magnet_input"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Neodymium Processing",
+          "attributes": {
+            "process_stage": "refining_and_conversion"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ExpressionCandidate",
+          "canonical_name": "Equity basket: MP / NEO / UUUU",
+          "attributes": {
+            "expression_type": "shares",
+            "time_horizon": "multi_quarter"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "NEO",
+          "attributes": {
+            "ticker": "NEO",
+            "exposure_type": "anchor"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "MP",
+          "attributes": {
+            "ticker": "MP",
+            "exposure_type": "anchor"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "UUUU",
+          "attributes": {
+            "ticker": "UUUU",
+            "exposure_type": "satellite"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "pm_motor_depends_on_neodymium",
+          "relationship_type": "DEPENDS_ON",
+          "source_type": "Component",
+          "source_name": "Permanent Magnet Motor",
+          "target_type": "MaterialInput",
+          "target_name": "Neodymium",
+          "relationship_strength": "high",
+          "causal_role": "required_input",
+          "confidence": "high"
+        },
+        {
+          "key": "neodymium_processed_by_processing",
+          "relationship_type": "PROCESSED_BY",
+          "source_type": "MaterialInput",
+          "source_name": "Neodymium",
+          "target_type": "ProcessLayer",
+          "target_name": "Neodymium Processing",
+          "relationship_strength": "high",
+          "causal_role": "qualified_industrial_form",
+          "confidence": "high"
+        },
+        {
+          "key": "processing_supplied_by_neo",
+          "relationship_type": "SUPPLIED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "PublicCompany",
+          "target_name": "NEO",
+          "relationship_strength": "medium",
+          "causal_role": "listed_exposure",
+          "confidence": "medium"
+        },
+        {
+          "key": "processing_supplied_by_mp",
+          "relationship_type": "SUPPLIED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "PublicCompany",
+          "target_name": "MP",
+          "relationship_strength": "high",
+          "causal_role": "listed_exposure",
+          "confidence": "high"
+        },
+        {
+          "key": "processing_supplied_by_uuuu",
+          "relationship_type": "SUPPLIED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "PublicCompany",
+          "target_name": "UUUU",
+          "relationship_strength": "medium",
+          "causal_role": "listed_exposure",
+          "confidence": "medium"
+        },
+        {
+          "key": "equity_basket_for_processing",
+          "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Equity basket: MP / NEO / UUUU",
+          "target_type": "ProcessLayer",
+          "target_name": "Neodymium Processing",
+          "relationship_strength": "medium",
+          "causal_role": "preliminary_expression",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_robotics_component_material_process_chain",
+          "claim_type": "material_or_processing_dependency",
+          "claim_text": "Robotic actuation depends on permanent magnet motors, which in turn depend on neodymium processing.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Actuation / Motion",
+            "Permanent Magnet Motor",
+            "Neodymium",
+            "Neodymium Processing"
+          ],
+          "relationship_keys": [
+            "pm_motor_depends_on_neodymium",
+            "neodymium_processed_by_processing"
+          ]
+        },
+        {
+          "claim_key": "claim_processing_better_than_downstream_exposure",
+          "claim_type": "valuation_gap_assertion",
+          "claim_text": "Better public-market exposure may sit in rare earth processing rather than downstream Chinese robotics companies.",
+          "claim_status": "supported",
+          "claim_kind": "speculative",
+          "confidence": "medium",
+          "entity_names": [
+            "Neodymium Processing",
+            "MP",
+            "NEO",
+            "UUUU"
+          ],
+          "relationship_keys": [
+            "processing_supplied_by_neo",
+            "processing_supplied_by_mp",
+            "processing_supplied_by_uuuu",
+            "equity_basket_for_processing"
+          ]
+        }
+      ],
+      "inference_candidates": [
+        {
+          "inference_key": "inf_market_miss_neodymium_processing",
+          "inference_type": "market_miss",
+          "statement": "The market may be underweighting neodymium processing as a cleaner Western proxy for robotics scale-up relative to downstream robot narratives.",
+          "claim_keys": [
+            "claim_actuation_top_bom_bucket",
+            "claim_robotics_component_material_process_chain",
+            "claim_processing_better_than_downstream_exposure"
+          ],
+          "relationship_keys": [
+            "actuation_part_of_humanoid",
+            "pm_motor_part_of_actuation",
+            "pm_motor_depends_on_neodymium",
+            "neodymium_processed_by_processing",
+            "processing_supplied_by_mp",
+            "processing_supplied_by_neo",
+            "processing_supplied_by_uuuu"
+          ],
+          "confidence": "medium",
+          "falsifiers": [
+            "robotics scale-up shifts away from permanent magnet motor architectures",
+            "neodymium processing capacity expands faster than expected",
+            "the listed names fail to capture economics from the processing layer"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_robotics_universe_anchor_mapping",
+      "source_id": "src_robotics_universe_seed_2026_03_16",
+      "fragment_type": "json_summary",
+      "section_label": "Universe anchors",
+      "excerpt": "MP, NEO, ATI, and CRS were marked as anchors in the robotics materials universe, with MP and NEO specifically tied to magnet-metals exposure. The universe was framed as a research universe rather than a final pick list.",
+      "contains_claim_candidate": true,
+      "entity_hints": [
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "ATI",
+          "attributes": {
+            "ticker": "ATI",
+            "exposure_type": "anchor"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "CRS",
+          "attributes": {
+            "ticker": "CRS",
+            "exposure_type": "anchor"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "theme_anchors_mp",
+          "relationship_type": "ANCHORS",
+          "source_type": "Theme",
+          "source_name": "Robotics Supply Chain",
+          "target_type": "PublicCompany",
+          "target_name": "MP",
+          "relationship_strength": "high",
+          "causal_role": "anchor_name",
+          "confidence": "high"
+        },
+        {
+          "key": "theme_anchors_neo",
+          "relationship_type": "ANCHORS",
+          "source_type": "Theme",
+          "source_name": "Robotics Supply Chain",
+          "target_type": "PublicCompany",
+          "target_name": "NEO",
+          "relationship_strength": "medium",
+          "causal_role": "anchor_name",
+          "confidence": "medium"
+        },
+        {
+          "key": "theme_anchors_ati",
+          "relationship_type": "ANCHORS",
+          "source_type": "Theme",
+          "source_name": "Robotics Supply Chain",
+          "target_type": "PublicCompany",
+          "target_name": "ATI",
+          "relationship_strength": "medium",
+          "causal_role": "anchor_name",
+          "confidence": "medium"
+        },
+        {
+          "key": "theme_anchors_crs",
+          "relationship_type": "ANCHORS",
+          "source_type": "Theme",
+          "source_name": "Robotics Supply Chain",
+          "target_type": "PublicCompany",
+          "target_name": "CRS",
+          "relationship_strength": "medium",
+          "causal_role": "anchor_name",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_universe_before_pick",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "The robotics materials map should be treated as a research universe first, with anchors identified before final picks or expressions are chosen.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Robotics Supply Chain",
+            "MP",
+            "NEO",
+            "ATI",
+            "CRS"
+          ],
+          "relationship_keys": [
+            "theme_anchors_mp",
+            "theme_anchors_neo",
+            "theme_anchors_ati",
+            "theme_anchors_crs"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -48,6 +48,7 @@ from .research_ontology import (
     build_research_graph_ontology,
     validate_research_ontology_spec,
 )
+from .structural_parser import build_structural_parse_from_source_bundle
 from .mispricing_screening import (
     DEFAULT_MISPRICING_WEIGHTS,
     DEFAULT_OPTIONS_FIT_WEIGHTS,
@@ -102,6 +103,7 @@ __all__ = [
     'build_research_ontology_spec',
     'build_research_graph_ontology',
     'validate_research_ontology_spec',
+    'build_structural_parse_from_source_bundle',
     'DEFAULT_MISPRICING_WEIGHTS',
     'DEFAULT_OPTIONS_FIT_WEIGHTS',
     'MispricingSignals',

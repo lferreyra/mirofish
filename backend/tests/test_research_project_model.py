@@ -61,6 +61,14 @@ def test_research_project_manager_round_trip(tmp_path):
                         "claim_type": "bottleneck_assertion",
                     }
                 ],
+                "evidence_links": [
+                    {
+                        "evidence_link_id": "ev_1",
+                        "fragment_id": "frag_1",
+                        "supports_object_type": "claim",
+                        "supports_object_id": "claim_1",
+                    }
+                ],
                 "inferences": [
                     {
                         "inference_id": "inf_1",
@@ -93,8 +101,10 @@ def test_research_project_manager_round_trip(tmp_path):
         assert loaded.status == ResearchProjectStatus.REPORTED
         assert loaded.source_count == 1
         assert loaded.fragment_count == 1
+        assert loaded.entity_count == 1
         assert loaded.relationship_count == 1
         assert loaded.claim_count == 1
+        assert loaded.evidence_link_count == 1
         assert loaded.inference_count == 1
         assert loaded.claims_audit_count == 1
         assert loaded.scorecard_count == 1

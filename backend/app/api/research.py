@@ -16,6 +16,7 @@ from ..services import (
     MispricingSignals,
     OptionsExpressionSignals,
     build_research_ontology_spec,
+    build_structural_parse_from_source_bundle,
     screen_candidates,
 )
 from ..utils.logger import get_logger
@@ -210,6 +211,53 @@ def save_structural_parse(research_project_id: str):
         }), 404
     except Exception as e:
         logger.error(f"保存 structural parse 失败: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }), 500
+
+
+@research_bp.route(
+    "/project/<research_project_id>/structural-parse/generate",
+    methods=["POST"],
+)
+def generate_structural_parse(research_project_id: str):
+    """Generate and persist a structural parse from the stored source bundle."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        source_bundle = payload.get("source_bundle")
+        if source_bundle is None:
+            source_bundle = ResearchProjectManager.get_source_bundle(research_project_id)
+        if not source_bundle:
+            return jsonify({
+                "success": False,
+                "error": "no source bundle available for structural parse generation",
+            }), 400
+        if not isinstance(source_bundle, dict):
+            return jsonify({
+                "success": False,
+                "error": "source bundle payload must be an object",
+            }), 400
+
+        structural_parse = build_structural_parse_from_source_bundle(source_bundle)
+        project = ResearchProjectManager.save_structural_parse(
+            research_project_id, structural_parse
+        )
+        return jsonify({
+            "success": True,
+            "data": {
+                "research_project": project.to_dict(),
+                "structural_parse": structural_parse,
+            },
+        })
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 404
+    except Exception as e:
+        logger.error(f"生成 structural parse 失败: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),

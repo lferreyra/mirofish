@@ -46,8 +46,10 @@ class ResearchProject:
     thesis_intake: Dict[str, Any] = field(default_factory=dict)
     source_count: int = 0
     fragment_count: int = 0
+    entity_count: int = 0
     relationship_count: int = 0
     claim_count: int = 0
+    evidence_link_count: int = 0
     inference_count: int = 0
     claims_audit_count: int = 0
     scorecard_count: int = 0
@@ -73,8 +75,10 @@ class ResearchProject:
             "thesis_intake": self.thesis_intake,
             "source_count": self.source_count,
             "fragment_count": self.fragment_count,
+            "entity_count": self.entity_count,
             "relationship_count": self.relationship_count,
             "claim_count": self.claim_count,
+            "evidence_link_count": self.evidence_link_count,
             "inference_count": self.inference_count,
             "claims_audit_count": self.claims_audit_count,
             "scorecard_count": self.scorecard_count,
@@ -104,8 +108,10 @@ class ResearchProject:
             thesis_intake=data.get("thesis_intake", {}),
             source_count=data.get("source_count", 0),
             fragment_count=data.get("fragment_count", 0),
+            entity_count=data.get("entity_count", 0),
             relationship_count=data.get("relationship_count", 0),
             claim_count=data.get("claim_count", 0),
+            evidence_link_count=data.get("evidence_link_count", 0),
             inference_count=data.get("inference_count", 0),
             claims_audit_count=data.get("claims_audit_count", 0),
             scorecard_count=data.get("scorecard_count", 0),
@@ -306,13 +312,16 @@ class ResearchProjectManager:
         ) as f:
             json.dump(structural_parse, f, ensure_ascii=False, indent=2)
 
+        project.entity_count = cls._count_items(structural_parse, "entities")
         project.relationship_count = cls._count_items(structural_parse, "relationships")
         project.claim_count = cls._count_items(structural_parse, "claims")
+        project.evidence_link_count = cls._count_items(structural_parse, "evidence_links")
         project.inference_count = cls._count_items(structural_parse, "inferences")
         if (
-            cls._count_items(structural_parse, "entities")
+            project.entity_count
             or project.relationship_count
             or project.claim_count
+            or project.evidence_link_count
             or project.inference_count
         ):
             project.status = ResearchProjectStatus.STRUCTURE_PARSED
