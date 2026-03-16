@@ -1,0 +1,207 @@
+{
+  "name": "federal_register_policy_feed_live_v1",
+  "theme": "critical_materials",
+  "synthetic_sample": false,
+  "notes": [
+    "Fetched from Federal Register API.",
+    "Query profile: rare_earths",
+    "Query: rare earth elements neodymium magnet separation"
+  ],
+  "feed_documents": [
+    {
+      "document_id": "federal_register_2023-03078",
+      "source_target_id": "src_target_federal_register_notices",
+      "source_target_name": "Federal Register Notices",
+      "source_class": "government_policy_enforcement",
+      "publisher": "Federal Register",
+      "title": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended",
+      "canonical_url": "https://www.federalregister.gov/documents/2023/02/14/2023-03078/publication-of-a-report-on-the-effect-of-imports-of-neodymium-iron-boron-ndfeb-permanent-magnets-on",
+      "published_at": "2023-02-14",
+      "retrieved_at": "2026-03-16T22:17:29.637300+00:00",
+      "source_quality": "high",
+      "source_reliability_score": 0.95,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "jurisdiction": "US",
+      "language": "en",
+      "ticker_refs": [
+        "MP",
+        "UUUU"
+      ],
+      "theme_refs": [
+        "critical_materials",
+        "rare_earths"
+      ],
+      "policy_scope": [
+        "export_control",
+        "industrial_policy"
+      ],
+      "summary": "The Bureau of Industry and Security (BIS) in this notice is publishing a report that summarizes the findings of an investigation conducted by the U.S. Department of Commerce (the \"Department\") pursuant to section 232 of the Trade Expansion Act of 1962, as amended (\"section 232\"), into the effect of imports of neodymium-iron-boron (NdFeB) permanent magnets on the national security of the United States. This report was completed in June 2022 and posted on the BIS website in September 2022. BIS has not published the appendices to the report in this notification of report findings, but they are available online at the BIS website, along with the rest of the report (see the ADDRESSES section).",
+      "excerpt": "\n \n 11 \n  “<span class=\"match\">Rare</span> <span class=\"match\">Earth</span> Permanent <span class=\"match\">Magnets</span>: Supply Chain Deep Dive Report,” Department of Energy, February 24, 2022, \n https://www.usitc.gov/publications/332/working_papers/rare_earths_and_the_electronics_sector_final_070921_2-compliant.pdf \n .\n \n \n \n \n 12 \n  Ibid.\n \n \n \n There are five main value chain steps prior to the production of NdFeB <span class=\"match\">magnets</span>: mixed <span class=\"match\">rare</span> <span class=\"match\">earth</span> element mining, processing of <span class=\"match\">rare</span> <span class=\"match\">earth</span> <span class=\"match\">elements</span> into <span class=\"match\">rare</span> <span class=\"match\">earth</span> carbonates, <span class=\"match\">separation</span> of <span class=\"match\">rare</span> <span class=\"match\">earth</span> carbonates into individual <span class=\"match\">rare</span> <span class=\"match\">earth</span> oxides, reduction of <span class=\"match\">rare</span> <span class=\"match\">earth</span> oxides into",
+      "research_tags": {
+        "themes": [
+          "Critical Materials",
+          "Rare Earths"
+        ],
+        "process_layers": [
+          "Neodymium Processing"
+        ],
+        "geographies": [
+          "China",
+          "Australia",
+          "Canada"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Event",
+          "canonical_name": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended",
+          "attributes": {
+            "event_type": "policy_notice",
+            "document_number": "2023-03078",
+            "document_type": "Notice",
+            "agencies": [
+              "Commerce Department",
+              "Industry and Security Bureau"
+            ]
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Neodymium Processing",
+          "attributes": {
+            "process_stage": "policy_affected"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "China",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "Australia",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "Canada",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Critical Materials",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Rare Earths",
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "2023-03078_affected_Neodymium Processing",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "Event",
+          "target_name": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended",
+          "relationship_strength": "high",
+          "confidence": "medium"
+        },
+        {
+          "key": "2023-03078_constrained_Neodymium Processing_China",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "Geography",
+          "target_name": "China",
+          "relationship_strength": "medium",
+          "confidence": "medium"
+        },
+        {
+          "key": "2023-03078_constrained_Neodymium Processing_Australia",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "Geography",
+          "target_name": "Australia",
+          "relationship_strength": "medium",
+          "confidence": "medium"
+        },
+        {
+          "key": "2023-03078_constrained_Neodymium Processing_Canada",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Neodymium Processing",
+          "target_type": "Geography",
+          "target_name": "Canada",
+          "relationship_strength": "medium",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_2023-03078_policy_notice_affects_process_layers",
+          "claim_type": "policy_transmission_assertion",
+          "claim_text": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended may affect Neodymium Processing before downstream market narratives update.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended",
+            "Neodymium Processing",
+            "China",
+            "Australia",
+            "Canada"
+          ],
+          "relationship_keys": [
+            "2023-03078_affected_Neodymium Processing",
+            "2023-03078_constrained_Neodymium Processing_China",
+            "2023-03078_constrained_Neodymium Processing_Australia",
+            "2023-03078_constrained_Neodymium Processing_Canada"
+          ]
+        }
+      ],
+      "relevance_score": 60,
+      "relevance_class": "directly_relevant",
+      "positive_markers": [
+        "neodymium",
+        "ndfeb",
+        "magnet"
+      ],
+      "negative_markers": [],
+      "matched_profile": "rare_earths",
+      "matched_process_layers": [
+        "Neodymium Processing"
+      ],
+      "notes": [
+        "Normalized from live Federal Register API response.",
+        "Agencies: Commerce Department, Industry and Security Bureau",
+        "Relevance: directly_relevant (60)"
+      ]
+    }
+  ],
+  "fetch_metadata": {
+    "api_url": "https://www.federalregister.gov/api/v1/documents.json?fields%5B%5D=abstract&fields%5B%5D=agencies&fields%5B%5D=document_number&fields%5B%5D=excerpts&fields%5B%5D=html_url&fields%5B%5D=publication_date&fields%5B%5D=title&fields%5B%5D=topics&fields%5B%5D=type&conditions%5Bterm%5D=rare+earth+elements+neodymium+magnet+separation&conditions%5Bagencies%5D%5B%5D=commerce-department&conditions%5Bagencies%5D%5B%5D=interior-department&conditions%5Btype%5D%5B%5D=RULE&conditions%5Btype%5D%5B%5D=PRORULE&conditions%5Btype%5D%5B%5D=NOTICE&per_page=20&page=1&order=newest",
+    "raw_result_count": 5,
+    "result_count": 1,
+    "filtered_out": 4,
+    "retrieved_at": "2026-03-16T22:17:29.637337+00:00",
+    "query_profile": "rare_earths",
+    "agencies": [
+      "commerce-department",
+      "interior-department"
+    ],
+    "document_types": [
+      "RULE",
+      "PRORULE",
+      "NOTICE"
+    ],
+    "minimum_relevance_score": 20,
+    "include_adjacent": true
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "count": 5,
+  "total_pages": 1,
+  "results": [
+    {
+      "abstract": "Final rule establishing the 2025 list of critical minerals pursuant to the Energy Act of 2020. The list identifies minerals critical to the economic and national security of the United States.",
+      "agencies": [
+        {"name": "Interior Department"},
+        {"name": "Geological Survey"}
+      ],
+      "document_number": "2026-10001",
+      "excerpts": [
+        "The Department of the Interior identifies critical minerals including rare earth elements, cobalt, lithium, gallium, and germanium as essential to national security and economic resilience."
+      ],
+      "html_url": "https://www.federalregister.gov/documents/2026/01/15/2026-10001/final-critical-minerals-list",
+      "publication_date": "2026-01-15",
+      "title": "Final 2025 List of Critical Minerals",
+      "topics": ["Critical Materials", "Mining", "National Security"],
+      "type": "NOTICE"
+    },
+    {
+      "abstract": "Addition of entities to the Entity List based on activities contrary to the national security or foreign policy interests of the United States related to rare earth and semiconductor supply chains.",
+      "agencies": [
+        {"name": "Bureau of Industry and Security"}
+      ],
+      "document_number": "2026-10002",
+      "excerpts": [
+        "The Bureau of Industry and Security adds entities to the Entity List under the Export Administration Regulations for their involvement in diverting critical mineral processing technology."
+      ],
+      "html_url": "https://www.federalregister.gov/documents/2026/02/01/2026-10002/entity-list-additions",
+      "publication_date": "2026-02-01",
+      "title": "Addition of Entities to the Entity List; Export Control on Critical Mineral Processing",
+      "topics": ["Exports", "Entity List", "Critical Materials"],
+      "type": "RULE"
+    },
+    {
+      "abstract": "Notice of request for public comments on Section 232 investigation of imports of processed critical minerals including cobalt, lithium, and rare earth compounds.",
+      "agencies": [
+        {"name": "Commerce Department"}
+      ],
+      "document_number": "2026-10003",
+      "excerpts": [
+        "Section 232 investigation into the national security implications of imported processed critical minerals, including refining and separation of rare earth elements."
+      ],
+      "html_url": "https://www.federalregister.gov/documents/2026/02/15/2026-10003/section-232-critical-minerals",
+      "publication_date": "2026-02-15",
+      "title": "Section 232 Investigation: Imports of Processed Critical Minerals",
+      "topics": ["National Security", "Critical Materials", "Imports"],
+      "type": "NOTICE"
+    },
+    {
+      "abstract": "Endangered and threatened wildlife and plants; determination of endangered species status for the black-capped vireo across its range.",
+      "agencies": [
+        {"name": "Fish and Wildlife Service"}
+      ],
+      "document_number": "2026-10004",
+      "excerpts": [
+        "The U.S. Fish and Wildlife Service determines that the black-capped vireo warrants listing as an endangered species under the Endangered Species Act."
+      ],
+      "html_url": "https://www.federalregister.gov/documents/2026/03/01/2026-10004/endangered-species-vireo",
+      "publication_date": "2026-03-01",
+      "title": "Endangered and Threatened Wildlife and Plants; Endangered Species Status for Black-Capped Vireo",
+      "topics": ["Wildlife", "Endangered Species"],
+      "type": "RULE"
+    },
+    {
+      "abstract": "Energy conservation program for consumer furnaces establishing new efficiency standards for residential gas and oil furnaces.",
+      "agencies": [
+        {"name": "Energy Department"}
+      ],
+      "document_number": "2026-10005",
+      "excerpts": [
+        "The Department of Energy establishes energy conservation standards for consumer furnaces to improve residential energy efficiency."
+      ],
+      "html_url": "https://www.federalregister.gov/documents/2026/03/10/2026-10005/consumer-furnace-standards",
+      "publication_date": "2026-03-10",
+      "title": "Energy Conservation Program: Energy Conservation Standards for Consumer Furnaces",
+      "topics": ["Energy Conservation", "Consumer Products"],
+      "type": "RULE"
+    }
+  ]
+}

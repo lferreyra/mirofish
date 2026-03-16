@@ -20,6 +20,10 @@ from .federal_register_query_profiles import (
     resolve_query_profile,
     validate_agency_slugs,
 )
+from .federal_register_relevance import (
+    filter_documents_by_relevance,
+    match_process_layers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,14 +132,29 @@ def _normalize_document_to_policy_feed(
     focus_geographies: Iterable[str],
     ticker_refs: Iterable[str],
     policy_scope: Iterable[str],
+    relevance_metadata: Optional[Dict[str, Any]] = None,
+    matched_process_layers: Optional[List[str]] = None,
+    matched_profile: Optional[str] = None,
 ) -> Dict[str, Any]:
     title = document.get("title") or "Untitled Federal Register document"
     document_number = str(document.get("document_number") or title)
     event_name = title
-    process_layers = [str(value) for value in _normalize_list(focus_process_layers)]
+    # Use document-specific matched layers instead of blanket profile layers.
+    if matched_process_layers is not None:
+        process_layers = matched_process_layers
+    else:
+        process_layers = [str(value) for value in _normalize_list(focus_process_layers)]
     geographies = [str(value) for value in _normalize_list(focus_geographies)]
     themes = [str(value) for value in _normalize_list(target_themes)]
     agencies = _agency_names(document)
+    relevance = relevance_metadata or {}
+    relevance_class = relevance.get("relevance_class", "directly_relevant")
+
+    # Adjacent documents get weaker relationship expansion to avoid graph
+    # inflation from tangentially related notices.
+    is_adjacent = relevance_class == "adjacent"
+    rel_strength = "low" if is_adjacent else "high"
+    rel_confidence = "low" if is_adjacent else "medium"
 
     relationship_hints: List[Dict[str, Any]] = []
     for process_layer in process_layers:
@@ -147,23 +166,25 @@ def _normalize_document_to_policy_feed(
                 "source_name": process_layer,
                 "target_type": "Event",
                 "target_name": event_name,
-                "relationship_strength": "high",
-                "confidence": "medium",
+                "relationship_strength": rel_strength,
+                "confidence": rel_confidence,
             }
         )
-        for geography in geographies:
-            relationship_hints.append(
-                {
-                    "key": f"{document_number}_constrained_{process_layer}_{geography}",
-                    "relationship_type": "CONSTRAINED_BY",
-                    "source_type": "ProcessLayer",
-                    "source_name": process_layer,
-                    "target_type": "Geography",
-                    "target_name": geography,
-                    "relationship_strength": "medium",
-                    "confidence": "medium",
-                }
-            )
+        # Only expand geography constraints for directly relevant docs.
+        if not is_adjacent:
+            for geography in geographies:
+                relationship_hints.append(
+                    {
+                        "key": f"{document_number}_constrained_{process_layer}_{geography}",
+                        "relationship_type": "CONSTRAINED_BY",
+                        "source_type": "ProcessLayer",
+                        "source_name": process_layer,
+                        "target_type": "Geography",
+                        "target_name": geography,
+                        "relationship_strength": "medium",
+                        "confidence": "medium",
+                    }
+                )
 
     entity_hints: List[Dict[str, Any]] = [
         {
@@ -253,9 +274,20 @@ def _normalize_document_to_policy_feed(
         "entity_hints": entity_hints,
         "relationship_hints": relationship_hints,
         "claim_candidates": claim_candidates,
+        "relevance_score": relevance.get("relevance_score"),
+        "relevance_class": relevance_class,
+        "positive_markers": relevance.get("positive_markers", []),
+        "negative_markers": relevance.get("negative_markers", []),
+        "matched_profile": matched_profile,
+        "matched_process_layers": process_layers,
         "notes": [
             "Normalized from live Federal Register API response.",
             *([f"Agencies: {', '.join(agencies)}"] if agencies else []),
+            *(
+                [f"Relevance: {relevance_class} ({relevance.get('relevance_score', '?')})"]
+                if relevance
+                else []
+            ),
         ],
     }
 
@@ -275,6 +307,10 @@ def fetch_federal_register_policy_feed(
     focus_geographies: Iterable[str] | None = None,
     ticker_refs: Iterable[str] | None = None,
     policy_scope: Iterable[str] | None = None,
+    minimum_relevance_score: int = 20,
+    include_adjacent: bool = True,
+    positive_markers: Iterable[str] | None = None,
+    negative_markers: Iterable[str] | None = None,
 ) -> Dict[str, Any]:
     # Resolve profile defaults, letting explicit args override.
     resolved = resolve_query_profile(
@@ -298,6 +334,8 @@ def fetch_federal_register_policy_feed(
     effective_geographies = resolved.get("focus_geographies") or []
     effective_tickers = resolved.get("ticker_refs") or []
     effective_policy_scope = resolved.get("policy_scope") or []
+    effective_positive = list(positive_markers) if positive_markers else resolved.get("positive_markers")
+    effective_negative = list(negative_markers) if negative_markers else resolved.get("negative_markers")
 
     url = build_federal_register_documents_url(
         query=effective_query,
@@ -332,19 +370,38 @@ def fetch_federal_register_policy_feed(
         else:
             raise
 
-    results = _extract_results(payload)
-    documents = [
-        _normalize_document_to_policy_feed(
-            result,
-            source_target_id="src_target_federal_register_notices",
-            target_themes=effective_target_themes,
-            focus_process_layers=effective_process_layers,
-            focus_geographies=effective_geographies,
-            ticker_refs=effective_tickers,
-            policy_scope=effective_policy_scope,
+    raw_results = _extract_results(payload)
+
+    # Score and filter results by relevance.
+    scored_results = filter_documents_by_relevance(
+        raw_results,
+        minimum_score=minimum_relevance_score,
+        include_adjacent=include_adjacent,
+        positive_markers=effective_positive,
+        negative_markers=effective_negative,
+    )
+
+    # Normalize each surviving document with conditional process-layer
+    # enrichment: only attach layers whose markers actually appear.
+    documents = []
+    for result in scored_results:
+        relevance = result.pop("_relevance", {})
+        doc_layers = match_process_layers(result, effective_process_layers)
+        documents.append(
+            _normalize_document_to_policy_feed(
+                result,
+                source_target_id="src_target_federal_register_notices",
+                target_themes=effective_target_themes,
+                focus_process_layers=effective_process_layers,
+                focus_geographies=effective_geographies,
+                ticker_refs=effective_tickers,
+                policy_scope=effective_policy_scope,
+                relevance_metadata=relevance,
+                matched_process_layers=doc_layers,
+                matched_profile=query_profile,
+            )
         )
-        for result in results
-    ]
+
     notes = ["Fetched from Federal Register API."]
     if query_profile:
         notes.append(f"Query profile: {query_profile}")
@@ -358,11 +415,15 @@ def fetch_federal_register_policy_feed(
         "feed_documents": documents,
         "fetch_metadata": {
             "api_url": url,
-            "result_count": len(results),
+            "raw_result_count": len(raw_results),
+            "result_count": len(documents),
+            "filtered_out": len(raw_results) - len(documents),
             "retrieved_at": _iso_now(),
             "query_profile": query_profile or None,
             "agencies": effective_agencies,
             "document_types": effective_document_types,
+            "minimum_relevance_score": minimum_relevance_score,
+            "include_adjacent": include_adjacent,
         },
     }
 

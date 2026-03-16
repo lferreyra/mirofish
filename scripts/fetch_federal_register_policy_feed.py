@@ -58,6 +58,10 @@ def main() -> int:
     parser.add_argument("--policy-scope", action="append", dest="policy_scope")
     parser.add_argument("--per-page", type=int, default=20)
     parser.add_argument("--page", type=int, default=1)
+    parser.add_argument("--minimum-relevance-score", type=int, default=20)
+    parser.add_argument("--include-adjacent", action="store_true", default=True)
+    parser.add_argument("--no-adjacent", dest="include_adjacent", action="store_false",
+                        help="Exclude adjacent-relevance documents (keep only directly_relevant)")
     parser.add_argument("--output-json", type=Path)
     args = parser.parse_args()
 
@@ -71,6 +75,7 @@ def main() -> int:
         parser.error("--output-json is required (unless --list-profiles is used)")
 
     feed_module = _load_module("federal_register_feed")
+    _load_module("federal_register_relevance")  # ensure dependency is loaded
     payload = feed_module.fetch_federal_register_policy_feed(
         query_profile=args.query_profile,
         query=args.query,
@@ -85,6 +90,8 @@ def main() -> int:
         focus_geographies=args.focus_geographies,
         ticker_refs=args.ticker_refs,
         policy_scope=args.policy_scope,
+        minimum_relevance_score=args.minimum_relevance_score,
+        include_adjacent=args.include_adjacent,
     )
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     args.output_json.write_text(

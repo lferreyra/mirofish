@@ -55,6 +55,14 @@ from .federal_register_feed import (
     build_federal_register_documents_url,
     fetch_federal_register_policy_feed,
 )
+from .federal_register_relevance import (
+    DEFAULT_POSITIVE_MARKERS,
+    DEFAULT_NEGATIVE_MARKERS,
+    PROCESS_LAYER_MARKERS,
+    filter_documents_by_relevance,
+    match_process_layers,
+    score_document_relevance,
+)
 from .federal_register_query_profiles import (
     KNOWN_AGENCY_SLUGS,
     QUERY_PROFILES,
@@ -133,6 +141,12 @@ __all__ = [
     'FEDERAL_REGISTER_API_URL',
     'build_federal_register_documents_url',
     'fetch_federal_register_policy_feed',
+    'DEFAULT_POSITIVE_MARKERS',
+    'DEFAULT_NEGATIVE_MARKERS',
+    'PROCESS_LAYER_MARKERS',
+    'filter_documents_by_relevance',
+    'match_process_layers',
+    'score_document_relevance',
     'KNOWN_AGENCY_SLUGS',
     'QUERY_PROFILES',
     'get_query_profile',

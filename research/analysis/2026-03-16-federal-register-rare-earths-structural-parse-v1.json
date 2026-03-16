@@ -1,0 +1,233 @@
+{
+  "parser_version": "deterministic_v1",
+  "generated_at": "2026-03-16T22:18:05.210768+00:00",
+  "source_ids": [
+    "src_federal_register_2023_03078"
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+      "entity_type": "Event",
+      "canonical_name": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "policy_notice",
+        "document_number": "2023-03078",
+        "document_type": "Notice",
+        "agencies": [
+          "Commerce Department",
+          "Industry and Security Bureau"
+        ]
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_geography_australia",
+      "entity_type": "Geography",
+      "canonical_name": "Australia",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_geography_canada",
+      "entity_type": "Geography",
+      "canonical_name": "Canada",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_geography_china",
+      "entity_type": "Geography",
+      "canonical_name": "China",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_processlayer_neodymium_processing",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Neodymium Processing",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "policy_affected"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_critical_materials",
+      "entity_type": "Theme",
+      "canonical_name": "Critical Materials",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_rare_earths",
+      "entity_type": "Theme",
+      "canonical_name": "Rare Earths",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_neodymium_processing_ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_neodymium_processing",
+      "target_entity_id": "ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_federal_register_2023_03078_relationship_rel_affected_by_event_ent_processlayer_neodymium_processing_ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended"
+      ],
+      "notes": [],
+      "relationship_key": "2023-03078_affected_Neodymium Processing"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_australia",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_processlayer_neodymium_processing",
+      "target_entity_id": "ent_geography_australia",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_australia"
+      ],
+      "notes": [],
+      "relationship_key": "2023-03078_constrained_Neodymium Processing_Australia"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_canada",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_processlayer_neodymium_processing",
+      "target_entity_id": "ent_geography_canada",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_canada"
+      ],
+      "notes": [],
+      "relationship_key": "2023-03078_constrained_Neodymium Processing_Canada"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_china",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_processlayer_neodymium_processing",
+      "target_entity_id": "ent_geography_china",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_china"
+      ],
+      "notes": [],
+      "relationship_key": "2023-03078_constrained_Neodymium Processing_China"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_claim_2023_03078_policy_notice_affects_process_layers",
+      "claim_type": "policy_transmission_assertion",
+      "claim_text": "Publication of a Report on the Effect of Imports of Neodymium-Iron-Boron (NdFeB) Permanent Magnets on the National Security: An Investigation Conducted Under Section 232 of the Trade Expansion Act of 1962, as Amended may affect Neodymium Processing before downstream market narratives update.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+        "ent_geography_australia",
+        "ent_geography_canada",
+        "ent_geography_china",
+        "ent_processlayer_neodymium_processing"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_neodymium_processing_ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+        "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_australia",
+        "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_canada",
+        "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_china"
+      ],
+      "source_ids": [
+        "src_federal_register_2023_03078"
+      ],
+      "fragment_ids": [
+        "frag_federal_register_2023_03078"
+      ],
+      "notes": [],
+      "claim_key": "claim_2023-03078_policy_notice_affects_process_layers",
+      "evidence_refs": [
+        "ev_frag_federal_register_2023_03078_claim_claim_claim_2023_03078_policy_notice_affects_process_layers"
+      ]
+    }
+  ],
+  "evidence_links": [
+    {
+      "evidence_link_id": "ev_frag_federal_register_2023_03078_claim_claim_claim_2023_03078_policy_notice_affects_process_layers",
+      "source_id": "src_federal_register_2023_03078",
+      "fragment_id": "frag_federal_register_2023_03078",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_2023_03078_policy_notice_affects_process_layers",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_federal_register_2023_03078_relationship_rel_affected_by_event_ent_processlayer_neodymium_processing_ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+      "source_id": "src_federal_register_2023_03078",
+      "fragment_id": "frag_federal_register_2023_03078",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_neodymium_processing_ent_event_publication_of_a_report_on_the_effect_of_imports_of_neodymium_iron_boron_ndfeb_permanent_magnets_on_the_national_security_an_investigation_conducted_under_section_232_of_the_trade_expansion_act_of_1962_as_amended",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_australia",
+      "source_id": "src_federal_register_2023_03078",
+      "fragment_id": "frag_federal_register_2023_03078",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_australia",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_canada",
+      "source_id": "src_federal_register_2023_03078",
+      "fragment_id": "frag_federal_register_2023_03078",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_canada",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_federal_register_2023_03078_relationship_rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_china",
+      "source_id": "src_federal_register_2023_03078",
+      "fragment_id": "frag_federal_register_2023_03078",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_processlayer_neodymium_processing_ent_geography_china",
+      "support_mode": "supporting",
+      "strength": "direct"
+    }
+  ],
+  "inferences": [],
+  "summary": {
+    "entity_count": 7,
+    "relationship_count": 4,
+    "claim_count": 1,
+    "evidence_link_count": 5,
+    "inference_count": 0
+  }
+}
