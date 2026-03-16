@@ -1,0 +1,66 @@
+{
+  "capture_meta": {
+    "provider": "yahoo-public",
+    "captured_at": "2026-03-16T10:35:28.118Z",
+    "underlying": "MTSI",
+    "capture_mode": "user_mediated_playwright",
+    "source_page": "https://finance.yahoo.com/quote/MTSI/options/?date=1799971200",
+    "selected_table_index": 0,
+    "selected_table_context": "",
+    "table_selector": null,
+    "notes": [
+      "Visible tables were captured after manual page preparation.",
+      "Review the raw CSV before normalization."
+    ]
+  },
+  "tables": [
+    {
+      "table_index": 0,
+      "context_text": "",
+      "headers": [
+        "Contract Name",
+        "Last Trade Date (EDT)",
+        "Strike",
+        "Last Price",
+        "Bid",
+        "Ask",
+        "Change",
+        "% Change",
+        "Volume",
+        "Open Interest",
+        "Implied Volatility"
+      ],
+      "row_count": 1,
+      "score": 25,
+      "rows": [
+        {
+          "Contract Name": "There are no calls."
+        }
+      ]
+    },
+    {
+      "table_index": 1,
+      "context_text": "",
+      "headers": [
+        "Contract Name",
+        "Last Trade Date (EDT)",
+        "Strike",
+        "Last Price",
+        "Bid",
+        "Ask",
+        "Change",
+        "% Change",
+        "Volume",
+        "Open Interest",
+        "Implied Volatility"
+      ],
+      "row_count": 1,
+      "score": 25,
+      "rows": [
+        {
+          "Contract Name": "There are no puts."
+        }
+      ]
+    }
+  ]
+}
