@@ -1,0 +1,838 @@
+{
+  "parser_version": "deterministic_v1",
+  "generated_at": "2026-03-16T13:20:43.404874+00:00",
+  "source_ids": [
+    "src_sive_ayar_2024_12_19",
+    "src_sive_lidar_2026_03_11",
+    "src_sive_poet_2025_11_06",
+    "src_sive_q4_2025_2026_02_26",
+    "src_sive_refi_2026_02_24",
+    "src_sive_win_2025_03_25"
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_component_inp_dfb_laser_array",
+      "entity_type": "Component",
+      "canonical_name": "InP DFB Laser Array",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_ayar_scale_qualification",
+      "entity_type": "Event",
+      "canonical_name": "Ayar Scale Qualification",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "qualification"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_lidar_customer_ramp",
+      "entity_type": "Event",
+      "canonical_name": "LiDAR Customer Ramp",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "adjacent_revenue_optionalitiy"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_event_poet_light_engine_partnership",
+      "entity_type": "Event",
+      "canonical_name": "POET Light Engine Partnership",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "customer_partnership"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_q4_2025_opportunity_pipeline_expansion",
+      "entity_type": "Event",
+      "canonical_name": "Q4 2025 Opportunity Pipeline Expansion",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "commercial_progress"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_sive_debt_refinancing",
+      "entity_type": "Event",
+      "canonical_name": "SIVE Debt Refinancing",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "capital_structure"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_win_high_volume_manufacturing_collaboration",
+      "entity_type": "Event",
+      "canonical_name": "WIN High-Volume Manufacturing Collaboration",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "manufacturing_scale"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_expressioncandidate_shares_sive",
+      "entity_type": "ExpressionCandidate",
+      "canonical_name": "Shares: SIVE",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "expression_type": "shares",
+        "time_horizon": "12-24m"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_facility_win_dfb_manufacturing_capacity",
+      "entity_type": "Facility",
+      "canonical_name": "WIN DFB Manufacturing Capacity",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "capacity_stage": "ramping"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "InP DFB Laser Production",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "laser_chip_manufacturing"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_processlayer_optical_light_engine_integration",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Optical Light Engine Integration",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "packaging_and_integration"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_publiccompany_poet",
+      "entity_type": "PublicCompany",
+      "canonical_name": "POET",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "ticker": "POET",
+        "exposure_type": "downstream_packaging"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_publiccompany_sive",
+      "entity_type": "PublicCompany",
+      "canonical_name": "SIVE",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "ticker": "SIVE",
+        "exposure_type": "upstream_supplier"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_subsystem_external_light_source",
+      "entity_type": "Subsystem",
+      "canonical_name": "External Light Source",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_system_ai_datacenter_optical_i_o",
+      "entity_type": "System",
+      "canonical_name": "AI Datacenter Optical I/O",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_theme_cpo_silicon_photonics_laser_supply",
+      "entity_type": "Theme",
+      "canonical_name": "CPO / Silicon Photonics Laser Supply",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_theme_lidar_revenue_optionality",
+      "entity_type": "Theme",
+      "canonical_name": "LiDAR Revenue Optionality",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "target_entity_id": "ent_event_ayar_scale_qualification",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "qualification_progress",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_ayar_scale_qualification_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_production_affected_by_ayar_scale"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "target_entity_id": "ent_event_poet_light_engine_partnership",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "customer_validation_path",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_production_affected_by_poet_partnership"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "target_entity_id": "ent_event_win_high_volume_manufacturing_collaboration",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "capacity_scale",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_win_manufacturing_scale_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_production_affected_by_win_collaboration"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_theme_cpo_silicon_photonics_laser_supply_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_theme_cpo_silicon_photonics_laser_supply",
+      "target_entity_id": "ent_event_q4_2025_opportunity_pipeline_expansion",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "commercial_validation",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_sive_pipeline_growth_relationship_rel_affected_by_event_ent_theme_cpo_silicon_photonics_laser_supply_ent_event_q4_2025_opportunity_pipeline_expansion"
+      ],
+      "notes": [],
+      "relationship_key": "theme_affected_by_pipeline_expansion"
+    },
+    {
+      "relationship_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_sive_ent_theme_cpo_silicon_photonics_laser_supply",
+      "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+      "source_entity_id": "ent_expressioncandidate_shares_sive",
+      "target_entity_id": "ent_theme_cpo_silicon_photonics_laser_supply",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "listed_expression",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_refinancing_cleanup_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_sive_ent_theme_cpo_silicon_photonics_laser_supply"
+      ],
+      "notes": [],
+      "relationship_key": "shares_sive_for_theme"
+    },
+    {
+      "relationship_id": "rel_depends_on_ent_component_inp_dfb_laser_array_ent_processlayer_inp_dfb_laser_production",
+      "relationship_type": "DEPENDS_ON",
+      "source_entity_id": "ent_component_inp_dfb_laser_array",
+      "target_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "qualified_supply_layer",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_depends_on_ent_component_inp_dfb_laser_array_ent_processlayer_inp_dfb_laser_production"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_depends_on_production"
+    },
+    {
+      "relationship_id": "rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production",
+      "relationship_type": "DEPENDS_ON",
+      "source_entity_id": "ent_processlayer_optical_light_engine_integration",
+      "target_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "upstream_dependency",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production"
+      ],
+      "notes": [],
+      "relationship_key": "light_engine_depends_on_dfb_production"
+    },
+    {
+      "relationship_id": "rel_expands_capacity_for_ent_facility_win_dfb_manufacturing_capacity_ent_processlayer_inp_dfb_laser_production",
+      "relationship_type": "EXPANDS_CAPACITY_FOR",
+      "source_entity_id": "ent_facility_win_dfb_manufacturing_capacity",
+      "target_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "outsourced_scale_path",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_win_manufacturing_scale_relationship_rel_expands_capacity_for_ent_facility_win_dfb_manufacturing_capacity_ent_processlayer_inp_dfb_laser_production"
+      ],
+      "notes": [],
+      "relationship_key": "win_capacity_expands_dfb_production"
+    },
+    {
+      "relationship_id": "rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source",
+      "relationship_type": "PART_OF",
+      "source_entity_id": "ent_component_inp_dfb_laser_array",
+      "target_entity_id": "ent_subsystem_external_light_source",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "critical_component",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_part_of_els"
+    },
+    {
+      "relationship_id": "rel_part_of_ent_subsystem_external_light_source_ent_system_ai_datacenter_optical_i_o",
+      "relationship_type": "PART_OF",
+      "source_entity_id": "ent_subsystem_external_light_source",
+      "target_entity_id": "ent_system_ai_datacenter_optical_i_o",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "critical_subsystem",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_part_of_ent_subsystem_external_light_source_ent_system_ai_datacenter_optical_i_o"
+      ],
+      "notes": [],
+      "relationship_key": "els_part_of_optical_io"
+    },
+    {
+      "relationship_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_lidar_customer_ramp",
+      "relationship_type": "REPRICES_VIA",
+      "source_entity_id": "ent_expressioncandidate_shares_sive",
+      "target_entity_id": "ent_event_lidar_customer_ramp",
+      "direction": "source_to_target",
+      "relationship_strength": "low",
+      "causal_role": "adjacent_optionality",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_sive_lidar_optionality_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_lidar_customer_ramp"
+      ],
+      "notes": [],
+      "relationship_key": "shares_sive_reprices_via_lidar"
+    },
+    {
+      "relationship_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "relationship_type": "REPRICES_VIA",
+      "source_entity_id": "ent_expressioncandidate_shares_sive",
+      "target_entity_id": "ent_event_q4_2025_opportunity_pipeline_expansion",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "commercial_progress",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_sive_refinancing_cleanup_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_q4_2025_opportunity_pipeline_expansion"
+      ],
+      "notes": [],
+      "relationship_key": "shares_sive_reprices_via_pipeline"
+    },
+    {
+      "relationship_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing",
+      "relationship_type": "REPRICES_VIA",
+      "source_entity_id": "ent_expressioncandidate_shares_sive",
+      "target_entity_id": "ent_event_sive_debt_refinancing",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "balance_sheet_cleanup",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_refinancing_cleanup_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing"
+      ],
+      "notes": [],
+      "relationship_key": "shares_sive_reprices_via_refi"
+    },
+    {
+      "relationship_id": "rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive",
+      "relationship_type": "SUPPLIED_BY",
+      "source_entity_id": "ent_processlayer_inp_dfb_laser_production",
+      "target_entity_id": "ent_publiccompany_sive",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "listed_exposure",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive"
+      ],
+      "notes": [],
+      "relationship_key": "dfb_production_supplied_by_sive"
+    },
+    {
+      "relationship_id": "rel_supplied_by_ent_processlayer_optical_light_engine_integration_ent_publiccompany_poet",
+      "relationship_type": "SUPPLIED_BY",
+      "source_entity_id": "ent_processlayer_optical_light_engine_integration",
+      "target_entity_id": "ent_publiccompany_poet",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "downstream_partner",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_relationship_rel_supplied_by_ent_processlayer_optical_light_engine_integration_ent_publiccompany_poet"
+      ],
+      "notes": [],
+      "relationship_key": "light_engine_integration_supplied_by_poet"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_claim_sive_upstream_to_poet",
+      "claim_type": "supplier_or_customer_relationship",
+      "claim_text": "Sivers' InP DFB lasers sit upstream of POET's optical light-engine integration for AI datacenter external light sources.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_processlayer_inp_dfb_laser_production",
+        "ent_processlayer_optical_light_engine_integration",
+        "ent_publiccompany_poet",
+        "ent_publiccompany_sive",
+        "ent_subsystem_external_light_source"
+      ],
+      "relationship_refs": [
+        "rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production",
+        "rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source",
+        "rel_part_of_ent_subsystem_external_light_source_ent_system_ai_datacenter_optical_i_o",
+        "rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive",
+        "rel_supplied_by_ent_processlayer_optical_light_engine_integration_ent_publiccompany_poet"
+      ],
+      "source_ids": [
+        "src_sive_poet_2025_11_06"
+      ],
+      "fragment_ids": [
+        "frag_sive_poet_light_engine_chain"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_upstream_to_poet",
+      "evidence_refs": [
+        "ev_frag_sive_poet_light_engine_chain_claim_claim_claim_sive_upstream_to_poet"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sive_has_scale_qualification_path",
+      "claim_type": "supplier_or_customer_relationship",
+      "claim_text": "Sivers has an ecosystem qualification path into high-volume optical I/O deployment through its expanded Ayar Labs partnership.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_ayar_scale_qualification",
+        "ent_processlayer_inp_dfb_laser_production",
+        "ent_publiccompany_sive"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification"
+      ],
+      "source_ids": [
+        "src_sive_ayar_2024_12_19"
+      ],
+      "fragment_ids": [
+        "frag_sive_ayar_scale_qualification"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_has_scale_qualification_path",
+      "evidence_refs": [
+        "ev_frag_sive_ayar_scale_qualification_claim_claim_claim_sive_has_scale_qualification_path"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sive_has_capacity_scale_path",
+      "claim_type": "capacity_expansion_or_ramp",
+      "claim_text": "Sivers has a credible outsourced capacity path for high-volume DFB laser production through WIN Semiconductor.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_event_win_high_volume_manufacturing_collaboration",
+        "ent_facility_win_dfb_manufacturing_capacity",
+        "ent_processlayer_inp_dfb_laser_production",
+        "ent_publiccompany_sive"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration",
+        "rel_expands_capacity_for_ent_facility_win_dfb_manufacturing_capacity_ent_processlayer_inp_dfb_laser_production"
+      ],
+      "source_ids": [
+        "src_sive_win_2025_03_25"
+      ],
+      "fragment_ids": [
+        "frag_sive_win_manufacturing_scale"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_has_capacity_scale_path",
+      "evidence_refs": [
+        "ev_frag_sive_win_manufacturing_scale_claim_claim_claim_sive_has_capacity_scale_path"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sive_pipeline_supports_rerating",
+      "claim_type": "demand_acceleration",
+      "claim_text": "Sivers' growing photonics pipeline supports the idea that the laser-supply thesis is moving toward commercial relevance.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_q4_2025_opportunity_pipeline_expansion",
+        "ent_publiccompany_sive",
+        "ent_theme_cpo_silicon_photonics_laser_supply"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership",
+        "rel_affected_by_event_ent_theme_cpo_silicon_photonics_laser_supply_ent_event_q4_2025_opportunity_pipeline_expansion"
+      ],
+      "source_ids": [
+        "src_sive_q4_2025_2026_02_26"
+      ],
+      "fragment_ids": [
+        "frag_sive_pipeline_growth"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_pipeline_supports_rerating",
+      "evidence_refs": [
+        "ev_frag_sive_pipeline_growth_claim_claim_claim_sive_pipeline_supports_rerating"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sive_balance_sheet_cleanup",
+      "claim_type": "valuation_gap_assertion",
+      "claim_text": "The balance-sheet cleanup reduces one of the obvious reasons the market might dismiss Sivers as too financially messy to re-rate.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_sive_debt_refinancing",
+        "ent_expressioncandidate_shares_sive",
+        "ent_publiccompany_sive"
+      ],
+      "relationship_refs": [
+        "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing"
+      ],
+      "source_ids": [
+        "src_sive_refi_2026_02_24"
+      ],
+      "fragment_ids": [
+        "frag_sive_refinancing_cleanup"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_balance_sheet_cleanup",
+      "evidence_refs": [
+        "ev_frag_sive_refinancing_cleanup_claim_claim_claim_sive_balance_sheet_cleanup"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sive_has_adjacent_optionality",
+      "claim_type": "demand_acceleration",
+      "claim_text": "Sivers has adjacent LiDAR revenue optionality that could supplement, but should not replace, the core AI-photonics thesis.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_lidar_customer_ramp",
+        "ent_expressioncandidate_shares_sive",
+        "ent_publiccompany_sive",
+        "ent_theme_lidar_revenue_optionality"
+      ],
+      "relationship_refs": [
+        "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_lidar_customer_ramp"
+      ],
+      "source_ids": [
+        "src_sive_lidar_2026_03_11"
+      ],
+      "fragment_ids": [
+        "frag_sive_lidar_optionality"
+      ],
+      "notes": [],
+      "claim_key": "claim_sive_has_adjacent_optionality",
+      "evidence_refs": [
+        "ev_frag_sive_lidar_optionality_claim_claim_claim_sive_has_adjacent_optionality"
+      ]
+    }
+  ],
+  "evidence_links": [
+    {
+      "evidence_link_id": "ev_frag_sive_refinancing_cleanup_claim_claim_claim_sive_balance_sheet_cleanup",
+      "source_id": "src_sive_refi_2026_02_24",
+      "fragment_id": "frag_sive_refinancing_cleanup",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_balance_sheet_cleanup",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_lidar_optionality_claim_claim_claim_sive_has_adjacent_optionality",
+      "source_id": "src_sive_lidar_2026_03_11",
+      "fragment_id": "frag_sive_lidar_optionality",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_has_adjacent_optionality",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_win_manufacturing_scale_claim_claim_claim_sive_has_capacity_scale_path",
+      "source_id": "src_sive_win_2025_03_25",
+      "fragment_id": "frag_sive_win_manufacturing_scale",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_has_capacity_scale_path",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_ayar_scale_qualification_claim_claim_claim_sive_has_scale_qualification_path",
+      "source_id": "src_sive_ayar_2024_12_19",
+      "fragment_id": "frag_sive_ayar_scale_qualification",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_has_scale_qualification_path",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_pipeline_growth_claim_claim_claim_sive_pipeline_supports_rerating",
+      "source_id": "src_sive_q4_2025_2026_02_26",
+      "fragment_id": "frag_sive_pipeline_growth",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_pipeline_supports_rerating",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_claim_claim_claim_sive_upstream_to_poet",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sive_upstream_to_poet",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_refinancing_cleanup_inference_inf_inf_sive_hidden_upstream_rerating",
+      "source_id": "src_sive_refi_2026_02_24",
+      "fragment_id": "frag_sive_refinancing_cleanup",
+      "supports_object_type": "inference",
+      "supports_object_id": "inf_inf_sive_hidden_upstream_rerating",
+      "support_mode": "supporting",
+      "strength": "contextual"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_ayar_scale_qualification_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification",
+      "source_id": "src_sive_ayar_2024_12_19",
+      "fragment_id": "frag_sive_ayar_scale_qualification",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_win_manufacturing_scale_relationship_rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration",
+      "source_id": "src_sive_win_2025_03_25",
+      "fragment_id": "frag_sive_win_manufacturing_scale",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_pipeline_growth_relationship_rel_affected_by_event_ent_theme_cpo_silicon_photonics_laser_supply_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "source_id": "src_sive_q4_2025_2026_02_26",
+      "fragment_id": "frag_sive_pipeline_growth",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_theme_cpo_silicon_photonics_laser_supply_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_refinancing_cleanup_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_sive_ent_theme_cpo_silicon_photonics_laser_supply",
+      "source_id": "src_sive_refi_2026_02_24",
+      "fragment_id": "frag_sive_refinancing_cleanup",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_sive_ent_theme_cpo_silicon_photonics_laser_supply",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_depends_on_ent_component_inp_dfb_laser_array_ent_processlayer_inp_dfb_laser_production",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_depends_on_ent_component_inp_dfb_laser_array_ent_processlayer_inp_dfb_laser_production",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_win_manufacturing_scale_relationship_rel_expands_capacity_for_ent_facility_win_dfb_manufacturing_capacity_ent_processlayer_inp_dfb_laser_production",
+      "source_id": "src_sive_win_2025_03_25",
+      "fragment_id": "frag_sive_win_manufacturing_scale",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_expands_capacity_for_ent_facility_win_dfb_manufacturing_capacity_ent_processlayer_inp_dfb_laser_production",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_part_of_ent_subsystem_external_light_source_ent_system_ai_datacenter_optical_i_o",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_part_of_ent_subsystem_external_light_source_ent_system_ai_datacenter_optical_i_o",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_lidar_optionality_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_lidar_customer_ramp",
+      "source_id": "src_sive_lidar_2026_03_11",
+      "fragment_id": "frag_sive_lidar_optionality",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_lidar_customer_ramp",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_refinancing_cleanup_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "source_id": "src_sive_refi_2026_02_24",
+      "fragment_id": "frag_sive_refinancing_cleanup",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_q4_2025_opportunity_pipeline_expansion",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_refinancing_cleanup_relationship_rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing",
+      "source_id": "src_sive_refi_2026_02_24",
+      "fragment_id": "frag_sive_refinancing_cleanup",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_sive_poet_light_engine_chain_relationship_rel_supplied_by_ent_processlayer_optical_light_engine_integration_ent_publiccompany_poet",
+      "source_id": "src_sive_poet_2025_11_06",
+      "fragment_id": "frag_sive_poet_light_engine_chain",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_supplied_by_ent_processlayer_optical_light_engine_integration_ent_publiccompany_poet",
+      "support_mode": "supporting",
+      "strength": "direct"
+    }
+  ],
+  "inferences": [
+    {
+      "inference_id": "inf_inf_sive_hidden_upstream_rerating",
+      "inference_type": "market_miss",
+      "statement": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
+      "derived_from_claim_ids": [
+        "claim_claim_sive_balance_sheet_cleanup",
+        "claim_claim_sive_has_capacity_scale_path",
+        "claim_claim_sive_has_scale_qualification_path",
+        "claim_claim_sive_pipeline_supports_rerating",
+        "claim_claim_sive_upstream_to_poet"
+      ],
+      "derived_from_relationship_ids": [
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_ayar_scale_qualification",
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_poet_light_engine_partnership",
+        "rel_affected_by_event_ent_processlayer_inp_dfb_laser_production_ent_event_win_high_volume_manufacturing_collaboration",
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_sive_ent_theme_cpo_silicon_photonics_laser_supply",
+        "rel_depends_on_ent_component_inp_dfb_laser_array_ent_processlayer_inp_dfb_laser_production",
+        "rel_depends_on_ent_processlayer_optical_light_engine_integration_ent_processlayer_inp_dfb_laser_production",
+        "rel_part_of_ent_component_inp_dfb_laser_array_ent_subsystem_external_light_source",
+        "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_q4_2025_opportunity_pipeline_expansion",
+        "rel_reprices_via_ent_expressioncandidate_shares_sive_ent_event_sive_debt_refinancing",
+        "rel_supplied_by_ent_processlayer_inp_dfb_laser_production_ent_publiccompany_sive"
+      ],
+      "confidence": "medium",
+      "falsifiers": [
+        "the partnerships fail to convert into meaningful volume",
+        "Sivers remains unable to scale laser production competitively",
+        "balance-sheet improvement proves insufficient and dilution dominates the equity story"
+      ],
+      "notes": [],
+      "evidence_refs": [
+        "ev_frag_sive_refinancing_cleanup_inference_inf_inf_sive_hidden_upstream_rerating"
+      ]
+    }
+  ],
+  "summary": {
+    "entity_count": 17,
+    "relationship_count": 15,
+    "claim_count": 6,
+    "evidence_link_count": 22,
+    "inference_count": 1
+  }
+}
