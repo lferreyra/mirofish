@@ -1042,6 +1042,107 @@ def build_source_gap_report(
     }
 
 
+def _cadence_bucket(cadence: str) -> str:
+    cadence = (cadence or "").lower()
+    if "daily" in cadence:
+        return "daily"
+    if "weekly" in cadence:
+        return "weekly"
+    if "monthly" in cadence:
+        return "monthly"
+    if "event-driven" in cadence:
+        return "event_driven"
+    return "ad_hoc"
+
+
+def _monitor_collection_mode(row: Dict[str, Any]) -> str:
+    access_mode = row.get("access_mode")
+    if access_mode == "local_workflow":
+        return "local_workflow"
+    if row.get("requires_login"):
+        return "login_gated"
+    if access_mode == "subscription":
+        return "subscription"
+    if access_mode == "manual":
+        return "manual"
+    return "web_public"
+
+
+def _automation_readiness(collection_mode: str) -> str:
+    mapping = {
+        "local_workflow": "automatable_now",
+        "web_public": "web_monitor_ready",
+        "login_gated": "blocked_login",
+        "subscription": "blocked_subscription",
+        "manual": "manual_only",
+    }
+    return mapping.get(collection_mode, "manual_only")
+
+
+def _next_action(row: Dict[str, Any], collection_mode: str) -> str:
+    recommendation = row.get("recommendation")
+    if collection_mode == "local_workflow":
+        return "run_local_capture"
+    if collection_mode == "web_public":
+        if recommendation == "ingest_now":
+            return "manual_ingest_now"
+        if recommendation == "monitor_event_driven":
+            return "add_event_watch"
+        return "add_periodic_watch"
+    if collection_mode == "login_gated":
+        return "defer_until_access"
+    if collection_mode == "subscription":
+        return "evaluate_subscription_need"
+    return "manual_review_only"
+
+
+def build_source_monitor_plan(
+    source_acquisition_plan: Dict[str, Any],
+    *,
+    max_tasks: int = 20,
+) -> Dict[str, Any]:
+    project_name = source_acquisition_plan.get("project_name", "unnamed_project")
+    rows = list(source_acquisition_plan.get("top_recommendations", [])) + list(
+        source_acquisition_plan.get("monitoring_queue", [])
+    )
+
+    tasks: List[Dict[str, Any]] = []
+    for row in rows[:max_tasks]:
+        collection_mode = _monitor_collection_mode(row)
+        cadence_bucket = _cadence_bucket(row.get("ingestion_cadence", ""))
+        tasks.append(
+            {
+                "source_target_id": row.get("source_target_id"),
+                "name": row.get("name"),
+                "source_class": row.get("source_class"),
+                "recommendation": row.get("recommendation"),
+                "collection_mode": collection_mode,
+                "automation_readiness": _automation_readiness(collection_mode),
+                "next_action": _next_action(row, collection_mode),
+                "cadence_bucket": cadence_bucket,
+                "expected_artifact_types": row.get("expected_artifact_types", []),
+                "reasons": row.get("reasons", []),
+            }
+        )
+
+    by_readiness = Counter(task["automation_readiness"] for task in tasks)
+    by_cadence = Counter(task["cadence_bucket"] for task in tasks)
+    by_action = Counter(task["next_action"] for task in tasks)
+
+    return {
+        "monitor_plan_version": "v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "project_name": project_name,
+        "task_count": len(tasks),
+        "summary": {
+            "automation_readiness": dict(by_readiness),
+            "cadence_buckets": dict(by_cadence),
+            "next_actions": dict(by_action),
+        },
+        "tasks": tasks,
+    }
+
+
 def build_source_acquisition_plan(
     source_registry: Dict[str, Any],
     *,
@@ -1160,4 +1261,5 @@ __all__ = [
     "build_source_registry_from_docs",
     "build_source_acquisition_plan",
     "build_source_gap_report",
+    "build_source_monitor_plan",
 ]

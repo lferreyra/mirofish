@@ -168,3 +168,55 @@ def test_build_source_gap_report_uses_blocking_gates_and_next_steps():
         step["source_class"] == "company_filing"
         for step in report["targeted_next_steps"]
     )
+
+
+def test_build_source_monitor_plan_classifies_collection_modes():
+    acquisition_plan = {
+        "project_name": "robotics_actuation_source_bundle_v1",
+        "top_recommendations": [
+            {
+                "source_target_id": "src_target_local_chain",
+                "name": "LEAPS watchlist refresh workflow",
+                "source_class": "market_data_snapshot",
+                "recommendation": "monitor_weekly",
+                "access_mode": "local_workflow",
+                "requires_login": False,
+                "ingestion_cadence": "daily or multi-weekly for watchlist names",
+                "expected_artifact_types": ["price_snapshot"],
+                "reasons": ["expression validation"],
+            },
+            {
+                "source_target_id": "src_target_sec_edgar",
+                "name": "SEC EDGAR Database (10-K, 10-Q, 8-K, 20-F)",
+                "source_class": "company_filing",
+                "recommendation": "monitor_weekly",
+                "access_mode": "web_public",
+                "requires_login": False,
+                "ingestion_cadence": "filing-driven + daily watchlist monitoring",
+                "expected_artifact_types": ["filing"],
+                "reasons": ["company disclosure coverage"],
+            },
+            {
+                "source_target_id": "src_target_linkedin_jobs",
+                "name": "LinkedIn Jobs",
+                "source_class": "job_posting_hiring_signal",
+                "recommendation": "backlog_only",
+                "access_mode": "login_required",
+                "requires_login": True,
+                "ingestion_cadence": "weekly scan",
+                "expected_artifact_types": ["job_posting"],
+                "reasons": ["supporting signal only"],
+            },
+        ],
+        "monitoring_queue": [],
+    }
+
+    monitor_plan = source_registry.build_source_monitor_plan(acquisition_plan, max_tasks=10)
+
+    assert monitor_plan["monitor_plan_version"] == "v1"
+    assert monitor_plan["task_count"] == 3
+    tasks = {task["source_target_id"]: task for task in monitor_plan["tasks"]}
+    assert tasks["src_target_local_chain"]["automation_readiness"] == "automatable_now"
+    assert tasks["src_target_local_chain"]["next_action"] == "run_local_capture"
+    assert tasks["src_target_sec_edgar"]["automation_readiness"] == "web_monitor_ready"
+    assert tasks["src_target_linkedin_jobs"]["automation_readiness"] == "blocked_login"
