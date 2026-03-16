@@ -4,67 +4,104 @@ Date: March 16, 2026
 
 Purpose:
 
-- keep a living working hypothesis of the method behind `@aleabitoreddit` / `u/AleaBito`
-- separate `idea-generation method` from `specific picks`
-- give the pick engine a benchmark for what kind of names and structures it should be surfacing
+- maintain a living, high-resolution hypothesis of the method behind `@aleabitoreddit` / `u/AleaBito`
+- separate `method`, `research process`, and `trade expression`
+- give the pick engine a benchmark that is closer to what he actually appears to do
 
-## Core hypothesis
+This is not a credibility memo.
+This is a methods memo.
 
-The strategy is best understood as:
+## Executive view
 
-1. start with a visibly expanding system
-2. identify the specific component that must scale inside that system
-3. identify the critical material and processing layers behind that component
-4. identify the narrowest qualified supplier or constrained material/process layer
-5. map that bottleneck into a public-equity universe
-6. separate `anchors` from `asymmetric satellites`
-7. choose `shares` or `LEAPS` based on whether the market is underpricing future variance, not just the stock story
-
-This is not ordinary thematic investing.
+The current best hypothesis is that AleaBito’s edge is not “theme picking.”
 
 It is:
 
-- bottleneck-first
-- supply-chain-native
-- asymmetry-seeking
-- expression-aware
+- early information synthesis under structural complexity
+- translated into asymmetric public-market expressions
 
-## Working model of his research process
+The bottleneck framework is real, but it is only one pillar inside a larger method.
 
-### 1. Build a research universe, not a single pick
+The full style appears to combine:
 
-The new robotics post strongly suggests he begins with a `research list`, not a final recommendation set.
+1. dependency and BOM mapping
+2. geopolitical / policy translation
+3. information synthesis from scattered public facts
+4. valuation-gap and hidden-exposure recognition
+5. expression selection across stock, LEAPS, long-vol, or basket form
+6. recognition-dynamics awareness, meaning he understands that media, analysts, and social spread can accelerate repricing
 
-That list contains:
+That makes the strategy broader than “find a chokepoint.”
 
-- anchor names
-- smaller upstream suppliers
-- processors and refiners
-- second-order beneficiaries
+It is closer to:
 
-So the likely process is:
+- structural information arbitrage
+- with bottlenecks as one major recurring subcategory
 
-- map the chain first
-- pick later
+## Core pillars
 
-This also implies that many public posts are likely:
+### 1. Dependency Mapping
 
-- intermediate research fragments
-- partial universe notes
-- live chain decomposition
+This is the most visible pillar.
 
-not necessarily final conviction-weighted picks.
+He repeatedly starts from:
 
-### 1a. Start from component first, not ticker first
+- AI clusters
+- photonics
+- rare earths
+- transformers
+- robotics
+- grid equipment
+- strategic minerals
 
-The newer robotics rare-earth commentary adds an important refinement.
+Then decomposes the system into:
 
-The likely flow is:
+- materials
+- substrates
+- processing / refining
+- components
+- modules
+- system integration
+- customer deployment
 
-- system demand
+This is not loose thematic reasoning.
+It is industrial graph reasoning.
+
+### 2. BOM Ranking
+
+The robotics posts sharpen the method considerably.
+
+He is not just asking “which sector matters?”
+He is asking:
+
+- what are the highest-cost or highest-constraint BOM buckets?
+- which subsystems dominate the economics?
+- where is supply concentrated geographically?
+
+Example:
+
+- robotic supply chain
+- `Actuation / Motion` as top BOM bucket
+- `Perception / Compute` as second
+- `Power Systems` lower priority
+
+That implies a research order:
+
+1. rank BOM buckets
+2. identify dominant suppliers in each bucket
+3. identify geography concentration
+4. search for Western or hidden upstream exposure
+
+This is better understood as `BOM concentration mapping`.
+
+### 3. Component-First Reasoning
+
+The newer rare-earth robotics commentary suggests the flow often looks like:
+
+- expanding system
 - critical component
-- material dependency
-- processing / refining layer
+- critical material
+- critical processing layer
 - public equity mapping
 
 Example:
@@ -73,130 +110,362 @@ Example:
 - permanent magnet motor
 - neodymium requirement
 - neodymium processing / NdPr oxide / magnet powder chain
-- public names like `NEO`, `MP`, `UUUU`
+- `NEO`, `MP`, `UUUU`
 
-That is sharper than generic thematic mapping because it identifies the `cost-critical scalable implementation layer`, not just a broad sector.
+This is important because it means he is often `component first`, not `ticker first`.
 
-### 2. Use anchors to orient the chain
+### 4. Processing / Refining Preference
 
-His own wording suggests names like:
+A repeated refinement in the material posts is that the better exposure may sit in:
+
+- refining
+- separation
+- oxide conversion
+- alloy making
+- powder / magnet production
+
+rather than pure extraction.
+
+That principle has already shown up across multiple domains:
+
+- rare earth separation and magnet manufacturing
+- InP substrates relative to downstream optics
+- packaging / metrology relative to broad semiconductor demand
+
+This suggests he is highly sensitive to the `qualified industrial form` of a material, not just the existence of the raw material itself.
+
+### 5. Geopolitical Translation
+
+His own year-end reflection strongly suggests a second major edge:
+
+- export controls
+- regime change
+- policy shocks
+- sanctions / country-risk translation
+- sovereign-asset inference
+
+These are not side topics.
+They appear to be core parts of how he converts structure into tradeable asymmetry.
+
+The likely process is:
+
+- identify a geopolitical or regulatory event
+- map the physical and economic transmission path
+- identify the beneficiaries or vulnerable chokepoints
+- choose the expression where the market has not yet repriced the shock
+
+### 6. Information Synthesis
+
+This may be the deepest common thread.
+
+His own wording points toward:
+
+- discovering scattered facts
+- synthesizing them quickly
+- publishing the implication before consensus, media, or analysts have fully connected the dots
+
+That matters because the edge may not come from having secret information.
+It may come from:
+
+- faster synthesis
+- better industrial translation
+- better mapping from fact pattern to market expression
+
+This is likely why his public posts sometimes look rough or partial:
+
+- they may be intermediate synthesis states
+- not polished final investment memos
+
+### 7. Valuation-Gap Recognition
+
+He appears especially drawn to situations where:
+
+- a tiny supplier sits underneath much larger downstream winners
+- the smaller company’s valuation looks absurd relative to strategic importance
+- the market is valuing it through legacy or stale business framing
+
+This is different from “small cap = cheap.”
+It is more specific:
+
+- hidden supplier
+- clear downstream anchor for value comparison
+- rerating potential if the chain gets recognized
+
+This is why names like `SIVE` or `AXTI` make sense inside his style even if they still carry major execution risk.
+
+### 8. Expression Selection
+
+This is the pillar we understand least well, but it is clearly important.
+
+The public record suggests he does not only think in:
+
+- stock longs
+
+He also thinks in:
+
+- long-dated optionality
+- volatility mispricing
+- IV arbitrage
+- baskets when precise single-name mapping is still uncertain
+
+The likely rule is not “always buy LEAPS.”
+It is closer to:
+
+- use stock when the equity is the cleanest path
+- use LEAPS when future variance is underpriced
+- use long-vol when the market is stale on regime or concentration risk
+- use baskets when the chain matters more than exact single-name precision
+
+### 9. Recognition Dynamics
+
+This pillar is easy to miss but likely matters a lot.
+
+His self-reflection highlights:
+
+- media citations
+- analyst notes
+- public attention
+- broad distribution over X
+
+That implies he is not just underwriting fundamental eventuality.
+He is also thinking about:
+
+- how quickly the thesis can become legible
+- who is likely to repeat it
+- whether the market can reprice faster once the framing spreads
+
+So one likely edge is:
+
+- identify a structurally important fact pattern
+- identify that it is not yet legible to the broader market
+- then profit as legibility increases
+
+This is not purely social reflexivity, but it is not purely fundamentals either.
+
+## Working model of his research process
+
+### Stage 1. Build a research universe, not a single pick
+
+The robotics material list strongly suggests he begins with:
+
+- a universe
+- not a final conviction set
+
+That universe can contain:
+
+- anchors
+- asymmetric satellites
+- refiners
+- processors
+- geography proxies
+- second-order beneficiaries
+
+So the early process is likely:
+
+- map chain first
+- pick later
+
+### Stage 2. Use anchors to orient the chain
+
+Names like:
 
 - `MP`
 - `NEO`
 - `ATI`
 - `CRS`
 
-function as `anchors`.
+appear to function as anchors.
 
-These are not necessarily the most asymmetric names. They are the names that help define the chain and make it legible.
+Anchors are useful because they:
 
-### 3. Hunt satellites with hidden leverage
+- define the chain
+- make it legible
+- help orient the smaller, more asymmetric names
 
-The likely asymmetric layer is then the smaller and less-followed set:
+Anchors are not necessarily the highest-upside picks.
+
+### Stage 3. Hunt satellites with hidden leverage
+
+The likely asymmetric layer is usually:
 
 - obscure refiners
-- processors
-- alloy makers
-- powder / magnet specialists
+- processing assets
+- alloy / powder makers
 - niche domestic projects
+- tiny upstream suppliers beneath famous downstream names
 
-This is where the “market missed it” logic is strongest.
+This is the part the engine should be especially attentive to.
 
-### 4. Processing may matter more than extraction
+### Stage 4. Keep posts as research fragments
 
-The robotics commentary also suggests a preference for processing/refining exposure over simple extraction when that is the layer that determines scalable economics.
+The “just publishing as I go” language matters.
 
-That means the better exposure can often be:
+It suggests many public posts are:
 
-- oxide conversion
-- refining
-- separation
-- alloy or powder production
+- partial chain notes
+- ongoing decomposition
+- public thinking in progress
 
-rather than generic mining alone.
+not fully weighted final trades
 
-This is highly consistent with:
+That means our benchmarking should avoid the mistake of treating every post as a finished recommendation.
 
-- rare-earth separation and magnet manufacturing
-- InP substrates versus downstream optics
-- packaging / metrology versus generic semiconductor demand
+### Stage 5. Make expression a second pass
 
-### 5. Treat multiple materials as one system
+The likely order is:
 
-The robotics post is important because it is not a one-node thesis.
+1. universe and dependency mapping
+2. anchor / satellite structure
+3. market-miss hypothesis
+4. only then:
+   - shares
+   - LEAPS
+   - long-vol
+   - basket
 
-It spans:
+That aligns with our current engine direction.
 
-- magnet metals
-- structural metallurgy
-- compute / perception / power materials
+## Likely style by category
 
-That implies he often thinks in `multi-constraint systems`, not isolated single-bottleneck narratives.
+### Bottleneck theses
 
-### 6. Expression is a second pass
+Best fit when:
 
-The universe appears to be built first.
+- secular demand is obvious
+- physical scaling is constrained
+- qualification matters
+- the market is still underwriting the chain too shallowly
 
-Only after that should the system ask:
+Examples:
 
-- is this a stock pick?
-- is this a LEAPS pick?
-- is this just a useful anchor with no attractive expression?
+- InP / photonics
+- HBM / packaging
+- transformers
+- rare earth processing and magnets
 
-That is consistent with our recent engine findings:
+### Geopolitical repricing theses
 
-- many good bottleneck names are still `shares`
-- very few deserve `LEAPS`
+Best fit when:
 
-## Current benchmark implications for MiroFish
+- the event is externally triggered
+- markets are stale on the transmission path
+- there is an identifiable set of beneficiaries or vulnerabilities
 
-If the engine is behaving plausibly, it should:
+Examples from his own reflection:
 
-- surface the same anchor names often
-- also surface obscure supplier names around them
-- suppress already-recognized optics winners when the asymmetry is gone
-- only promote `LEAPS` when the option-specific case is materially stronger than the stock case
+- export controls
+- South Korea volatility
+- Venezuela regime-change beneficiaries
 
-If it fails to do that, something is off.
+### Structural information synthesis theses
 
-## Current live hypotheses to test
+Best fit when:
+
+- the facts are public but fragmented
+- the synthesis is hard
+- the implication is not yet consensus
+
+This likely explains the broader diversity in his posts beyond supply-chain bottlenecks.
+
+## What the engine should recover if it is aligned
+
+If our system is genuinely converging toward this style, it should:
+
+- recover the same `anchor` names often
+- recover the same `satellite` supplier types
+- prefer processing / refining layers more than naive mining exposure
+- reward downstream valuation-gap setups
+- suppress already recognized winners when asymmetry is gone
+- promote `LEAPS` only when there is genuine option-specific edge, not just a good stock thesis
+
+## What the engine should not do
+
+It should not:
+
+- confuse every bottleneck with a trade
+- assume the smallest company is always the best pick
+- assume every good thesis should be a LEAPS trade
+- assume every post is a finished conviction ranking
+- collapse all of his method into “find rare materials”
+
+## Current implications for MiroFish
+
+The strongest architecture now looks like:
+
+1. `Universe construction`
+   - chain map
+   - anchors
+   - satellites
+   - BOM buckets
+   - geography concentration
+
+2. `Market-miss identification`
+   - hiddenness
+   - recognition gap
+   - downstream valuation gap
+   - policy / media / analyst legibility
+
+3. `Expression selection`
+   - shares
+   - LEAPS
+   - long-vol
+   - reject
+
+4. `Benchmarking`
+   - compare against recovered AleaBito universe shapes and picks
+
+## Current live hypotheses
 
 ### Hypothesis A
 
-The engine should be run in two passes:
+The engine should run in two passes:
 
 1. `universe construction`
 2. `expression selection`
 
-This is likely closer to the real method than directly scoring isolated ticker ideas.
+This now looks more strongly supported than before.
 
 ### Hypothesis B
 
-The best near-term benchmark for alignment is not “does the engine match every pick?”
+The best benchmark is not “does the engine copy his final picks?”
 
 It is:
 
-- does it recover the same anchor map?
-- does it elevate the same hidden supplier types?
-- does it reject crowded names for the same reasons?
+- does it build the same universe shape?
+- does it identify the same anchor names?
+- does it surface the same class of hidden suppliers?
+- does it choose similar expressions for the same reasons?
 
 ### Hypothesis C
 
-His edge likely combines:
+His edge is likely a combination of:
 
 - supply-chain graph intuition
+- geopolitical translation
+- information synthesis
 - valuation-gap intuition
 - options-expression discretion
 
-That means the engine may need to emulate those as separate layers, not one blended score.
+That means our engine should model these as separate layers, not one blended score.
+
+### Hypothesis D
+
+Many of his public posts are likely research states, not terminal outputs.
+
+That means post-level evaluation needs to distinguish:
+
+- universe notes
+- thesis fragments
+- actual picks
+- actual expressions
 
 ## What to update next
 
-This note should be updated whenever we learn one of the following from new posts, replies, or later data:
+This note should be updated whenever we learn one of the following:
 
-- new recurrent categories of bottlenecks
-- evidence that he starts with baskets or universe lists more often than single names
-- stronger evidence around how he chooses `LEAPS` versus stock
-- repeated use of specific valuation comparison patterns
-- repeated use of specific time-horizon or catalyst structures
-- repeated evidence that posts are intermediate research states rather than final picks
+- repeated new bottleneck categories
+- stronger evidence on `LEAPS` selection rules
+- stronger evidence on long-vol / IV-arb selection rules
+- repeated use of analyst/media legibility as a catalyst
+- repeated universe-first / basket-first behavior
+- clearer signals on which posts are just chain fragments versus actual trade calls
