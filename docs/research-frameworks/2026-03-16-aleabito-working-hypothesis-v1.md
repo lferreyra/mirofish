@@ -13,11 +13,12 @@ Purpose:
 The strategy is best understood as:
 
 1. start with a visibly expanding system
-2. decompose it into physical dependencies
-3. identify the narrowest qualified supplier or constrained material layer
-4. map that bottleneck into a public-equity universe
-5. separate `anchors` from `asymmetric satellites`
-6. choose `shares` or `LEAPS` based on whether the market is underpricing future variance, not just the stock story
+2. identify the specific component that must scale inside that system
+3. identify the critical material and processing layers behind that component
+4. identify the narrowest qualified supplier or constrained material/process layer
+5. map that bottleneck into a public-equity universe
+6. separate `anchors` from `asymmetric satellites`
+7. choose `shares` or `LEAPS` based on whether the market is underpricing future variance, not just the stock story
 
 This is not ordinary thematic investing.
 
@@ -46,6 +47,36 @@ So the likely process is:
 - map the chain first
 - pick later
 
+This also implies that many public posts are likely:
+
+- intermediate research fragments
+- partial universe notes
+- live chain decomposition
+
+not necessarily final conviction-weighted picks.
+
+### 1a. Start from component first, not ticker first
+
+The newer robotics rare-earth commentary adds an important refinement.
+
+The likely flow is:
+
+- system demand
+- critical component
+- material dependency
+- processing / refining layer
+- public equity mapping
+
+Example:
+
+- robotic joint
+- permanent magnet motor
+- neodymium requirement
+- neodymium processing / NdPr oxide / magnet powder chain
+- public names like `NEO`, `MP`, `UUUU`
+
+That is sharper than generic thematic mapping because it identifies the `cost-critical scalable implementation layer`, not just a broad sector.
+
 ### 2. Use anchors to orient the chain
 
 His own wording suggests names like:
@@ -71,7 +102,26 @@ The likely asymmetric layer is then the smaller and less-followed set:
 
 This is where the “market missed it” logic is strongest.
 
-### 4. Treat multiple materials as one system
+### 4. Processing may matter more than extraction
+
+The robotics commentary also suggests a preference for processing/refining exposure over simple extraction when that is the layer that determines scalable economics.
+
+That means the better exposure can often be:
+
+- oxide conversion
+- refining
+- separation
+- alloy or powder production
+
+rather than generic mining alone.
+
+This is highly consistent with:
+
+- rare-earth separation and magnet manufacturing
+- InP substrates versus downstream optics
+- packaging / metrology versus generic semiconductor demand
+
+### 5. Treat multiple materials as one system
 
 The robotics post is important because it is not a one-node thesis.
 
@@ -83,7 +133,7 @@ It spans:
 
 That implies he often thinks in `multi-constraint systems`, not isolated single-bottleneck narratives.
 
-### 5. Expression is a second pass
+### 6. Expression is a second pass
 
 The universe appears to be built first.
 
@@ -149,3 +199,4 @@ This note should be updated whenever we learn one of the following from new post
 - stronger evidence around how he chooses `LEAPS` versus stock
 - repeated use of specific valuation comparison patterns
 - repeated use of specific time-horizon or catalyst structures
+- repeated evidence that posts are intermediate research states rather than final picks
