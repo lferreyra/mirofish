@@ -1,0 +1,755 @@
+{
+  "name": "mp_magnet_sovereignty_source_bundle_v1",
+  "theme": "rare_earth_magnet_sovereignty",
+  "notes": [
+    "This source bundle reuses the strongest evidence from the rare-earth magnets case study to test the structural parser on a higher-quality thesis.",
+    "Unlike the robotics actuation pilot, this bundle is mostly evidence-mode source material rather than exploratory investor fragments.",
+    "The objective is to see whether MiroFish can reconstruct a conviction-grade mine-to-magnet graph around MP."
+  ],
+  "sources": [
+    {
+      "source_id": "src_iea_commentary_concentration_2025",
+      "source_class": "industry_body",
+      "title": "With new export controls on critical minerals, supply concentration risks become reality",
+      "canonical_url": "https://www.iea.org/commentaries/with-new-export-controls-on-critical-minerals-supply-concentration-risks-become-reality",
+      "publisher": "International Energy Agency",
+      "published_at": "2025-09-09T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "global",
+      "ticker_refs": [
+        "MP"
+      ],
+      "theme_refs": [
+        "rare_earth_magnet_sovereignty",
+        "magnet_manufacturing",
+        "heavy_rare_earths"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.93,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Primary concentration source used in the rare-earth magnets case study."
+      ]
+    },
+    {
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "source_class": "policy_tracker",
+      "title": "Export controls on certain medium and heavy rare earth items",
+      "canonical_url": "https://www.iea.org/policies/26796-export-controls-on-certain-medium-and-heavy-rare-earth-items",
+      "publisher": "International Energy Agency",
+      "published_at": "2025-04-04T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "China",
+      "ticker_refs": [
+        "MP"
+      ],
+      "theme_refs": [
+        "rare_earth_magnet_sovereignty",
+        "heavy_rare_earths",
+        "export_controls"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.91,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Used to ground the heavy rare earth export-control edge."
+      ]
+    },
+    {
+      "source_id": "src_dod_evac_magnet_2025",
+      "source_class": "government",
+      "title": "Department of Defense enters an agreement to expand domestic rare earth permanent magnet manufacturing",
+      "canonical_url": "https://www.defense.gov/News/Releases/Release/Article/3529874/department-of-defense-enters-an-agreement-to-expand-domestic-manufacturing-to-s/",
+      "publisher": "U.S. Department of Defense",
+      "published_at": "2025-09-20T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "MP"
+      ],
+      "theme_refs": [
+        "rare_earth_magnet_sovereignty",
+        "magnet_manufacturing",
+        "defense"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.9,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Used to support strategic importance of domestic magnet manufacturing."
+      ]
+    },
+    {
+      "source_id": "src_mp_magnet_production_2025",
+      "source_class": "company_release",
+      "title": "MP Materials restores U.S. rare earth magnet production",
+      "canonical_url": "https://investors.mpmaterials.com/investor-news/news-details/2025/MP-Materials-Restores-U.S.-Rare-Earth-Magnet-Production/default.aspx?query=email%25252525252525252525252520marketing",
+      "publisher": "MP Materials",
+      "published_at": "2025-01-10T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "MP"
+      ],
+      "theme_refs": [
+        "rare_earth_magnet_sovereignty",
+        "magnet_manufacturing",
+        "domestic_capacity"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.84,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Company evidence for live U.S. magnet-production ramp."
+      ]
+    },
+    {
+      "source_id": "src_mp_dod_partnership_2025",
+      "source_class": "company_release",
+      "title": "MP Materials announces transformational public-private partnership with the Department of Defense",
+      "canonical_url": "https://investors.mpmaterials.com/investor-news/news-details/2025/MP-Materials-Announces-Transformational-Public-Private-Partnership-with-the-Department-of-Defense-to-Accelerate-U-S--Rare-Earth-Magnet-Independence/default.aspx",
+      "publisher": "MP Materials",
+      "published_at": "2025-07-10T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "MP"
+      ],
+      "theme_refs": [
+        "rare_earth_magnet_sovereignty",
+        "heavy_rare_earths",
+        "domestic_capacity"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.86,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Used to support MP's move into heavy rare earth separation and second magnet facility."
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "fragment_id": "frag_iea_concentration_layers",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_type": "report_excerpt",
+      "section_label": "Concentration data",
+      "excerpt": "IEA says China accounted for about 91% of magnet rare earth separation and refining in 2024 and 94% of sintered permanent magnet production used across cars, wind turbines, industrial motors, data centres, and defence systems.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Rare Earth Magnet Sovereignty"
+        ],
+        "systems": [
+          "Industrial Motor System",
+          "Defense System",
+          "AI Data Center Infrastructure"
+        ],
+        "components": [
+          "Permanent Magnet Motor"
+        ],
+        "process_layers": [
+          "Magnet Rare Earth Separation and Refining",
+          "Sintered NdFeB Magnet Manufacturing"
+        ],
+        "geographies": [
+          "China"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Rare Earth Magnet Sovereignty",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "Industrial Motor System",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "Defense System",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "AI Data Center Infrastructure",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Component",
+          "canonical_name": "Permanent Magnet Motor",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Magnet Rare Earth Separation and Refining",
+          "attributes": {
+            "process_stage": "refining_and_separation"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Sintered NdFeB Magnet Manufacturing",
+          "attributes": {
+            "process_stage": "finished_magnet_manufacturing"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "China",
+          "attributes": {
+            "risk_profile": "extreme_concentration"
+          },
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "motor_used_in_industrial_system",
+          "relationship_type": "USED_IN",
+          "source_type": "Component",
+          "source_name": "Permanent Magnet Motor",
+          "target_type": "System",
+          "target_name": "Industrial Motor System",
+          "relationship_strength": "high",
+          "causal_role": "critical_component",
+          "confidence": "medium"
+        },
+        {
+          "key": "motor_used_in_defense_system",
+          "relationship_type": "USED_IN",
+          "source_type": "Component",
+          "source_name": "Permanent Magnet Motor",
+          "target_type": "System",
+          "target_name": "Defense System",
+          "relationship_strength": "medium",
+          "causal_role": "critical_component",
+          "confidence": "medium"
+        },
+        {
+          "key": "motor_used_in_ai_infra",
+          "relationship_type": "USED_IN",
+          "source_type": "Component",
+          "source_name": "Permanent Magnet Motor",
+          "target_type": "System",
+          "target_name": "AI Data Center Infrastructure",
+          "relationship_strength": "medium",
+          "causal_role": "critical_component",
+          "confidence": "medium"
+        },
+        {
+          "key": "magnet_manufacturing_depends_on_refining",
+          "relationship_type": "DEPENDS_ON",
+          "source_type": "ProcessLayer",
+          "source_name": "Sintered NdFeB Magnet Manufacturing",
+          "target_type": "ProcessLayer",
+          "target_name": "Magnet Rare Earth Separation and Refining",
+          "relationship_strength": "high",
+          "causal_role": "upstream_constraint",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_refining_and_magnet_concentration",
+          "claim_type": "market_share_or_concentration",
+          "claim_text": "China remains overwhelmingly dominant in both magnet rare earth refining and sintered NdFeB magnet manufacturing.",
+          "claim_status": "supported",
+          "claim_kind": "factual",
+          "confidence": "high",
+          "entity_names": [
+            "China",
+            "Magnet Rare Earth Separation and Refining",
+            "Sintered NdFeB Magnet Manufacturing"
+          ],
+          "relationship_keys": [
+            "magnet_manufacturing_depends_on_refining"
+          ]
+        },
+        {
+          "claim_key": "claim_magnets_touch_multiple_end_markets",
+          "claim_type": "component_dependency",
+          "claim_text": "Permanent magnet motor dependencies propagate into industrial, defense, and AI infrastructure systems.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Permanent Magnet Motor",
+            "Industrial Motor System",
+            "Defense System",
+            "AI Data Center Infrastructure"
+          ],
+          "relationship_keys": [
+            "motor_used_in_industrial_system",
+            "motor_used_in_defense_system",
+            "motor_used_in_ai_infra"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_iea_hre_export_controls",
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "fragment_type": "policy_excerpt",
+      "section_label": "Export controls",
+      "excerpt": "China imposed export controls on certain medium and heavy rare earth items on April 4, 2025, creating direct risk around dysprosium and terbium availability.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Rare Earth Magnet Sovereignty"
+        ],
+        "materials": [
+          "Dysprosium",
+          "Terbium"
+        ],
+        "events": [
+          "China Heavy Rare Earth Export Controls"
+        ],
+        "geographies": [
+          "China"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "MaterialInput",
+          "canonical_name": "Dysprosium",
+          "attributes": {
+            "processing_stage": "heavy_rare_earth"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "MaterialInput",
+          "canonical_name": "Terbium",
+          "attributes": {
+            "processing_stage": "heavy_rare_earth"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Event",
+          "canonical_name": "China Heavy Rare Earth Export Controls",
+          "attributes": {
+            "event_type": "export_control"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "PolicyAction",
+          "canonical_name": "April 2025 Heavy Rare Earth Export Controls",
+          "attributes": {
+            "policy_type": "export_control"
+          },
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "dysprosium_affected_by_controls",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "MaterialInput",
+          "source_name": "Dysprosium",
+          "target_type": "PolicyAction",
+          "target_name": "April 2025 Heavy Rare Earth Export Controls",
+          "relationship_strength": "high",
+          "causal_role": "policy_shock",
+          "confidence": "high"
+        },
+        {
+          "key": "terbium_affected_by_controls",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "MaterialInput",
+          "source_name": "Terbium",
+          "target_type": "PolicyAction",
+          "target_name": "April 2025 Heavy Rare Earth Export Controls",
+          "relationship_strength": "high",
+          "causal_role": "policy_shock",
+          "confidence": "high"
+        },
+        {
+          "key": "theme_affected_by_hre_controls",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "Theme",
+          "source_name": "Rare Earth Magnet Sovereignty",
+          "target_type": "Event",
+          "target_name": "China Heavy Rare Earth Export Controls",
+          "relationship_strength": "high",
+          "causal_role": "market_relevance",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_hre_export_control_risk",
+          "claim_type": "export_control_or_policy",
+          "claim_text": "Heavy rare earth availability is directly exposed to Chinese export controls, especially dysprosium and terbium.",
+          "claim_status": "supported",
+          "claim_kind": "factual",
+          "confidence": "high",
+          "entity_names": [
+            "Dysprosium",
+            "Terbium",
+            "April 2025 Heavy Rare Earth Export Controls",
+            "China Heavy Rare Earth Export Controls"
+          ],
+          "relationship_keys": [
+            "dysprosium_affected_by_controls",
+            "terbium_affected_by_controls",
+            "theme_affected_by_hre_controls"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_dod_magnet_strategic_support",
+      "source_id": "src_dod_evac_magnet_2025",
+      "fragment_type": "government_release_excerpt",
+      "section_label": "Strategic support",
+      "excerpt": "The Department of Defense funded domestic rare earth permanent magnet manufacturing to strengthen U.S. supply chains, implying the finished magnet layer is strategic and scarce.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Rare Earth Magnet Sovereignty"
+        ],
+        "process_layers": [
+          "Sintered NdFeB Magnet Manufacturing"
+        ],
+        "geographies": [
+          "United States"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Geography",
+          "canonical_name": "United States",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Event",
+          "canonical_name": "DoD Magnet Manufacturing Support",
+          "attributes": {
+            "event_type": "industrial_policy"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "magnet_manufacturing_affected_by_dod_support",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Sintered NdFeB Magnet Manufacturing",
+          "target_type": "Event",
+          "target_name": "DoD Magnet Manufacturing Support",
+          "relationship_strength": "high",
+          "causal_role": "state_support",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_magnet_manufacturing_is_strategic",
+          "claim_type": "bottleneck_assertion",
+          "claim_text": "The finished magnet manufacturing layer is strategic enough to attract direct DoD support, reinforcing that it is scarce and bottlenecked.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "Sintered NdFeB Magnet Manufacturing",
+            "DoD Magnet Manufacturing Support",
+            "United States"
+          ],
+          "relationship_keys": [
+            "magnet_manufacturing_affected_by_dod_support"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_mp_restores_magnet_production",
+      "source_id": "src_mp_magnet_production_2025",
+      "fragment_type": "company_release_excerpt",
+      "section_label": "Operational progress",
+      "excerpt": "MP Materials restored U.S. rare earth magnet production and began trial production of automotive-grade sintered NdFeB magnets in Texas.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "public_companies": [
+          "MP"
+        ],
+        "process_layers": [
+          "Sintered NdFeB Magnet Manufacturing"
+        ],
+        "geographies": [
+          "United States"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "PublicCompany",
+          "canonical_name": "MP",
+          "attributes": {
+            "ticker": "MP",
+            "exposure_type": "pure_play"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Facility",
+          "canonical_name": "MP Texas Magnet Facility",
+          "attributes": {
+            "capacity_stage": "trial_production"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "mp_supplies_magnet_manufacturing",
+          "relationship_type": "SUPPLIED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Sintered NdFeB Magnet Manufacturing",
+          "target_type": "PublicCompany",
+          "target_name": "MP",
+          "relationship_strength": "high",
+          "causal_role": "listed_exposure",
+          "confidence": "high"
+        },
+        {
+          "key": "mp_texas_facility_expands_magnet_layer",
+          "relationship_type": "EXPANDS_CAPACITY_FOR",
+          "source_type": "Facility",
+          "source_name": "MP Texas Magnet Facility",
+          "target_type": "ProcessLayer",
+          "target_name": "Sintered NdFeB Magnet Manufacturing",
+          "relationship_strength": "medium",
+          "causal_role": "capacity_ramp",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_mp_live_magnet_exposure",
+          "claim_type": "supplier_or_customer_relationship",
+          "claim_text": "MP has live and expanding exposure to the U.S. sintered NdFeB magnet manufacturing layer rather than only upstream mining.",
+          "claim_status": "supported",
+          "claim_kind": "factual",
+          "confidence": "high",
+          "entity_names": [
+            "MP",
+            "Sintered NdFeB Magnet Manufacturing",
+            "MP Texas Magnet Facility"
+          ],
+          "relationship_keys": [
+            "mp_supplies_magnet_manufacturing",
+            "mp_texas_facility_expands_magnet_layer"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_type": "company_release_excerpt",
+      "section_label": "Mine-to-magnet buildout",
+      "excerpt": "MP's DoD partnership added a long-term NdPr price floor, heavy rare earth separation expansion, and a second magnet facility, strengthening a domestic mine-to-magnet buildout.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "public_companies": [
+          "MP"
+        ],
+        "materials": [
+          "NdPr Oxide",
+          "Dysprosium",
+          "Terbium"
+        ],
+        "process_layers": [
+          "Magnet Rare Earth Separation and Refining",
+          "Sintered NdFeB Magnet Manufacturing"
+        ],
+        "events": [
+          "MP DoD Mine-to-Magnet Partnership"
+        ],
+        "expressions": [
+          "Shares: MP"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "MaterialInput",
+          "canonical_name": "NdPr Oxide",
+          "attributes": {
+            "processing_stage": "magnet_rare_earth_feedstock"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Event",
+          "canonical_name": "MP DoD Mine-to-Magnet Partnership",
+          "attributes": {
+            "event_type": "public_private_partnership"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ExpressionCandidate",
+          "canonical_name": "Shares: MP",
+          "attributes": {
+            "expression_type": "shares",
+            "time_horizon": "multi_year"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Facility",
+          "canonical_name": "MP Second Magnet Facility",
+          "attributes": {
+            "capacity_stage": "announced"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "mp_refining_layer_affected_by_partnership",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Magnet Rare Earth Separation and Refining",
+          "target_type": "Event",
+          "target_name": "MP DoD Mine-to-Magnet Partnership",
+          "relationship_strength": "high",
+          "causal_role": "scale_and_price_support",
+          "confidence": "high"
+        },
+        {
+          "key": "mp_magnet_layer_affected_by_partnership",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Sintered NdFeB Magnet Manufacturing",
+          "target_type": "Event",
+          "target_name": "MP DoD Mine-to-Magnet Partnership",
+          "relationship_strength": "high",
+          "causal_role": "scale_and_price_support",
+          "confidence": "high"
+        },
+        {
+          "key": "shares_mp_for_theme",
+          "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: MP",
+          "target_type": "Theme",
+          "target_name": "Rare Earth Magnet Sovereignty",
+          "relationship_strength": "high",
+          "causal_role": "listed_expression",
+          "confidence": "high"
+        },
+        {
+          "key": "shares_mp_reprices_via_partnership",
+          "relationship_type": "REPRICES_VIA",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: MP",
+          "target_type": "Event",
+          "target_name": "MP DoD Mine-to-Magnet Partnership",
+          "relationship_strength": "medium",
+          "causal_role": "recognition_driver",
+          "confidence": "high"
+        },
+        {
+          "key": "second_facility_expands_magnet_layer",
+          "relationship_type": "EXPANDS_CAPACITY_FOR",
+          "source_type": "Facility",
+          "source_name": "MP Second Magnet Facility",
+          "target_type": "ProcessLayer",
+          "target_name": "Sintered NdFeB Magnet Manufacturing",
+          "relationship_strength": "medium",
+          "causal_role": "announced_capacity",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_mp_mine_to_magnet_buildout",
+          "claim_type": "capacity_expansion_or_ramp",
+          "claim_text": "MP's DoD partnership supports a domestic mine-to-magnet buildout across NdPr feedstock, heavy rare earth separation, and finished magnet capacity.",
+          "claim_status": "supported",
+          "claim_kind": "factual",
+          "confidence": "high",
+          "entity_names": [
+            "MP",
+            "NdPr Oxide",
+            "Magnet Rare Earth Separation and Refining",
+            "Sintered NdFeB Magnet Manufacturing",
+            "MP DoD Mine-to-Magnet Partnership"
+          ],
+          "relationship_keys": [
+            "mp_refining_layer_affected_by_partnership",
+            "mp_magnet_layer_affected_by_partnership",
+            "second_facility_expands_magnet_layer"
+          ]
+        },
+        {
+          "claim_key": "claim_mp_clean_public_expression",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "MP is a relatively clean listed expression for the non-China mine-to-magnet sovereignty theme.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "MP",
+            "Shares: MP",
+            "Rare Earth Magnet Sovereignty"
+          ],
+          "relationship_keys": [
+            "shares_mp_for_theme",
+            "shares_mp_reprices_via_partnership",
+            "mp_supplies_magnet_manufacturing"
+          ]
+        }
+      ],
+      "inference_candidates": [
+        {
+          "inference_key": "inf_mp_sits_on_mine_to_magnet_gap",
+          "inference_type": "market_miss",
+          "statement": "The market may still frame MP too narrowly as a mining story even though the company is becoming a policy-backed mine-to-magnet platform tied to the most constrained layers.",
+          "claim_keys": [
+            "claim_refining_and_magnet_concentration",
+            "claim_hre_export_control_risk",
+            "claim_magnet_manufacturing_is_strategic",
+            "claim_mp_live_magnet_exposure",
+            "claim_mp_mine_to_magnet_buildout",
+            "claim_mp_clean_public_expression"
+          ],
+          "relationship_keys": [
+            "magnet_manufacturing_depends_on_refining",
+            "dysprosium_affected_by_controls",
+            "terbium_affected_by_controls",
+            "mp_supplies_magnet_manufacturing",
+            "mp_refining_layer_affected_by_partnership",
+            "mp_magnet_layer_affected_by_partnership",
+            "shares_mp_for_theme",
+            "shares_mp_reprices_via_partnership"
+          ],
+          "confidence": "high",
+          "falsifiers": [
+            "MP fails to scale beyond a partial magnet-manufacturing foothold",
+            "non-China capacity expands broadly enough to collapse scarcity value",
+            "policy support does not translate into durable economics"
+          ]
+        }
+      ]
+    }
+  ]
+}

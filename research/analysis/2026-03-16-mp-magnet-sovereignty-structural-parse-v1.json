@@ -1,0 +1,905 @@
+{
+  "parser_version": "deterministic_v1",
+  "generated_at": "2026-03-16T13:11:35.549427+00:00",
+  "source_ids": [
+    "src_dod_evac_magnet_2025",
+    "src_iea_commentary_concentration_2025",
+    "src_iea_policy_tracker_hre_2025",
+    "src_mp_dod_partnership_2025",
+    "src_mp_magnet_production_2025"
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_component_permanent_magnet_motor",
+      "entity_type": "Component",
+      "canonical_name": "Permanent Magnet Motor",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_event_china_heavy_rare_earth_export_controls",
+      "entity_type": "Event",
+      "canonical_name": "China Heavy Rare Earth Export Controls",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "export_control"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_dod_magnet_manufacturing_support",
+      "entity_type": "Event",
+      "canonical_name": "DoD Magnet Manufacturing Support",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "industrial_policy"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_event_mp_dod_mine_to_magnet_partnership",
+      "entity_type": "Event",
+      "canonical_name": "MP DoD Mine-to-Magnet Partnership",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "public_private_partnership"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_expressioncandidate_shares_mp",
+      "entity_type": "ExpressionCandidate",
+      "canonical_name": "Shares: MP",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "expression_type": "shares",
+        "time_horizon": "multi_year"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_facility_mp_second_magnet_facility",
+      "entity_type": "Facility",
+      "canonical_name": "MP Second Magnet Facility",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "capacity_stage": "announced"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_facility_mp_texas_magnet_facility",
+      "entity_type": "Facility",
+      "canonical_name": "MP Texas Magnet Facility",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "capacity_stage": "trial_production"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_geography_china",
+      "entity_type": "Geography",
+      "canonical_name": "China",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "risk_profile": "extreme_concentration"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_geography_united_states",
+      "entity_type": "Geography",
+      "canonical_name": "United States",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_materialinput_dysprosium",
+      "entity_type": "MaterialInput",
+      "canonical_name": "Dysprosium",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "processing_stage": "heavy_rare_earth"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_materialinput_ndpr_oxide",
+      "entity_type": "MaterialInput",
+      "canonical_name": "NdPr Oxide",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "processing_stage": "magnet_rare_earth_feedstock"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_materialinput_terbium",
+      "entity_type": "MaterialInput",
+      "canonical_name": "Terbium",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "processing_stage": "heavy_rare_earth"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "entity_type": "PolicyAction",
+      "canonical_name": "April 2025 Heavy Rare Earth Export Controls",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "policy_type": "export_control"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Magnet Rare Earth Separation and Refining",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "refining_and_separation"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Sintered NdFeB Magnet Manufacturing",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "finished_magnet_manufacturing"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_publiccompany_mp",
+      "entity_type": "PublicCompany",
+      "canonical_name": "MP",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "ticker": "MP",
+        "exposure_type": "pure_play"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_system_ai_data_center_infrastructure",
+      "entity_type": "System",
+      "canonical_name": "AI Data Center Infrastructure",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_system_defense_system",
+      "entity_type": "System",
+      "canonical_name": "Defense System",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_system_industrial_motor_system",
+      "entity_type": "System",
+      "canonical_name": "Industrial Motor System",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_rare_earth_magnet_sovereignty",
+      "entity_type": "Theme",
+      "canonical_name": "Rare Earth Magnet Sovereignty",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "target_entity_id": "ent_event_mp_dod_mine_to_magnet_partnership",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "scale_and_price_support",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership"
+      ],
+      "notes": [],
+      "relationship_key": "mp_refining_layer_affected_by_partnership"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_dod_magnet_manufacturing_support",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "target_entity_id": "ent_event_dod_magnet_manufacturing_support",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "state_support",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_dod_magnet_strategic_support_relationship_rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_dod_magnet_manufacturing_support"
+      ],
+      "notes": [],
+      "relationship_key": "magnet_manufacturing_affected_by_dod_support"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "target_entity_id": "ent_event_mp_dod_mine_to_magnet_partnership",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "scale_and_price_support",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership"
+      ],
+      "notes": [],
+      "relationship_key": "mp_magnet_layer_affected_by_partnership"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_theme_rare_earth_magnet_sovereignty_ent_event_china_heavy_rare_earth_export_controls",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_theme_rare_earth_magnet_sovereignty",
+      "target_entity_id": "ent_event_china_heavy_rare_earth_export_controls",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "market_relevance",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_iea_hre_export_controls_relationship_rel_affected_by_event_ent_theme_rare_earth_magnet_sovereignty_ent_event_china_heavy_rare_earth_export_controls"
+      ],
+      "notes": [],
+      "relationship_key": "theme_affected_by_hre_controls"
+    },
+    {
+      "relationship_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty",
+      "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+      "source_entity_id": "ent_expressioncandidate_shares_mp",
+      "target_entity_id": "ent_theme_rare_earth_magnet_sovereignty",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "listed_expression",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty"
+      ],
+      "notes": [],
+      "relationship_key": "shares_mp_for_theme"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_materialinput_dysprosium",
+      "target_entity_id": "ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "policy_shock",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_iea_hre_export_controls_relationship_rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls"
+      ],
+      "notes": [],
+      "relationship_key": "dysprosium_affected_by_controls"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_materialinput_terbium",
+      "target_entity_id": "ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "policy_shock",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_iea_hre_export_controls_relationship_rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls"
+      ],
+      "notes": [],
+      "relationship_key": "terbium_affected_by_controls"
+    },
+    {
+      "relationship_id": "rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "relationship_type": "DEPENDS_ON",
+      "source_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "target_entity_id": "ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "upstream_constraint",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_relationship_rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining"
+      ],
+      "notes": [],
+      "relationship_key": "magnet_manufacturing_depends_on_refining"
+    },
+    {
+      "relationship_id": "rel_expands_capacity_for_ent_facility_mp_second_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "relationship_type": "EXPANDS_CAPACITY_FOR",
+      "source_entity_id": "ent_facility_mp_second_magnet_facility",
+      "target_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "announced_capacity",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_expands_capacity_for_ent_facility_mp_second_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing"
+      ],
+      "notes": [],
+      "relationship_key": "second_facility_expands_magnet_layer"
+    },
+    {
+      "relationship_id": "rel_expands_capacity_for_ent_facility_mp_texas_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "relationship_type": "EXPANDS_CAPACITY_FOR",
+      "source_entity_id": "ent_facility_mp_texas_magnet_facility",
+      "target_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "capacity_ramp",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_mp_restores_magnet_production_relationship_rel_expands_capacity_for_ent_facility_mp_texas_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing"
+      ],
+      "notes": [],
+      "relationship_key": "mp_texas_facility_expands_magnet_layer"
+    },
+    {
+      "relationship_id": "rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership",
+      "relationship_type": "REPRICES_VIA",
+      "source_entity_id": "ent_expressioncandidate_shares_mp",
+      "target_entity_id": "ent_event_mp_dod_mine_to_magnet_partnership",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "recognition_driver",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership"
+      ],
+      "notes": [],
+      "relationship_key": "shares_mp_reprices_via_partnership"
+    },
+    {
+      "relationship_id": "rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp",
+      "relationship_type": "SUPPLIED_BY",
+      "source_entity_id": "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "target_entity_id": "ent_publiccompany_mp",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "listed_exposure",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_mp_restores_magnet_production_relationship_rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp"
+      ],
+      "notes": [],
+      "relationship_key": "mp_supplies_magnet_manufacturing"
+    },
+    {
+      "relationship_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_ai_data_center_infrastructure",
+      "relationship_type": "USED_IN",
+      "source_entity_id": "ent_component_permanent_magnet_motor",
+      "target_entity_id": "ent_system_ai_data_center_infrastructure",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "critical_component",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_ai_data_center_infrastructure"
+      ],
+      "notes": [],
+      "relationship_key": "motor_used_in_ai_infra"
+    },
+    {
+      "relationship_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_defense_system",
+      "relationship_type": "USED_IN",
+      "source_entity_id": "ent_component_permanent_magnet_motor",
+      "target_entity_id": "ent_system_defense_system",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "critical_component",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_defense_system"
+      ],
+      "notes": [],
+      "relationship_key": "motor_used_in_defense_system"
+    },
+    {
+      "relationship_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_industrial_motor_system",
+      "relationship_type": "USED_IN",
+      "source_entity_id": "ent_component_permanent_magnet_motor",
+      "target_entity_id": "ent_system_industrial_motor_system",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "critical_component",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_industrial_motor_system"
+      ],
+      "notes": [],
+      "relationship_key": "motor_used_in_industrial_system"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_claim_refining_and_magnet_concentration",
+      "claim_type": "market_share_or_concentration",
+      "claim_text": "China remains overwhelmingly dominant in both magnet rare earth refining and sintered NdFeB magnet manufacturing.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_geography_china",
+        "ent_processlayer_magnet_rare_earth_separation_and_refining",
+        "ent_processlayer_sintered_ndfeb_magnet_manufacturing"
+      ],
+      "relationship_refs": [
+        "rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining"
+      ],
+      "source_ids": [
+        "src_iea_commentary_concentration_2025"
+      ],
+      "fragment_ids": [
+        "frag_iea_concentration_layers"
+      ],
+      "notes": [],
+      "claim_key": "claim_refining_and_magnet_concentration",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_claim_claim_claim_refining_and_magnet_concentration"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_magnets_touch_multiple_end_markets",
+      "claim_type": "component_dependency",
+      "claim_text": "Permanent magnet motor dependencies propagate into industrial, defense, and AI infrastructure systems.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_component_permanent_magnet_motor",
+        "ent_system_ai_data_center_infrastructure",
+        "ent_system_defense_system",
+        "ent_system_industrial_motor_system"
+      ],
+      "relationship_refs": [
+        "rel_used_in_ent_component_permanent_magnet_motor_ent_system_ai_data_center_infrastructure",
+        "rel_used_in_ent_component_permanent_magnet_motor_ent_system_defense_system",
+        "rel_used_in_ent_component_permanent_magnet_motor_ent_system_industrial_motor_system"
+      ],
+      "source_ids": [
+        "src_iea_commentary_concentration_2025"
+      ],
+      "fragment_ids": [
+        "frag_iea_concentration_layers"
+      ],
+      "notes": [],
+      "claim_key": "claim_magnets_touch_multiple_end_markets",
+      "evidence_refs": [
+        "ev_frag_iea_concentration_layers_claim_claim_claim_magnets_touch_multiple_end_markets"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_hre_export_control_risk",
+      "claim_type": "export_control_or_policy",
+      "claim_text": "Heavy rare earth availability is directly exposed to Chinese export controls, especially dysprosium and terbium.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_event_china_heavy_rare_earth_export_controls",
+        "ent_materialinput_dysprosium",
+        "ent_materialinput_terbium",
+        "ent_policyaction_april_2025_heavy_rare_earth_export_controls"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_theme_rare_earth_magnet_sovereignty_ent_event_china_heavy_rare_earth_export_controls",
+        "rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+        "rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls"
+      ],
+      "source_ids": [
+        "src_iea_policy_tracker_hre_2025"
+      ],
+      "fragment_ids": [
+        "frag_iea_hre_export_controls"
+      ],
+      "notes": [],
+      "claim_key": "claim_hre_export_control_risk",
+      "evidence_refs": [
+        "ev_frag_iea_hre_export_controls_claim_claim_claim_hre_export_control_risk"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_magnet_manufacturing_is_strategic",
+      "claim_type": "bottleneck_assertion",
+      "claim_text": "The finished magnet manufacturing layer is strategic enough to attract direct DoD support, reinforcing that it is scarce and bottlenecked.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_event_dod_magnet_manufacturing_support",
+        "ent_geography_united_states",
+        "ent_processlayer_sintered_ndfeb_magnet_manufacturing"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_dod_magnet_manufacturing_support"
+      ],
+      "source_ids": [
+        "src_dod_evac_magnet_2025"
+      ],
+      "fragment_ids": [
+        "frag_dod_magnet_strategic_support"
+      ],
+      "notes": [],
+      "claim_key": "claim_magnet_manufacturing_is_strategic",
+      "evidence_refs": [
+        "ev_frag_dod_magnet_strategic_support_claim_claim_claim_magnet_manufacturing_is_strategic"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_mp_live_magnet_exposure",
+      "claim_type": "supplier_or_customer_relationship",
+      "claim_text": "MP has live and expanding exposure to the U.S. sintered NdFeB magnet manufacturing layer rather than only upstream mining.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_facility_mp_texas_magnet_facility",
+        "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+        "ent_publiccompany_mp"
+      ],
+      "relationship_refs": [
+        "rel_expands_capacity_for_ent_facility_mp_texas_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+        "rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp"
+      ],
+      "source_ids": [
+        "src_mp_magnet_production_2025"
+      ],
+      "fragment_ids": [
+        "frag_mp_restores_magnet_production"
+      ],
+      "notes": [],
+      "claim_key": "claim_mp_live_magnet_exposure",
+      "evidence_refs": [
+        "ev_frag_mp_restores_magnet_production_claim_claim_claim_mp_live_magnet_exposure"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_mp_mine_to_magnet_buildout",
+      "claim_type": "capacity_expansion_or_ramp",
+      "claim_text": "MP's DoD partnership supports a domestic mine-to-magnet buildout across NdPr feedstock, heavy rare earth separation, and finished magnet capacity.",
+      "claim_status": "supported",
+      "claim_kind": "factual",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_event_mp_dod_mine_to_magnet_partnership",
+        "ent_materialinput_ndpr_oxide",
+        "ent_processlayer_magnet_rare_earth_separation_and_refining",
+        "ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+        "ent_publiccompany_mp"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_expands_capacity_for_ent_facility_mp_second_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing"
+      ],
+      "source_ids": [
+        "src_mp_dod_partnership_2025"
+      ],
+      "fragment_ids": [
+        "frag_mp_dod_partnership_mine_to_magnet"
+      ],
+      "notes": [],
+      "claim_key": "claim_mp_mine_to_magnet_buildout",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_claim_claim_claim_mp_mine_to_magnet_buildout"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_mp_clean_public_expression",
+      "claim_type": "expression_fit_assertion",
+      "claim_text": "MP is a relatively clean listed expression for the non-China mine-to-magnet sovereignty theme.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_expressioncandidate_shares_mp",
+        "ent_publiccompany_mp",
+        "ent_theme_rare_earth_magnet_sovereignty"
+      ],
+      "relationship_refs": [
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty",
+        "rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp"
+      ],
+      "source_ids": [
+        "src_mp_dod_partnership_2025"
+      ],
+      "fragment_ids": [
+        "frag_mp_dod_partnership_mine_to_magnet"
+      ],
+      "notes": [],
+      "claim_key": "claim_mp_clean_public_expression",
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_claim_claim_claim_mp_clean_public_expression"
+      ]
+    }
+  ],
+  "evidence_links": [
+    {
+      "evidence_link_id": "ev_frag_iea_hre_export_controls_claim_claim_claim_hre_export_control_risk",
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "fragment_id": "frag_iea_hre_export_controls",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_hre_export_control_risk",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_dod_magnet_strategic_support_claim_claim_claim_magnet_manufacturing_is_strategic",
+      "source_id": "src_dod_evac_magnet_2025",
+      "fragment_id": "frag_dod_magnet_strategic_support",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_magnet_manufacturing_is_strategic",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_claim_claim_claim_magnets_touch_multiple_end_markets",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_magnets_touch_multiple_end_markets",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_claim_claim_claim_mp_clean_public_expression",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_mp_clean_public_expression",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_restores_magnet_production_claim_claim_claim_mp_live_magnet_exposure",
+      "source_id": "src_mp_magnet_production_2025",
+      "fragment_id": "frag_mp_restores_magnet_production",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_mp_live_magnet_exposure",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_claim_claim_claim_mp_mine_to_magnet_buildout",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_mp_mine_to_magnet_buildout",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_claim_claim_claim_refining_and_magnet_concentration",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_refining_and_magnet_concentration",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_inference_inf_inf_mp_sits_on_mine_to_magnet_gap",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "inference",
+      "supports_object_id": "inf_inf_mp_sits_on_mine_to_magnet_gap",
+      "support_mode": "supporting",
+      "strength": "contextual"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_dod_magnet_strategic_support_relationship_rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_dod_magnet_manufacturing_support",
+      "source_id": "src_dod_evac_magnet_2025",
+      "fragment_id": "frag_dod_magnet_strategic_support",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_dod_magnet_manufacturing_support",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_hre_export_controls_relationship_rel_affected_by_event_ent_theme_rare_earth_magnet_sovereignty_ent_event_china_heavy_rare_earth_export_controls",
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "fragment_id": "frag_iea_hre_export_controls",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_theme_rare_earth_magnet_sovereignty_ent_event_china_heavy_rare_earth_export_controls",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_hre_export_controls_relationship_rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "fragment_id": "frag_iea_hre_export_controls",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_hre_export_controls_relationship_rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "source_id": "src_iea_policy_tracker_hre_2025",
+      "fragment_id": "frag_iea_hre_export_controls",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_relationship_rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_expands_capacity_for_ent_facility_mp_second_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_expands_capacity_for_ent_facility_mp_second_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_restores_magnet_production_relationship_rel_expands_capacity_for_ent_facility_mp_texas_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "source_id": "src_mp_magnet_production_2025",
+      "fragment_id": "frag_mp_restores_magnet_production",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_expands_capacity_for_ent_facility_mp_texas_magnet_facility_ent_processlayer_sintered_ndfeb_magnet_manufacturing",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_dod_partnership_mine_to_magnet_relationship_rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership",
+      "source_id": "src_mp_dod_partnership_2025",
+      "fragment_id": "frag_mp_dod_partnership_mine_to_magnet",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_mp_restores_magnet_production_relationship_rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp",
+      "source_id": "src_mp_magnet_production_2025",
+      "fragment_id": "frag_mp_restores_magnet_production",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_ai_data_center_infrastructure",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_ai_data_center_infrastructure",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_defense_system",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_defense_system",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_iea_concentration_layers_relationship_rel_used_in_ent_component_permanent_magnet_motor_ent_system_industrial_motor_system",
+      "source_id": "src_iea_commentary_concentration_2025",
+      "fragment_id": "frag_iea_concentration_layers",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_used_in_ent_component_permanent_magnet_motor_ent_system_industrial_motor_system",
+      "support_mode": "supporting",
+      "strength": "direct"
+    }
+  ],
+  "inferences": [
+    {
+      "inference_id": "inf_inf_mp_sits_on_mine_to_magnet_gap",
+      "inference_type": "market_miss",
+      "statement": "The market may still frame MP too narrowly as a mining story even though the company is becoming a policy-backed mine-to-magnet platform tied to the most constrained layers.",
+      "derived_from_claim_ids": [
+        "claim_claim_hre_export_control_risk",
+        "claim_claim_magnet_manufacturing_is_strategic",
+        "claim_claim_mp_clean_public_expression",
+        "claim_claim_mp_live_magnet_exposure",
+        "claim_claim_mp_mine_to_magnet_buildout",
+        "claim_claim_refining_and_magnet_concentration"
+      ],
+      "derived_from_relationship_ids": [
+        "rel_affected_by_event_ent_processlayer_magnet_rare_earth_separation_and_refining_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_affected_by_event_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_mp_ent_theme_rare_earth_magnet_sovereignty",
+        "rel_constrained_by_ent_materialinput_dysprosium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+        "rel_constrained_by_ent_materialinput_terbium_ent_policyaction_april_2025_heavy_rare_earth_export_controls",
+        "rel_depends_on_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_processlayer_magnet_rare_earth_separation_and_refining",
+        "rel_reprices_via_ent_expressioncandidate_shares_mp_ent_event_mp_dod_mine_to_magnet_partnership",
+        "rel_supplied_by_ent_processlayer_sintered_ndfeb_magnet_manufacturing_ent_publiccompany_mp"
+      ],
+      "confidence": "high",
+      "falsifiers": [
+        "MP fails to scale beyond a partial magnet-manufacturing foothold",
+        "non-China capacity expands broadly enough to collapse scarcity value",
+        "policy support does not translate into durable economics"
+      ],
+      "notes": [],
+      "evidence_refs": [
+        "ev_frag_mp_dod_partnership_mine_to_magnet_inference_inf_inf_mp_sits_on_mine_to_magnet_gap"
+      ]
+    }
+  ],
+  "summary": {
+    "entity_count": 20,
+    "relationship_count": 15,
+    "claim_count": 7,
+    "evidence_link_count": 23,
+    "inference_count": 1
+  }
+}
