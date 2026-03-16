@@ -537,7 +537,7 @@ const selectAgent = (agent, idx) => {
   
   // 恢复该 Agent 的对话记录
   chatHistory.value = chatHistoryCache.value[`agent_${idx}`] || []
-  addLog(`选择对话对象: ${agent.username}`)
+  addLog(t('logs.s5_selectChatTarget', { name: agent.username }))
 }
 
 const formatTime = (timestamp) => {
@@ -679,7 +679,7 @@ const sendMessage = async () => {
 }
 
 const sendToReportAgent = async (message) => {
-  addLog(`向 Report Agent 发送: ${message.substring(0, 50)}...`)
+  addLog(t('logs.s5_sendToReportAgent', { msg: message.substring(0, 50) }))
   
   // Build chat history for API
   const historyForApi = chatHistory.value
@@ -702,7 +702,7 @@ const sendToReportAgent = async (message) => {
       content: res.data.response || res.data.answer || '无响应',
       timestamp: new Date().toISOString()
     })
-    addLog('Report Agent 已回复')
+    addLog(t('logs.s5_reportAgentReplied'))
   } else {
     throw new Error(res.error || '请求失败')
   }
@@ -713,7 +713,7 @@ const sendToAgent = async (message) => {
     throw new Error('请先选择一个模拟个体')
   }
   
-  addLog(`向 ${selectedAgent.value.username} 发送: ${message.substring(0, 50)}...`)
+  addLog(t('logs.s5_sendToAgent', { name: selectedAgent.value.username, msg: message.substring(0, 50) }))
   
   // Build prompt with chat history
   let prompt = message
@@ -763,7 +763,7 @@ const sendToAgent = async (message) => {
         content: responseContent,
         timestamp: new Date().toISOString()
       })
-      addLog(`${selectedAgent.value.username} 已回复`)
+      addLog(t('logs.s5_agentReplied', { name: selectedAgent.value.username }))
     } else {
       throw new Error('无响应数据')
     }
@@ -805,7 +805,7 @@ const submitSurvey = async () => {
   if (selectedAgents.value.size === 0 || !surveyQuestion.value.trim()) return
   
   isSurveying.value = true
-  addLog(`发送问卷给 ${selectedAgents.value.size} 个对象...`)
+  addLog(t('logs.s5_sendingSurvey', { count: selectedAgents.value.size }))
   
   try {
     const interviews = Array.from(selectedAgents.value).map(idx => ({
@@ -859,7 +859,7 @@ const submitSurvey = async () => {
       }
       
       surveyResults.value = surveyResultsList
-      addLog(`收到 ${surveyResults.value.length} 条回复`)
+      addLog(t('logs.s5_surveyRepliesReceived', { count: surveyResults.value.length }))
     } else {
       throw new Error(res.error || '请求失败')
     }
@@ -875,7 +875,7 @@ const loadReportData = async () => {
   if (!props.reportId) return
   
   try {
-    addLog(`加载报告数据: ${props.reportId}`)
+    addLog(t('logs.s5_loadingReportData', { id: props.reportId }))
     
     // Get report info
     const reportRes = await getReport(props.reportId)
@@ -906,7 +906,7 @@ const loadAgentLogs = async () => {
         }
       })
       
-      addLog('报告数据加载完成')
+      addLog(t('logs.s5_reportDataLoaded'))
     }
   } catch (err) {
     addLog(`${t('errors.loadReportLogFailed')}: ${err.message}`)
@@ -920,7 +920,7 @@ const loadProfiles = async () => {
     const res = await getSimulationProfilesRealtime(props.simulationId, 'reddit')
     if (res.success && res.data) {
       profiles.value = res.data.profiles || []
-      addLog(`加载了 ${profiles.value.length} 个模拟个体`)
+      addLog(t('logs.s5_profilesLoaded', { count: profiles.value.length }))
     }
   } catch (err) {
     addLog(`${t('errors.loadProfilesFailed')}: ${err.message}`)
@@ -937,7 +937,7 @@ const handleClickOutside = (e) => {
 
 // Lifecycle
 onMounted(() => {
-  addLog('Step5 深度互动初始化')
+  addLog(t('logs.s5_init'))
   loadReportData()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)

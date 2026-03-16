@@ -143,7 +143,7 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`加载报告数据: ${currentReportId.value}`)
+    addLog(t('logs.rv_loadingReportData', { id: currentReportId.value }))
     
     // 获取 report 信息以获取 simulation_id
     const reportRes = await getReport(currentReportId.value)
@@ -162,7 +162,7 @@ const loadReportData = async () => {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`项目加载成功: ${projRes.data.project_id}`)
+              addLog(t('logs.rv_projectLoaded', { id: projRes.data.project_id }))
               
               // 获取 graph 数据
               if (projRes.data.graph_id) {
@@ -173,10 +173,10 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`获取报告信息失败: ${reportRes.error || '未知错误'}`)
+      addLog(t('logs.rv_loadReportFailed', { error: reportRes.error || t('errors.unknown') }))
     }
   } catch (err) {
-    addLog(`加载异常: ${err.message}`)
+    addLog(t('logs.rv_loadException', { error: err.message }))
   }
 }
 
@@ -187,10 +187,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('图谱数据加载成功')
+      addLog(t('logs.graphDataLoaded'))
     }
   } catch (err) {
-    addLog(`图谱加载失败: ${err.message}`)
+    addLog(t('logs.rv_graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -211,7 +211,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('ReportView 初始化')
+  addLog(t('logs.rv_init'))
   loadReportData()
 })
 </script>

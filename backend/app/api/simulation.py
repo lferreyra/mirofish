@@ -15,6 +15,7 @@ from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner
 from ..utils.logger import get_logger
 from ..utils.request_locale import get_request_locale
+from ..utils.error_messages import get_error_message
 from ..models.project import ProjectManager
 
 logger = get_logger('mirofish.api.simulation')
@@ -60,7 +61,7 @@ def get_graph_entities(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": get_error_message('graph_zep_not_configured', get_request_locale())
             }), 500
         
         entity_types_str = request.args.get('entity_types', '')
@@ -97,7 +98,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": get_error_message('graph_zep_not_configured', get_request_locale())
             }), 500
         
         reader = ZepEntityReader()
@@ -106,7 +107,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not entity:
             return jsonify({
                 "success": False,
-                "error": f"实体不存在: {entity_uuid}"
+                "error": get_error_message('sim_entity_not_found', get_request_locale()).format(entity_uuid=entity_uuid)
             }), 404
         
         return jsonify({
@@ -130,7 +131,7 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": get_error_message('graph_zep_not_configured', get_request_locale())
             }), 500
         
         enrich = request.args.get('enrich', 'true').lower() == 'true'
@@ -194,25 +195,26 @@ def create_simulation():
     try:
         data = request.get_json() or {}
         
+        locale = get_request_locale()
         project_id = data.get('project_id')
         if not project_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 project_id"
+                "error": get_error_message('sim_missing_project_id', locale)
             }), 400
-        
+
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"项目不存在: {project_id}"
+                "error": get_error_message('sim_project_not_found', locale).format(project_id=project_id)
             }), 404
-        
+
         graph_id = data.get('graph_id') or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "项目尚未构建图谱，请先调用 /api/graph/build"
+                "error": get_error_message('sim_graph_not_built', locale)
             }), 400
         
         manager = SimulationManager()
@@ -260,7 +262,7 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
     
     # 检查目录是否存在
     if not os.path.exists(simulation_dir):
-        return False, {"reason": "模拟目录不存在"}
+        return False, {"reason": "sim_dir_not_found"}
     
     # 必要文件列表（不包括脚本，脚本位于 backend/scripts/）
     required_files = [
@@ -282,7 +284,7 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
     
     if missing_files:
         return False, {
-            "reason": "缺少必要文件",
+            "reason": "sim_missing_files",
             "missing_files": missing_files,
             "existing_files": existing_files
         }
@@ -403,22 +405,24 @@ def prepare_simulation():
     try:
         data = request.get_json() or {}
         
+        locale = get_request_locale()
+
         simulation_id = data.get('simulation_id')
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', locale)
             }), 400
-        
+
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
-        
+
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": get_error_message('sim_not_found', locale).format(simulation_id=simulation_id)
             }), 404
-        
+
         # 检查是否强制重新生成
         force_regenerate = data.get('force_regenerate', False)
         logger.info(f"开始处理 /prepare 请求: simulation_id={simulation_id}, force_regenerate={force_regenerate}")
@@ -435,7 +439,7 @@ def prepare_simulation():
                     "data": {
                         "simulation_id": simulation_id,
                         "status": "ready",
-                        "message": "已有完成的准备工作，无需重复生成",
+                        "message": get_error_message('sim_already_prepared', locale),
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
@@ -448,15 +452,15 @@ def prepare_simulation():
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"项目不存在: {state.project_id}"
+                "error": get_error_message('sim_project_not_found', locale).format(project_id=state.project_id)
             }), 404
-        
+
         # 获取模拟需求
         simulation_requirement = project.simulation_requirement or ""
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "项目缺少模拟需求描述 (simulation_requirement)"
+                "error": get_error_message('sim_missing_requirement', locale)
             }), 400
         
         # 获取文档文本
@@ -466,8 +470,7 @@ def prepare_simulation():
         use_llm_for_profiles = data.get('use_llm_for_profiles', True)
         parallel_profile_count = data.get('parallel_profile_count', 5)
 
-        # 在请求上下文中获取 locale（后台线程无法访问 Flask 请求上下文）
-        locale = get_request_locale()
+        # locale already captured above (before background thread)
         
         # ========== 同步获取实体数量（在后台任务启动前） ==========
         # 这样前端在调用prepare后立即就能获取到预期Agent总数
@@ -509,7 +512,7 @@ def prepare_simulation():
                     task_id,
                     status=TaskStatus.PROCESSING,
                     progress=0,
-                    message="开始准备模拟环境..."
+                    message=get_error_message('sim_prepare_starting', locale)
                 )
                 
                 # 准备模拟（带进度回调）
@@ -530,10 +533,10 @@ def prepare_simulation():
                     
                     # 构建详细进度信息
                     stage_names = {
-                        "reading": "读取图谱实体",
-                        "generating_profiles": "生成Agent人设",
-                        "generating_config": "生成模拟配置",
-                        "copying_scripts": "准备模拟脚本"
+                        "reading": get_error_message('sim_stage_reading', locale),
+                        "generating_profiles": get_error_message('sim_stage_profiles', locale),
+                        "generating_config": get_error_message('sim_stage_config', locale),
+                        "copying_scripts": get_error_message('sim_stage_scripts', locale),
                     }
                     
                     stage_index = list(stage_weights.keys()).index(stage) + 1 if stage in stage_weights else 1
@@ -615,7 +618,7 @@ def prepare_simulation():
                 "simulation_id": simulation_id,
                 "task_id": task_id,
                 "status": "preparing",
-                "message": "准备任务已启动，请通过 /api/simulation/prepare/status 查询进度",
+                "message": get_error_message('sim_prepare_started', locale),
                 "already_prepared": False,
                 "expected_entities_count": state.entities_count,  # 预期的Agent总数
                 "entity_types": state.entity_types  # 实体类型列表
@@ -666,13 +669,14 @@ def get_prepare_status():
         }
     """
     from ..models.task import TaskManager
-    
+
     try:
+        locale = get_request_locale()
         data = request.get_json() or {}
-        
+
         task_id = data.get('task_id')
         simulation_id = data.get('simulation_id')
-        
+
         # 如果提供了simulation_id，先检查是否已准备完成
         if simulation_id:
             is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
@@ -683,12 +687,12 @@ def get_prepare_status():
                         "simulation_id": simulation_id,
                         "status": "ready",
                         "progress": 100,
-                        "message": "已有完成的准备工作",
+                        "message": get_error_message('sim_status_ready', locale),
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
                 })
-        
+
         # 如果没有task_id，返回错误
         if not task_id:
             if simulation_id:
@@ -699,18 +703,18 @@ def get_prepare_status():
                         "simulation_id": simulation_id,
                         "status": "not_started",
                         "progress": 0,
-                        "message": "尚未开始准备，请调用 /api/simulation/prepare 开始",
+                        "message": get_error_message('sim_not_started', locale),
                         "already_prepared": False
                     }
                 })
             return jsonify({
                 "success": False,
-                "error": "请提供 task_id 或 simulation_id"
+                "error": get_error_message('sim_missing_task_or_sim_id', locale)
             }), 400
-        
+
         task_manager = TaskManager()
         task = task_manager.get_task(task_id)
-        
+
         if not task:
             # 任务不存在，但如果有simulation_id，检查是否已准备完成
             if simulation_id:
@@ -723,7 +727,7 @@ def get_prepare_status():
                             "task_id": task_id,
                             "status": "ready",
                             "progress": 100,
-                            "message": "任务已完成（准备工作已存在）",
+                            "message": get_error_message('sim_task_ready', locale),
                             "already_prepared": True,
                             "prepare_info": prepare_info
                         }
@@ -731,9 +735,9 @@ def get_prepare_status():
             
             return jsonify({
                 "success": False,
-                "error": f"任务不存在: {task_id}"
+                "error": get_error_message('sim_task_not_found', locale).format(task_id=task_id)
             }), 404
-        
+
         task_dict = task.to_dict()
         task_dict["already_prepared"] = False
         
@@ -760,7 +764,7 @@ def get_simulation(simulation_id: str):
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": get_error_message('sim_not_found', get_request_locale()).format(simulation_id=simulation_id)
             }), 404
         
         result = state.to_dict()
@@ -1063,7 +1067,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": get_error_message('sim_not_found', get_request_locale()).format(simulation_id=simulation_id)
             }), 404
         
         # 确定文件路径
@@ -1166,7 +1170,7 @@ def get_simulation_config_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": get_error_message('sim_not_found', get_request_locale()).format(simulation_id=simulation_id)
             }), 404
         
         # 配置文件路径
@@ -1271,7 +1275,7 @@ def get_simulation_config(simulation_id: str):
         if not config:
             return jsonify({
                 "success": False,
-                "error": "模拟配置不存在，请先调用 /prepare 接口"
+                "error": get_error_message('sim_config_not_found', get_request_locale())
             }), 404
         
         return jsonify({
@@ -1299,7 +1303,7 @@ def download_simulation_config(simulation_id: str):
         if not os.path.exists(config_path):
             return jsonify({
                 "success": False,
-                "error": "配置文件不存在，请先调用 /prepare 接口"
+                "error": get_error_message('sim_config_file_not_found', get_request_locale())
             }), 404
         
         return send_file(
@@ -1343,7 +1347,7 @@ def download_simulation_script(script_name: str):
         if script_name not in allowed_scripts:
             return jsonify({
                 "success": False,
-                "error": f"未知脚本: {script_name}，可选: {allowed_scripts}"
+                "error": get_error_message('sim_unknown_script', get_request_locale()).format(script_name=script_name, allowed=allowed_scripts)
             }), 400
         
         script_path = os.path.join(scripts_dir, script_name)
@@ -1351,7 +1355,7 @@ def download_simulation_script(script_name: str):
         if not os.path.exists(script_path):
             return jsonify({
                 "success": False,
-                "error": f"脚本文件不存在: {script_name}"
+                "error": get_error_message('sim_script_not_found', get_request_locale()).format(script_name=script_name)
             }), 404
         
         return send_file(
@@ -1391,7 +1395,7 @@ def generate_profiles():
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 graph_id"
+                "error": get_error_message('sim_missing_graph_id', get_request_locale())
             }), 400
         
         entity_types = data.get('entity_types')
@@ -1408,7 +1412,7 @@ def generate_profiles():
         if filtered.filtered_count == 0:
             return jsonify({
                 "success": False,
-                "error": "没有找到符合条件的实体"
+                "error": get_error_message('sim_no_entities', get_request_locale())
             }), 400
         
         generator = OasisProfileGenerator()
@@ -1493,7 +1497,7 @@ def start_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
 
         platform = data.get('platform', 'parallel')
@@ -1508,18 +1512,18 @@ def start_simulation():
                 if max_rounds <= 0:
                     return jsonify({
                         "success": False,
-                        "error": "max_rounds 必须是正整数"
+                        "error": get_error_message('sim_max_rounds_positive', get_request_locale())
                     }), 400
             except (ValueError, TypeError):
                 return jsonify({
                     "success": False,
-                    "error": "max_rounds 必须是有效的整数"
+                    "error": get_error_message('sim_max_rounds_invalid', get_request_locale())
                 }), 400
 
         if platform not in ['twitter', 'reddit', 'parallel']:
             return jsonify({
                 "success": False,
-                "error": f"无效的平台类型: {platform}，可选: twitter/reddit/parallel"
+                "error": get_error_message('sim_invalid_platform', get_request_locale()).format(platform=platform)
             }), 400
 
         # 检查模拟是否已准备好
@@ -1529,7 +1533,7 @@ def start_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": get_error_message('sim_not_found', get_request_locale()).format(simulation_id=simulation_id)
             }), 404
 
         force_restarted = False
@@ -1556,7 +1560,7 @@ def start_simulation():
                         else:
                             return jsonify({
                                 "success": False,
-                                "error": "模拟正在运行中，请先调用 /stop 接口停止，或使用 force=true 强制重新开始"
+                                "error": get_error_message('sim_already_running', get_request_locale())
                             }), 400
 
                 # 如果是强制模式，清理运行日志
@@ -1575,7 +1579,7 @@ def start_simulation():
                 # 准备工作未完成
                 return jsonify({
                     "success": False,
-                    "error": f"模拟未准备好，当前状态: {state.status.value}，请先调用 /prepare 接口"
+                    "error": get_error_message('sim_not_ready', get_request_locale()).format(status=state.status.value)
                 }), 400
         
         # 获取图谱ID（用于图谱记忆更新）
@@ -1592,7 +1596,7 @@ def start_simulation():
             if not graph_id:
                 return jsonify({
                     "success": False,
-                    "error": "启用图谱记忆更新需要有效的 graph_id，请确保项目已构建图谱"
+                    "error": get_error_message('sim_graph_memory_needs_graph', get_request_locale())
                 }), 400
             
             logger.info(f"启用图谱记忆更新: simulation_id={simulation_id}, graph_id={graph_id}")
@@ -1665,7 +1669,7 @@ def stop_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
         
         run_state = SimulationRunner.stop_simulation(simulation_id)
@@ -2013,7 +2017,7 @@ def get_simulation_posts(simulation_id: str):
                     "platform": platform,
                     "count": 0,
                     "posts": [],
-                    "message": "数据库不存在，模拟可能尚未运行"
+                    "message": get_error_message('sim_db_not_exists', get_request_locale())
                 }
             })
         
@@ -2199,33 +2203,33 @@ def interview_agent():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
         
         if agent_id is None:
             return jsonify({
                 "success": False,
-                "error": "请提供 agent_id"
+                "error": get_error_message('sim_missing_agent_id', get_request_locale())
             }), 400
         
         if not prompt:
             return jsonify({
                 "success": False,
-                "error": "请提供 prompt（采访问题）"
+                "error": get_error_message('sim_missing_prompt', get_request_locale())
             }), 400
         
         # 验证platform参数
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform 参数只能是 'twitter' 或 'reddit'"
+                "error": get_error_message('sim_invalid_platform_choice', get_request_locale())
             }), 400
         
         # 检查环境状态
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。"
+                "error": get_error_message('sim_env_not_running', get_request_locale())
             }), 400
         
         # 优化prompt，添加前缀避免Agent调用工具
@@ -2253,7 +2257,7 @@ def interview_agent():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"等待Interview响应超时: {str(e)}"
+            "error": get_error_message('sim_interview_timeout', get_request_locale()).format(error=str(e))
         }), 504
         
     except Exception as e:
@@ -2320,20 +2324,20 @@ def interview_agents_batch():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
 
         if not interviews or not isinstance(interviews, list):
             return jsonify({
                 "success": False,
-                "error": "请提供 interviews（采访列表）"
+                "error": get_error_message('sim_missing_interviews', get_request_locale())
             }), 400
 
         # 验证platform参数
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform 参数只能是 'twitter' 或 'reddit'"
+                "error": get_error_message('sim_invalid_platform_choice', get_request_locale())
             }), 400
 
         # 验证每个采访项
@@ -2341,26 +2345,26 @@ def interview_agents_batch():
             if 'agent_id' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"采访列表第{i+1}项缺少 agent_id"
+                    "error": get_error_message('sim_interview_missing_agent_id', get_request_locale()).format(index=i+1)
                 }), 400
             if 'prompt' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"采访列表第{i+1}项缺少 prompt"
+                    "error": get_error_message('sim_interview_missing_prompt', get_request_locale()).format(index=i+1)
                 }), 400
             # 验证每项的platform（如果有）
             item_platform = interview.get('platform')
             if item_platform and item_platform not in ("twitter", "reddit"):
                 return jsonify({
                     "success": False,
-                    "error": f"采访列表第{i+1}项的platform只能是 'twitter' 或 'reddit'"
+                    "error": get_error_message('sim_interview_invalid_platform', get_request_locale()).format(index=i+1)
                 }), 400
 
         # 检查环境状态
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。"
+                "error": get_error_message('sim_env_not_running', get_request_locale())
             }), 400
 
         # 优化每个采访项的prompt，添加前缀避免Agent调用工具
@@ -2447,27 +2451,27 @@ def interview_all_agents():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
 
         if not prompt:
             return jsonify({
                 "success": False,
-                "error": "请提供 prompt（采访问题）"
+                "error": get_error_message('sim_missing_prompt', get_request_locale())
             }), 400
 
         # 验证platform参数
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform 参数只能是 'twitter' 或 'reddit'"
+                "error": get_error_message('sim_invalid_platform_choice', get_request_locale())
             }), 400
 
         # 检查环境状态
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。"
+                "error": get_error_message('sim_env_not_running', get_request_locale())
             }), 400
 
         # 优化prompt，添加前缀避免Agent调用工具
@@ -2551,7 +2555,7 @@ def get_interview_history():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
 
         history = SimulationRunner.get_interview_history(
@@ -2610,7 +2614,7 @@ def get_env_status():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
 
         env_alive = SimulationRunner.check_env_alive(simulation_id)
@@ -2618,10 +2622,11 @@ def get_env_status():
         # 获取更详细的状态信息
         env_status = SimulationRunner.get_env_status_detail(simulation_id)
 
+        _locale = get_request_locale()
         if env_alive:
-            message = "环境正在运行，可以接收Interview命令"
+            message = get_error_message('sim_env_alive', _locale)
         else:
-            message = "环境未运行或已关闭"
+            message = get_error_message('sim_env_not_alive', _locale)
 
         return jsonify({
             "success": True,
@@ -2678,7 +2683,7 @@ def close_simulation_env():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": get_error_message('sim_missing_simulation_id', get_request_locale())
             }), 400
         
         result = SimulationRunner.close_simulation_env(
