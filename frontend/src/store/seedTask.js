@@ -11,6 +11,7 @@ const state = reactive({
   currentFile: '',
   completedFiles: [],
   error: null,
+  showModal: false,
 });
 
 export function startSeedTask(taskId, prompt, categories, depth) {
