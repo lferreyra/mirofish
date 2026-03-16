@@ -3,53 +3,84 @@
     <!-- Overlay to close menu when clicking outside -->
     <div v-if="isOpen" class="fab-overlay" @click="isOpen = false"></div>
 
-    <!-- Menu items (rendered behind FAB, animate outward) -->
-    <transition-group name="fab-menu">
-      <button
-        v-if="isOpen"
-        key="lang"
-        class="fab-menu-item lang-item"
+    <!-- Ring segment menu (SVG) -->
+    <svg
+      v-if="isOpen"
+      class="ring-menu"
+      viewBox="-5 -5 140 140"
+      @click.self="isOpen = false"
+    >
+      <!-- Language segment: 270° → 310° (9:00 → 10:20) -->
+      <path
+        class="ring-segment"
+        :class="{ hovered: hoveredSegment === 'lang' }"
+        d="M 10 100 A 90 90 0 0 1 31.1 42.1 L 57.9 64.6 A 55 55 0 0 0 45 100 Z"
+        @mouseenter="hoveredSegment = 'lang'"
+        @mouseleave="hoveredSegment = null"
         @click="handleLangToggle"
-        :title="locale === 'en' ? 'Switch to Malay' : 'Switch to English'"
-      >
-        A
-      </button>
-      <button
-        v-if="isOpen"
-        key="research"
-        class="fab-menu-item research-item"
+      />
+      <text
+        class="ring-label"
+        x="32" y="78"
+        @mouseenter="hoveredSegment = 'lang'"
+        @click="handleLangToggle"
+      >{{ locale === 'en' ? 'EN' : 'MS' }}</text>
+
+      <!-- Research segment: 316° → 356° (10:32 → 11:52) -->
+      <path
+        class="ring-segment"
+        :class="{ hovered: hoveredSegment === 'research' }"
+        d="M 37.5 35.3 A 90 90 0 0 1 93.7 10.2 L 96.2 45.1 A 55 55 0 0 0 61.8 60.4 Z"
+        @mouseenter="hoveredSegment = 'research'"
+        @mouseleave="hoveredSegment = null"
         @click="handleResearch"
-        title="AI Research"
-      >
-        <span class="research-icon">&#9670;</span>
-        <span v-if="seedTaskState.active" class="active-dot"></span>
-      </button>
-    </transition-group>
+      />
+      <text
+        class="ring-label ring-label-sm"
+        x="70" y="38"
+        @mouseenter="hoveredSegment = 'research'"
+        @click="handleResearch"
+      >&#9670; RES</text>
+      <!-- Active dot when seed task is running -->
+      <circle
+        v-if="seedTaskState.active"
+        cx="84" cy="22" r="3.5"
+        class="active-dot"
+      />
+    </svg>
 
     <!-- Main FAB button -->
     <button
       class="fab-main"
-      :class="{ open: isOpen, 'has-progress': isGenerating }"
+      :class="{
+        open: isOpen,
+        'has-progress': isGenerating,
+        'is-done': isDone,
+      }"
       @click="toggleMenu"
     >
-      <!-- SVG Progress ring -->
-      <svg v-if="isGenerating" class="progress-ring" viewBox="0 0 52 52">
-        <circle class="progress-ring-bg" cx="26" cy="26" r="23" />
+      <!-- Progress ring (generating) -->
+      <svg v-if="isGenerating && !isOpen" class="progress-ring" viewBox="0 0 56 56">
+        <circle class="progress-ring-bg" cx="28" cy="28" r="25" />
         <circle
           class="progress-ring-fill"
-          cx="26" cy="26" r="23"
+          cx="28" cy="28" r="25"
           :style="{ strokeDashoffset: progressOffset }"
         />
       </svg>
 
+      <!-- Done ring -->
+      <svg v-if="isDone && !isOpen" class="done-ring" viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="25" fill="none" stroke="#4CAF50" stroke-width="2.5" />
+      </svg>
+
       <!-- FAB content -->
-      <span v-if="isGenerating" class="fab-text progress-text">
+      <span v-if="isGenerating && !isOpen" class="fab-text progress-text">
         {{ seedTaskState.progress }}%
       </span>
-      <span v-else-if="!isOpen" class="fab-text">
-        {{ locale === 'en' ? 'EN' : 'MS' }}
-      </span>
-      <span v-else class="fab-text fab-close">+</span>
+      <span v-else-if="isDone && !isOpen" class="fab-text done-text">&#10003;</span>
+      <span v-else-if="isOpen" class="fab-text fab-close">+</span>
+      <span v-else class="fab-text fab-diamond">&#9670;</span>
     </button>
   </div>
 </template>
@@ -60,12 +91,14 @@ import { seedTaskState } from '../store/seedTask.js';
 import { setLocale, state as i18nState } from '../i18n/index.js';
 
 const isOpen = ref(false);
+const hoveredSegment = ref(null);
 
 const locale = computed(() => i18nState.locale);
 
 const isGenerating = computed(() => seedTaskState.status === 'generating');
+const isDone = computed(() => seedTaskState.status === 'completed');
 
-const CIRCUMFERENCE = 2 * Math.PI * 23; // ~144.51
+const CIRCUMFERENCE = 2 * Math.PI * 25; // ~157.08
 
 const progressOffset = computed(() => {
   return CIRCUMFERENCE * (1 - seedTaskState.progress / 100);
@@ -73,6 +106,7 @@ const progressOffset = computed(() => {
 
 const toggleMenu = () => {
   isOpen.value = !isOpen.value;
+  hoveredSegment.value = null;
 };
 
 const handleLangToggle = () => {
@@ -100,6 +134,47 @@ const handleResearch = () => {
   z-index: -1;
 }
 
+/* Ring segment menu */
+.ring-menu {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 180px;
+  height: 180px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ring-segment {
+  fill: #333;
+  cursor: pointer;
+  pointer-events: all;
+  transition: fill 0.15s ease;
+}
+
+.ring-segment.hovered,
+.ring-segment:hover {
+  fill: #FF4500;
+}
+
+.ring-label {
+  fill: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.ring-label-sm {
+  font-size: 9px;
+}
+
+.active-dot {
+  fill: #FF4500;
+}
+
 /* Main FAB button */
 .fab-main {
   position: relative;
@@ -114,53 +189,57 @@ const handleResearch = () => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease;
   user-select: none;
   z-index: 2;
 }
 
 .fab-main:hover {
-  background: #FF4500;
-  transform: scale(1.1);
+  background: #1a1a1a;
 }
 
-.fab-main.open:hover {
-  transform: scale(1.1);
+.fab-main.open {
+  background: #000;
 }
 
 /* FAB text */
 .fab-text {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  transition: transform 0.25s ease;
   line-height: 1;
+}
+
+.fab-diamond {
+  font-size: 1.1rem;
+  color: #FF4500;
 }
 
 .fab-close {
   font-size: 1.25rem;
   font-weight: 400;
+  color: #FF4500;
   transform: rotate(45deg);
   display: inline-block;
 }
 
-.fab-main.open .fab-text {
-  /* Rotated state for close icon */
-}
-
 .progress-text {
   font-size: 0.6rem;
+  color: #FF4500;
   z-index: 1;
+}
+
+.done-text {
+  font-size: 1rem;
+  color: #4CAF50;
 }
 
 /* Progress ring */
 .progress-ring {
   position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 52px;
-  height: 52px;
+  top: -4px;
+  left: -4px;
+  width: 56px;
+  height: 56px;
   transform: rotate(-90deg);
   pointer-events: none;
 }
@@ -168,18 +247,29 @@ const handleResearch = () => {
 .progress-ring-bg {
   fill: none;
   stroke: #333;
-  stroke-width: 3;
+  stroke-width: 2.5;
 }
 
 .progress-ring-fill {
   fill: none;
   stroke: #FF4500;
-  stroke-width: 3;
-  stroke-dasharray: 144.51;
+  stroke-width: 2.5;
+  stroke-dasharray: 157.08;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.3s ease;
 }
 
+/* Done ring */
+.done-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+}
+
+/* Pulse animation when generating */
 .fab-main.has-progress {
   animation: fab-pulse 2s ease-in-out infinite;
 }
@@ -191,88 +281,5 @@ const handleResearch = () => {
   50% {
     box-shadow: 0 2px 16px rgba(255, 69, 0, 0.4);
   }
-}
-
-/* Menu items */
-.fab-menu-item {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #fff;
-  color: #000;
-  border: 2px solid #000;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  font-weight: 700;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-  z-index: 1;
-}
-
-.fab-menu-item:hover {
-  background: #FF4500;
-  color: #fff;
-  border-color: #FF4500;
-  transform: scale(1.1);
-}
-
-/* Language button — upper-left diagonal */
-.lang-item {
-  bottom: 4px;
-  right: 4px;
-  transform: translate(-60px, -60px);
-}
-
-/* Research button — directly left */
-.research-item {
-  bottom: 4px;
-  right: 4px;
-  transform: translate(-75px, 0);
-}
-
-.research-icon {
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-/* Active dot indicator on research button */
-.active-dot {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  background: #FF4500;
-  border-radius: 50%;
-  border: 1.5px solid #fff;
-}
-
-/* Menu item transitions */
-.fab-menu-enter-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.fab-menu-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.fab-menu-enter-from,
-.fab-menu-leave-to {
-  opacity: 0;
-}
-
-.fab-menu-enter-from.lang-item,
-.fab-menu-leave-to.lang-item {
-  transform: translate(0, 0) !important;
-}
-
-.fab-menu-enter-from.research-item,
-.fab-menu-leave-to.research-item {
-  transform: translate(0, 0) !important;
 }
 </style>
