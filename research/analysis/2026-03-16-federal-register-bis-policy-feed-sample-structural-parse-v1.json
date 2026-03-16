@@ -1,0 +1,295 @@
+{
+  "parser_version": "deterministic_v1",
+  "generated_at": "2026-03-16T20:28:57.194090+00:00",
+  "source_ids": [
+    "src_doc_bis_sample_entity_expansion",
+    "src_doc_federal_register_sample_advanced_technology_controls"
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_event_advanced_technology_export_control_expansion",
+      "entity_type": "Event",
+      "canonical_name": "Advanced Technology Export-Control Expansion",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "policy_action"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_event_strategic_material_export_review_update",
+      "entity_type": "Event",
+      "canonical_name": "Strategic Material Export Review Update",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "enforcement_update"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_geography_china",
+      "entity_type": "Geography",
+      "canonical_name": "China",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_geography_united_states",
+      "entity_type": "Geography",
+      "canonical_name": "United States",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_processlayer_advanced_technology_export_compliance",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Advanced Technology Export Compliance",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "policy_enforcement"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_processlayer_strategic_material_processing",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Strategic Material Processing",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "process_stage": "domestic_processing"
+      },
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_system_humanoid_robot",
+      "entity_type": "System",
+      "canonical_name": "Humanoid Robot",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_ai_infrastructure",
+      "entity_type": "Theme",
+      "canonical_name": "AI Infrastructure",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_critical_materials",
+      "entity_type": "Theme",
+      "canonical_name": "Critical Materials",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_theme_robotics_supply_chain",
+      "entity_type": "Theme",
+      "canonical_name": "Robotics Supply Chain",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "medium"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_advanced_technology_export_compliance",
+      "target_entity_id": "ent_event_advanced_technology_export_control_expansion",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_doc_federal_register_sample_advanced_technology_controls_relationship_rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion"
+      ],
+      "notes": [],
+      "relationship_key": "sample_export_compliance_affected_by_event"
+    },
+    {
+      "relationship_id": "rel_affected_by_event_ent_processlayer_strategic_material_processing_ent_event_strategic_material_export_review_update",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_processlayer_strategic_material_processing",
+      "target_entity_id": "ent_event_strategic_material_export_review_update",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_doc_bis_sample_entity_expansion_relationship_rel_affected_by_event_ent_processlayer_strategic_material_processing_ent_event_strategic_material_export_review_update"
+      ],
+      "notes": [],
+      "relationship_key": "sample_material_processing_affected_by_bis_update"
+    },
+    {
+      "relationship_id": "rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china",
+      "relationship_type": "CONSTRAINED_BY",
+      "source_entity_id": "ent_processlayer_advanced_technology_export_compliance",
+      "target_entity_id": "ent_geography_china",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_doc_federal_register_sample_advanced_technology_controls_relationship_rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china"
+      ],
+      "notes": [],
+      "relationship_key": "sample_export_compliance_constrained_by_china"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_claim_sample_export_control_changes_dependency_graph",
+      "claim_type": "policy_transmission_assertion",
+      "claim_text": "A policy control change can alter supply-chain dependency graphs before consensus market interpretation catches up.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_advanced_technology_export_control_expansion",
+        "ent_geography_china",
+        "ent_processlayer_advanced_technology_export_compliance"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion",
+        "rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china"
+      ],
+      "source_ids": [
+        "src_doc_federal_register_sample_advanced_technology_controls"
+      ],
+      "fragment_ids": [
+        "frag_doc_federal_register_sample_advanced_technology_controls"
+      ],
+      "notes": [],
+      "claim_key": "claim_sample_export_control_changes_dependency_graph",
+      "evidence_refs": [
+        "ev_frag_doc_federal_register_sample_advanced_technology_controls_claim_claim_claim_sample_export_control_changes_dependency_graph"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_sample_bis_processing_relevance",
+      "claim_type": "policy_transmission_assertion",
+      "claim_text": "BIS enforcement posture can change how domestic strategic-material processing is valued inside robotics and critical-material chains.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "medium",
+      "entity_refs": [
+        "ent_event_strategic_material_export_review_update",
+        "ent_processlayer_strategic_material_processing",
+        "ent_theme_robotics_supply_chain"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_processlayer_strategic_material_processing_ent_event_strategic_material_export_review_update"
+      ],
+      "source_ids": [
+        "src_doc_bis_sample_entity_expansion"
+      ],
+      "fragment_ids": [
+        "frag_doc_bis_sample_entity_expansion"
+      ],
+      "notes": [],
+      "claim_key": "claim_sample_bis_processing_relevance",
+      "evidence_refs": [
+        "ev_frag_doc_bis_sample_entity_expansion_claim_claim_claim_sample_bis_processing_relevance"
+      ]
+    }
+  ],
+  "evidence_links": [
+    {
+      "evidence_link_id": "ev_frag_doc_bis_sample_entity_expansion_claim_claim_claim_sample_bis_processing_relevance",
+      "source_id": "src_doc_bis_sample_entity_expansion",
+      "fragment_id": "frag_doc_bis_sample_entity_expansion",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sample_bis_processing_relevance",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_doc_federal_register_sample_advanced_technology_controls_claim_claim_claim_sample_export_control_changes_dependency_graph",
+      "source_id": "src_doc_federal_register_sample_advanced_technology_controls",
+      "fragment_id": "frag_doc_federal_register_sample_advanced_technology_controls",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_sample_export_control_changes_dependency_graph",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_doc_federal_register_sample_advanced_technology_controls_inference_inf_inf_sample_policy_spine_is_graph_forming",
+      "source_id": "src_doc_federal_register_sample_advanced_technology_controls",
+      "fragment_id": "frag_doc_federal_register_sample_advanced_technology_controls",
+      "supports_object_type": "inference",
+      "supports_object_id": "inf_inf_sample_policy_spine_is_graph_forming",
+      "support_mode": "supporting",
+      "strength": "contextual"
+    },
+    {
+      "evidence_link_id": "ev_frag_doc_federal_register_sample_advanced_technology_controls_relationship_rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion",
+      "source_id": "src_doc_federal_register_sample_advanced_technology_controls",
+      "fragment_id": "frag_doc_federal_register_sample_advanced_technology_controls",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_doc_bis_sample_entity_expansion_relationship_rel_affected_by_event_ent_processlayer_strategic_material_processing_ent_event_strategic_material_export_review_update",
+      "source_id": "src_doc_bis_sample_entity_expansion",
+      "fragment_id": "frag_doc_bis_sample_entity_expansion",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_processlayer_strategic_material_processing_ent_event_strategic_material_export_review_update",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_doc_federal_register_sample_advanced_technology_controls_relationship_rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china",
+      "source_id": "src_doc_federal_register_sample_advanced_technology_controls",
+      "fragment_id": "frag_doc_federal_register_sample_advanced_technology_controls",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china",
+      "support_mode": "supporting",
+      "strength": "direct"
+    }
+  ],
+  "inferences": [
+    {
+      "inference_id": "inf_inf_sample_policy_spine_is_graph_forming",
+      "inference_type": "market_miss",
+      "statement": "Policy notices can create graph-forming updates that should enter evidence intake before downstream news summaries.",
+      "derived_from_claim_ids": [
+        "claim_claim_sample_export_control_changes_dependency_graph"
+      ],
+      "derived_from_relationship_ids": [
+        "rel_affected_by_event_ent_processlayer_advanced_technology_export_compliance_ent_event_advanced_technology_export_control_expansion",
+        "rel_constrained_by_ent_processlayer_advanced_technology_export_compliance_ent_geography_china"
+      ],
+      "confidence": "medium",
+      "falsifiers": [],
+      "notes": [],
+      "evidence_refs": [
+        "ev_frag_doc_federal_register_sample_advanced_technology_controls_inference_inf_inf_sample_policy_spine_is_graph_forming"
+      ]
+    }
+  ],
+  "summary": {
+    "entity_count": 10,
+    "relationship_count": 3,
+    "claim_count": 2,
+    "evidence_link_count": 6,
+    "inference_count": 1
+  }
+}

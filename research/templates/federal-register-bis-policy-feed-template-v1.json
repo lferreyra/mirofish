@@ -1,0 +1,226 @@
+{
+  "name": "federal_register_bis_policy_feed_sample_v1",
+  "theme": "policy_feed_connector_sample",
+  "synthetic_sample": true,
+  "notes": [
+    "Synthetic Federal Register/BIS input used to validate the first policy-feed connector contract.",
+    "This template demonstrates the normalized document shape expected by build_policy_feed_source_bundle."
+  ],
+  "feed_documents": [
+    {
+      "document_id": "doc_federal_register_sample_advanced_technology_controls",
+      "source_target_id": "src_target_federal_register",
+      "source_target_name": "Federal Register Notices",
+      "source_class": "government_policy_enforcement",
+      "publisher": "Federal Register",
+      "title": "Sample Federal Register notice for advanced-technology export-control expansion",
+      "canonical_url": "https://www.federalregister.gov/",
+      "published_at": "2026-03-16T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "source_quality": "high",
+      "source_reliability_score": 0.95,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "jurisdiction": "US",
+      "language": "en",
+      "theme_refs": [
+        "ai_infrastructure",
+        "semiconductors"
+      ],
+      "policy_scope": [
+        "export_control",
+        "advanced_technology"
+      ],
+      "summary": "Synthetic sample showing how a policy notice can be normalized into a source bundle with event and process-layer hints.",
+      "excerpt": "Sample Federal Register language indicating that a policy action could constrain advanced-technology process layers and alter the dependency graph before market narratives update.",
+      "research_tags": {
+        "themes": [
+          "AI Infrastructure"
+        ],
+        "process_layers": [
+          "Advanced Technology Export Compliance"
+        ],
+        "geographies": [
+          "United States",
+          "China"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Event",
+          "canonical_name": "Advanced Technology Export-Control Expansion",
+          "attributes": {
+            "event_type": "policy_action"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Advanced Technology Export Compliance",
+          "attributes": {
+            "process_stage": "policy_enforcement"
+          },
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "China",
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "sample_export_compliance_affected_by_event",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Advanced Technology Export Compliance",
+          "target_type": "Event",
+          "target_name": "Advanced Technology Export-Control Expansion",
+          "relationship_strength": "high",
+          "confidence": "high"
+        },
+        {
+          "key": "sample_export_compliance_constrained_by_china",
+          "relationship_type": "CONSTRAINED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Advanced Technology Export Compliance",
+          "target_type": "Geography",
+          "target_name": "China",
+          "relationship_strength": "medium",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_sample_export_control_changes_dependency_graph",
+          "claim_type": "policy_transmission_assertion",
+          "claim_text": "A policy control change can alter supply-chain dependency graphs before consensus market interpretation catches up.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Advanced Technology Export-Control Expansion",
+            "Advanced Technology Export Compliance",
+            "China"
+          ],
+          "relationship_keys": [
+            "sample_export_compliance_affected_by_event",
+            "sample_export_compliance_constrained_by_china"
+          ]
+        }
+      ],
+      "inference_candidates": [
+        {
+          "inference_key": "inf_sample_policy_spine_is_graph_forming",
+          "inference_type": "market_miss",
+          "statement": "Policy notices can create graph-forming updates that should enter evidence intake before downstream news summaries.",
+          "claim_keys": [
+            "claim_sample_export_control_changes_dependency_graph"
+          ],
+          "relationship_keys": [
+            "sample_export_compliance_affected_by_event",
+            "sample_export_compliance_constrained_by_china"
+          ]
+        }
+      ],
+      "notes": [
+        "Synthetic sample notice."
+      ]
+    },
+    {
+      "document_id": "doc_bis_sample_entity_expansion",
+      "source_target_id": "src_target_bis",
+      "source_target_name": "Bureau of Industry and Security (BIS), U.S. Department of Commerce",
+      "source_class": "government_policy_enforcement",
+      "publisher": "Bureau of Industry and Security",
+      "title": "Sample BIS enforcement update for strategic-material export review",
+      "canonical_url": "https://www.bis.doc.gov/",
+      "published_at": "2026-03-16T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "source_quality": "high",
+      "source_reliability_score": 0.96,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "jurisdiction": "US",
+      "language": "en",
+      "theme_refs": [
+        "critical_materials",
+        "robotics"
+      ],
+      "policy_scope": [
+        "enforcement",
+        "critical_materials"
+      ],
+      "summary": "Synthetic sample showing how a BIS update can seed process-layer and expression-adjacent evidence.",
+      "excerpt": "Sample BIS language indicating that strategic-material processing capacity and export review can influence domestic supply-chain readiness.",
+      "research_tags": {
+        "themes": [
+          "Critical Materials",
+          "Robotics Supply Chain"
+        ],
+        "process_layers": [
+          "Strategic Material Processing"
+        ],
+        "systems": [
+          "Humanoid Robot"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Event",
+          "canonical_name": "Strategic Material Export Review Update",
+          "attributes": {
+            "event_type": "enforcement_update"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Strategic Material Processing",
+          "attributes": {
+            "process_stage": "domestic_processing"
+          },
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Robotics Supply Chain",
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "sample_material_processing_affected_by_bis_update",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "ProcessLayer",
+          "source_name": "Strategic Material Processing",
+          "target_type": "Event",
+          "target_name": "Strategic Material Export Review Update",
+          "relationship_strength": "high",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_sample_bis_processing_relevance",
+          "claim_type": "policy_transmission_assertion",
+          "claim_text": "BIS enforcement posture can change how domestic strategic-material processing is valued inside robotics and critical-material chains.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "medium",
+          "entity_names": [
+            "Strategic Material Export Review Update",
+            "Strategic Material Processing",
+            "Robotics Supply Chain"
+          ],
+          "relationship_keys": [
+            "sample_material_processing_affected_by_bis_update"
+          ]
+        }
+      ],
+      "notes": [
+        "Synthetic sample notice."
+      ]
+    }
+  ]
+}

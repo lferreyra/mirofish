@@ -16,6 +16,7 @@ from ..services import (
     MispricingCandidate,
     MispricingSignals,
     OptionsExpressionSignals,
+    build_policy_feed_source_bundle,
     build_source_acquisition_plan,
     build_research_ontology_spec,
     build_source_registry_from_docs,
@@ -179,6 +180,51 @@ def save_source_bundle(research_project_id: str):
         }), 404
     except Exception as e:
         logger.error(f"保存 source bundle 失败: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }), 500
+
+
+@research_bp.route("/project/<research_project_id>/source-bundle/policy-feed-import", methods=["POST"])
+def import_policy_feed_source_bundle(research_project_id: str):
+    """Normalize a Federal Register/BIS style feed payload into a source bundle."""
+    try:
+        payload = request.get_json() or {}
+        policy_feed = payload.get("policy_feed")
+        if not isinstance(policy_feed, dict):
+            return jsonify({
+                "success": False,
+                "error": "policy_feed must be an object",
+            }), 400
+
+        merge_existing = bool(payload.get("merge_existing", True))
+        existing_source_bundle = None
+        if merge_existing:
+            existing_source_bundle = ResearchProjectManager.get_source_bundle(research_project_id)
+            if not isinstance(existing_source_bundle, dict):
+                existing_source_bundle = None
+
+        source_bundle = build_policy_feed_source_bundle(
+            policy_feed,
+            existing_source_bundle=existing_source_bundle,
+        )
+        project = ResearchProjectManager.save_source_bundle(research_project_id, source_bundle)
+        return jsonify({
+            "success": True,
+            "data": {
+                "research_project": project.to_dict(),
+                "source_bundle": source_bundle,
+            },
+        })
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 404
+    except Exception as e:
+        logger.error(f"导入 policy feed source bundle 失败: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),

@@ -49,6 +49,7 @@ from .research_ontology import (
     validate_research_ontology_spec,
 )
 from .structural_parser import build_structural_parse_from_source_bundle
+from .policy_feed_connector import build_policy_feed_source_bundle, merge_source_bundles
 from .source_registry import (
     DEFAULT_DOCS_DIR as SOURCE_REGISTRY_DOCS_DIR,
     DEFAULT_MATRIX_PATH as SOURCE_REGISTRY_MATRIX_PATH,
@@ -113,6 +114,8 @@ __all__ = [
     'build_research_graph_ontology',
     'validate_research_ontology_spec',
     'build_structural_parse_from_source_bundle',
+    'build_policy_feed_source_bundle',
+    'merge_source_bundles',
     'SOURCE_REGISTRY_DOCS_DIR',
     'SOURCE_REGISTRY_MATRIX_PATH',
     'SOURCE_REGISTRY_INVESTIGATION_PATH',
