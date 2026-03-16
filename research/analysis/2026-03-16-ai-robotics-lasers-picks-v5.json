@@ -1,0 +1,1091 @@
+{
+  "method": "market scan -> mispricing score -> stock-vs-LEAPS choice -> ranked picks",
+  "rows": [
+    {
+      "name": "AXTI equity on InP substrate expansion",
+      "underlying": "AXTI",
+      "market_theme": "AI photonics / materials",
+      "thesis": "AXT remains one of the few scaled InP substrate suppliers and has been raising capital to expand indium phosphide capacity into rising silicon-photonics and optical interconnect demand.",
+      "bottleneck_layer": "InP substrate capacity",
+      "value_capture_layer": "Upstream compound semiconductor wafer supplier",
+      "why_missed": [
+        "small-cap material supplier hidden behind larger optical names",
+        "market often focuses on lasers and modules rather than wafer inputs"
+      ],
+      "catalysts": [
+        "capacity expansion milestones",
+        "continued silicon photonics adoption",
+        "additional optical supply-chain qualification wins"
+      ],
+      "invalidations": [
+        "capacity adds fail to convert into pricing power",
+        "geopolitical/export restrictions outweigh demand tailwind",
+        "optical demand growth shifts away from InP-heavy architectures"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.5,
+        "downstream_valuation_gap": 4.5,
+        "microcap_rerating_potential": 4.5
+      },
+      "mispricing": {
+        "candidate_name": "AXTI equity on InP substrate expansion",
+        "score_type": "mispricing",
+        "score_0_to_100": 83.8,
+        "band": "critical",
+        "weighted_signals": {
+          "hiddenness": 1.08,
+          "recognition_gap": 0.72,
+          "catalyst_clarity": 0.35,
+          "propagation_asymmetry": 0.56,
+          "duration_mismatch": 0.4,
+          "evidence_quality": 0.36,
+          "crowding_inverse": 0.36,
+          "valuation_nonlinearity": 0.36
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            1.08
+          ],
+          [
+            "recognition_gap",
+            0.72
+          ],
+          [
+            "propagation_asymmetry",
+            0.56
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "catalyst_clarity",
+            0.35
+          ],
+          [
+            "valuation_nonlinearity",
+            0.36
+          ]
+        ],
+        "explanation": "AXTI equity on InP substrate expansion scores 83.8/100 (critical) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are catalyst clarity, valuation nonlinearity. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "AXTI equity on InP substrate expansion",
+        "score_type": "options_fit",
+        "score_0_to_100": 58.0,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.54,
+          "tenor_alignment": 0.63,
+          "vol_expansion_potential": 0.54,
+          "downside_definedness": 0.35,
+          "liquidity_path": 0.24,
+          "implementation_simplicity": 0.3,
+          "catalyst_timing_specificity": 0.3
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.63
+          ],
+          [
+            "convexity_need",
+            0.54
+          ],
+          [
+            "vol_expansion_potential",
+            0.54
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "liquidity_path",
+            0.24
+          ],
+          [
+            "catalyst_timing_specificity",
+            0.3
+          ]
+        ],
+        "explanation": "AXTI equity on InP substrate expansion scores 58.0/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, convexity need, vol expansion potential. The least supportive signals are liquidity path, catalyst timing specificity. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 51.4,
+        "weighted_signals": {
+          "iv_cheapness": 0.6,
+          "surface_staleness": 0.45,
+          "pre_expiration_repricing_potential": 0.72,
+          "stock_vs_call_convexity_advantage": 0.6,
+          "long_dated_liquidity_quality": 0.2
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.72
+          ],
+          [
+            "iv_cheapness",
+            0.6
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.6
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.45
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.2
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 68.0,
+        "weighted_signals": {
+          "market_accessibility": 0.4,
+          "implementation_simplicity": 0.48,
+          "balance_sheet_resilience": 0.35,
+          "dilution_risk_inverse": 0.24,
+          "thesis_linearity": 0.63,
+          "duration_tolerance": 0.88,
+          "listing_quality": 0.42
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.88
+          ],
+          [
+            "thesis_linearity",
+            0.63
+          ],
+          [
+            "implementation_simplicity",
+            0.48
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "balance_sheet_resilience",
+            0.35
+          ],
+          [
+            "dilution_risk_inverse",
+            0.24
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 10.39,
+      "pick_score": 75.32
+    },
+    {
+      "name": "MTSI equity on 1.6T optical lane scaling",
+      "underlying": "MTSI",
+      "market_theme": "AI photonics / lasers",
+      "thesis": "MACOM is building a broader position in 1.6T optical connectivity and silicon photonics, including CW laser arrays and other components needed for higher-lane AI networking.",
+      "bottleneck_layer": "1.6T optical lane components and CW lasers",
+      "value_capture_layer": "Mixed-signal and photonics component supplier",
+      "why_missed": [
+        "market narrative still skews toward better-known optics incumbents",
+        "broader semiconductor mix can hide the photonics leverage"
+      ],
+      "catalysts": [
+        "1.6T design wins",
+        "silicon photonics program ramps",
+        "domestic fab modernization milestones"
+      ],
+      "invalidations": [
+        "optical product wins do not scale into revenue mix",
+        "AI networking spend shifts to competitors",
+        "photonic product cycle slips"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.0,
+        "downstream_valuation_gap": 2.5,
+        "microcap_rerating_potential": 2.0
+      },
+      "mispricing": {
+        "candidate_name": "MTSI equity on 1.6T optical lane scaling",
+        "score_type": "mispricing",
+        "score_0_to_100": 71.5,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.84,
+          "recognition_gap": 0.64,
+          "catalyst_clarity": 0.35,
+          "propagation_asymmetry": 0.49,
+          "duration_mismatch": 0.35,
+          "evidence_quality": 0.32,
+          "crowding_inverse": 0.315,
+          "valuation_nonlinearity": 0.27
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.84
+          ],
+          [
+            "recognition_gap",
+            0.64
+          ],
+          [
+            "propagation_asymmetry",
+            0.49
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "valuation_nonlinearity",
+            0.27
+          ],
+          [
+            "crowding_inverse",
+            0.315
+          ]
+        ],
+        "explanation": "MTSI equity on 1.6T optical lane scaling scores 71.5/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "MTSI equity on 1.6T optical lane scaling",
+        "score_type": "options_fit",
+        "score_0_to_100": 54.8,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.45,
+          "tenor_alignment": 0.54,
+          "vol_expansion_potential": 0.45,
+          "downside_definedness": 0.35,
+          "liquidity_path": 0.3,
+          "implementation_simplicity": 0.4,
+          "catalyst_timing_specificity": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.54
+          ],
+          [
+            "convexity_need",
+            0.45
+          ],
+          [
+            "vol_expansion_potential",
+            0.45
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "catalyst_timing_specificity",
+            0.25
+          ],
+          [
+            "liquidity_path",
+            0.3
+          ]
+        ],
+        "explanation": "MTSI equity on 1.6T optical lane scaling scores 54.8/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, convexity need, vol expansion potential. The least supportive signals are catalyst timing specificity, liquidity path. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 41.0,
+        "weighted_signals": {
+          "iv_cheapness": 0.48,
+          "surface_staleness": 0.36,
+          "pre_expiration_repricing_potential": 0.6,
+          "stock_vs_call_convexity_advantage": 0.36,
+          "long_dated_liquidity_quality": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.6
+          ],
+          [
+            "iv_cheapness",
+            0.48
+          ],
+          [
+            "surface_staleness",
+            0.36
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.36
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.25
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 81.6,
+        "weighted_signals": {
+          "market_accessibility": 0.45,
+          "implementation_simplicity": 0.54,
+          "balance_sheet_resilience": 0.56,
+          "dilution_risk_inverse": 0.48,
+          "thesis_linearity": 0.63,
+          "duration_tolerance": 0.88,
+          "listing_quality": 0.54
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.88
+          ],
+          [
+            "thesis_linearity",
+            0.63
+          ],
+          [
+            "balance_sheet_resilience",
+            0.56
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "dilution_risk_inverse",
+            0.48
+          ],
+          [
+            "market_accessibility",
+            0.45
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 7.51,
+      "pick_score": 69.34
+    },
+    {
+      "name": "LASR equity on defense and sensing laser ramp",
+      "underlying": "LASR",
+      "market_theme": "Lasers / defense / sensing",
+      "thesis": "nLIGHT has growing leverage to high-energy lasers and laser sensing, and the market may still underappreciate how a scaled defense-laser manufacturing ramp can rerate a previously messy optical name.",
+      "bottleneck_layer": "High-energy laser manufacturing capacity",
+      "value_capture_layer": "Mission-critical laser supplier",
+      "why_missed": [
+        "legacy losses can obscure the improving defense mix",
+        "many investors do not model defense laser capacity as a constrained supply chain"
+      ],
+      "catalysts": [
+        "continued aerospace and defense revenue growth",
+        "capacity expansion utilization",
+        "additional program awards"
+      ],
+      "invalidations": [
+        "program timing slips",
+        "laser demand remains episodic rather than scaled",
+        "margins fail to improve with volume"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 2.5,
+        "microcap_rerating_potential": 3.0
+      },
+      "mispricing": {
+        "candidate_name": "LASR equity on defense and sensing laser ramp",
+        "score_type": "mispricing",
+        "score_0_to_100": 74.2,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.84,
+          "recognition_gap": 0.64,
+          "catalyst_clarity": 0.4,
+          "propagation_asymmetry": 0.49,
+          "duration_mismatch": 0.35,
+          "evidence_quality": 0.36,
+          "crowding_inverse": 0.315,
+          "valuation_nonlinearity": 0.315
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.84
+          ],
+          [
+            "recognition_gap",
+            0.64
+          ],
+          [
+            "propagation_asymmetry",
+            0.49
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "valuation_nonlinearity",
+            0.315
+          ],
+          [
+            "crowding_inverse",
+            0.315
+          ]
+        ],
+        "explanation": "LASR equity on defense and sensing laser ramp scores 74.2/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "LASR equity on defense and sensing laser ramp",
+        "score_type": "options_fit",
+        "score_0_to_100": 55.0,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.45,
+          "tenor_alignment": 0.54,
+          "vol_expansion_potential": 0.54,
+          "downside_definedness": 0.28,
+          "liquidity_path": 0.24,
+          "implementation_simplicity": 0.4,
+          "catalyst_timing_specificity": 0.3
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.54
+          ],
+          [
+            "vol_expansion_potential",
+            0.54
+          ],
+          [
+            "convexity_need",
+            0.45
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "liquidity_path",
+            0.24
+          ],
+          [
+            "downside_definedness",
+            0.28
+          ]
+        ],
+        "explanation": "LASR equity on defense and sensing laser ramp scores 55.0/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, vol expansion potential, convexity need. The least supportive signals are liquidity path, downside definedness. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 31.0,
+        "weighted_signals": {
+          "iv_cheapness": 0.36,
+          "surface_staleness": 0.27,
+          "pre_expiration_repricing_potential": 0.48,
+          "stock_vs_call_convexity_advantage": 0.24,
+          "long_dated_liquidity_quality": 0.2
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.48
+          ],
+          [
+            "iv_cheapness",
+            0.36
+          ],
+          [
+            "surface_staleness",
+            0.27
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "stock_vs_call_convexity_advantage",
+            0.24
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.2
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 71.8,
+        "weighted_signals": {
+          "market_accessibility": 0.4,
+          "implementation_simplicity": 0.48,
+          "balance_sheet_resilience": 0.42,
+          "dilution_risk_inverse": 0.36,
+          "thesis_linearity": 0.63,
+          "duration_tolerance": 0.88,
+          "listing_quality": 0.42
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.88
+          ],
+          [
+            "thesis_linearity",
+            0.63
+          ],
+          [
+            "implementation_simplicity",
+            0.48
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "market_accessibility",
+            0.4
+          ],
+          [
+            "dilution_risk_inverse",
+            0.36
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 7.85,
+      "pick_score": 68.59
+    },
+    {
+      "name": "OUST equity on industrial autonomy lidar adoption",
+      "underlying": "OUST",
+      "market_theme": "Robotics / autonomy",
+      "thesis": "Ouster is gaining real industrial autonomy and robotics traction through digital lidar, with supply-chain and platform relevance that may still be underappreciated outside the headline autonomous vehicle narrative.",
+      "bottleneck_layer": "3D digital lidar perception stack",
+      "value_capture_layer": "Sensor platform for robotics and autonomy deployments",
+      "why_missed": [
+        "many investors still bucket lidar with failed auto narratives",
+        "industrial and robotics wins can be overlooked versus passenger-vehicle stories"
+      ],
+      "catalysts": [
+        "additional industrial autonomy wins",
+        "warehouse and mining deployment ramps",
+        "software-enabled lidar feature adoption"
+      ],
+      "invalidations": [
+        "industrial lidar demand remains too niche",
+        "customer wins do not scale economically",
+        "competition compresses margins"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 3.0,
+        "microcap_rerating_potential": 4.0
+      },
+      "mispricing": {
+        "candidate_name": "OUST equity on industrial autonomy lidar adoption",
+        "score_type": "mispricing",
+        "score_0_to_100": 75.7,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.96,
+          "recognition_gap": 0.64,
+          "catalyst_clarity": 0.35,
+          "propagation_asymmetry": 0.49,
+          "duration_mismatch": 0.35,
+          "evidence_quality": 0.32,
+          "crowding_inverse": 0.315,
+          "valuation_nonlinearity": 0.36
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.96
+          ],
+          [
+            "recognition_gap",
+            0.64
+          ],
+          [
+            "propagation_asymmetry",
+            0.49
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "crowding_inverse",
+            0.315
+          ],
+          [
+            "evidence_quality",
+            0.32
+          ]
+        ],
+        "explanation": "OUST equity on industrial autonomy lidar adoption scores 75.7/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are crowding inverse, evidence quality. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "OUST equity on industrial autonomy lidar adoption",
+        "score_type": "options_fit",
+        "score_0_to_100": 45.0,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.36,
+          "tenor_alignment": 0.45,
+          "vol_expansion_potential": 0.45,
+          "downside_definedness": 0.21,
+          "liquidity_path": 0.18,
+          "implementation_simplicity": 0.35,
+          "catalyst_timing_specificity": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.45
+          ],
+          [
+            "vol_expansion_potential",
+            0.45
+          ],
+          [
+            "convexity_need",
+            0.36
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "liquidity_path",
+            0.18
+          ],
+          [
+            "downside_definedness",
+            0.21
+          ]
+        ],
+        "explanation": "OUST equity on industrial autonomy lidar adoption scores 45.0/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, vol expansion potential, convexity need. The least supportive signals are liquidity path, downside definedness. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 23.4,
+        "weighted_signals": {
+          "iv_cheapness": 0.24,
+          "surface_staleness": 0.18,
+          "pre_expiration_repricing_potential": 0.36,
+          "stock_vs_call_convexity_advantage": 0.24,
+          "long_dated_liquidity_quality": 0.15
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.36
+          ],
+          [
+            "iv_cheapness",
+            0.24
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.24
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.18
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.15
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 63.0,
+        "weighted_signals": {
+          "market_accessibility": 0.35,
+          "implementation_simplicity": 0.48,
+          "balance_sheet_resilience": 0.35,
+          "dilution_risk_inverse": 0.3,
+          "thesis_linearity": 0.54,
+          "duration_tolerance": 0.77,
+          "listing_quality": 0.36
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.77
+          ],
+          [
+            "thesis_linearity",
+            0.54
+          ],
+          [
+            "implementation_simplicity",
+            0.48
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "market_accessibility",
+            0.35
+          ],
+          [
+            "dilution_risk_inverse",
+            0.3
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 8.81,
+      "pick_score": 68.07
+    },
+    {
+      "name": "AMBA equity on edge AI robotics vision",
+      "underlying": "AMBA",
+      "market_theme": "AI / robotics vision",
+      "thesis": "Ambarella\u2019s edge AI and low-power multimodal vision silicon could benefit from on-premise robotics and machine-vision adoption as physical AI shifts toward constrained edge deployments.",
+      "bottleneck_layer": "Low-power edge AI vision compute",
+      "value_capture_layer": "Specialized edge AI silicon provider",
+      "why_missed": [
+        "market attention remains concentrated on data-center AI",
+        "edge and robotics AI can be overshadowed by cloud narratives"
+      ],
+      "catalysts": [
+        "new design wins in robotics and edge AI boxes",
+        "product ramp of N1 family",
+        "evidence of broader physical-AI deployment"
+      ],
+      "invalidations": [
+        "robotics demand remains too slow to matter",
+        "edge AI stays niche relative to cloud inference",
+        "competitive pressure reduces pricing power"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 2.0,
+        "microcap_rerating_potential": 2.0
+      },
+      "mispricing": {
+        "candidate_name": "AMBA equity on edge AI robotics vision",
+        "score_type": "mispricing",
+        "score_0_to_100": 69.0,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.84,
+          "recognition_gap": 0.56,
+          "catalyst_clarity": 0.35,
+          "propagation_asymmetry": 0.49,
+          "duration_mismatch": 0.35,
+          "evidence_quality": 0.32,
+          "crowding_inverse": 0.27,
+          "valuation_nonlinearity": 0.27
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.84
+          ],
+          [
+            "recognition_gap",
+            0.56
+          ],
+          [
+            "propagation_asymmetry",
+            0.49
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "valuation_nonlinearity",
+            0.27
+          ],
+          [
+            "crowding_inverse",
+            0.27
+          ]
+        ],
+        "explanation": "AMBA equity on edge AI robotics vision scores 69.0/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "AMBA equity on edge AI robotics vision",
+        "score_type": "options_fit",
+        "score_0_to_100": 53.4,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.45,
+          "tenor_alignment": 0.54,
+          "vol_expansion_potential": 0.45,
+          "downside_definedness": 0.28,
+          "liquidity_path": 0.3,
+          "implementation_simplicity": 0.4,
+          "catalyst_timing_specificity": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.54
+          ],
+          [
+            "convexity_need",
+            0.45
+          ],
+          [
+            "vol_expansion_potential",
+            0.45
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "catalyst_timing_specificity",
+            0.25
+          ],
+          [
+            "downside_definedness",
+            0.28
+          ]
+        ],
+        "explanation": "AMBA equity on edge AI robotics vision scores 53.4/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, convexity need, vol expansion potential. The least supportive signals are catalyst timing specificity, downside definedness. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 32.0,
+        "weighted_signals": {
+          "iv_cheapness": 0.36,
+          "surface_staleness": 0.27,
+          "pre_expiration_repricing_potential": 0.48,
+          "stock_vs_call_convexity_advantage": 0.24,
+          "long_dated_liquidity_quality": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.48
+          ],
+          [
+            "iv_cheapness",
+            0.36
+          ],
+          [
+            "surface_staleness",
+            0.27
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "long_dated_liquidity_quality",
+            0.25
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.24
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 80.6,
+        "weighted_signals": {
+          "market_accessibility": 0.4,
+          "implementation_simplicity": 0.54,
+          "balance_sheet_resilience": 0.56,
+          "dilution_risk_inverse": 0.48,
+          "thesis_linearity": 0.63,
+          "duration_tolerance": 0.88,
+          "listing_quality": 0.54
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.88
+          ],
+          [
+            "thesis_linearity",
+            0.63
+          ],
+          [
+            "balance_sheet_resilience",
+            0.56
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "dilution_risk_inverse",
+            0.48
+          ],
+          [
+            "market_accessibility",
+            0.4
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 6.91,
+      "pick_score": 67.13
+    },
+    {
+      "name": "TER equity on physical AI robotics recovery",
+      "underlying": "TER",
+      "market_theme": "Robotics / industrial automation",
+      "thesis": "Teradyne\u2019s robotics assets give it a real angle on physical AI and industrial automation, but the market still appears to treat robotics as a lower-quality side business versus the core test franchise.",
+      "bottleneck_layer": "Industrial collaborative and mobile robotics deployment",
+      "value_capture_layer": "Listed parent with hidden robotics option value",
+      "why_missed": [
+        "robotics is buried inside a larger semiconductor test company",
+        "recent softness in robotics results can overshadow future physical-AI leverage"
+      ],
+      "catalysts": [
+        "robotics recovery",
+        "U.S. operations hub execution",
+        "visible physical-AI application wins"
+      ],
+      "invalidations": [
+        "robotics weakness persists",
+        "physical AI remains more narrative than revenue",
+        "test business dominates valuation unchanged"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.0,
+        "downstream_valuation_gap": 1.5,
+        "microcap_rerating_potential": 1.0
+      },
+      "mispricing": {
+        "candidate_name": "TER equity on physical AI robotics recovery",
+        "score_type": "mispricing",
+        "score_0_to_100": 61.6,
+        "band": "moderate",
+        "weighted_signals": {
+          "hiddenness": 0.72,
+          "recognition_gap": 0.56,
+          "catalyst_clarity": 0.35,
+          "propagation_asymmetry": 0.42,
+          "duration_mismatch": 0.3,
+          "evidence_quality": 0.28,
+          "crowding_inverse": 0.225,
+          "valuation_nonlinearity": 0.225
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.72
+          ],
+          [
+            "recognition_gap",
+            0.56
+          ],
+          [
+            "propagation_asymmetry",
+            0.42
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "valuation_nonlinearity",
+            0.225
+          ],
+          [
+            "crowding_inverse",
+            0.225
+          ]
+        ],
+        "explanation": "TER equity on physical AI robotics recovery scores 61.6/100 (moderate) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "TER equity on physical AI robotics recovery",
+        "score_type": "options_fit",
+        "score_0_to_100": 49.4,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.36,
+          "tenor_alignment": 0.45,
+          "vol_expansion_potential": 0.36,
+          "downside_definedness": 0.35,
+          "liquidity_path": 0.3,
+          "implementation_simplicity": 0.4,
+          "catalyst_timing_specificity": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.45
+          ],
+          [
+            "implementation_simplicity",
+            0.4
+          ],
+          [
+            "convexity_need",
+            0.36
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "catalyst_timing_specificity",
+            0.25
+          ],
+          [
+            "liquidity_path",
+            0.3
+          ]
+        ],
+        "explanation": "TER equity on physical AI robotics recovery scores 49.4/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, implementation simplicity, convexity need. The least supportive signals are catalyst timing specificity, liquidity path. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 23.0,
+        "weighted_signals": {
+          "iv_cheapness": 0.24,
+          "surface_staleness": 0.18,
+          "pre_expiration_repricing_potential": 0.36,
+          "stock_vs_call_convexity_advantage": 0.12,
+          "long_dated_liquidity_quality": 0.25
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.36
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.25
+          ],
+          [
+            "iv_cheapness",
+            0.24
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.18
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.12
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 84.0,
+        "weighted_signals": {
+          "market_accessibility": 0.5,
+          "implementation_simplicity": 0.54,
+          "balance_sheet_resilience": 0.63,
+          "dilution_risk_inverse": 0.6,
+          "thesis_linearity": 0.45,
+          "duration_tolerance": 0.88,
+          "listing_quality": 0.6
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.88
+          ],
+          [
+            "balance_sheet_resilience",
+            0.63
+          ],
+          [
+            "dilution_risk_inverse",
+            0.6
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "market_accessibility",
+            0.5
+          ],
+          [
+            "thesis_linearity",
+            0.45
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 5.54,
+      "pick_score": 62.64
+    }
+  ]
+}

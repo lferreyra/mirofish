@@ -1,0 +1,394 @@
+{
+  "rows": [
+    {
+      "name": "AXTI equity on InP substrate expansion",
+      "market_theme": "AI photonics / materials",
+      "thesis": "AXT remains one of the few scaled InP substrate suppliers and has been raising capital to expand indium phosphide capacity into rising silicon-photonics and optical interconnect demand.",
+      "underlying": "AXTI",
+      "mispricing_type": "hidden_bottleneck",
+      "time_horizon": "12-24m",
+      "linked_companies": ["AXTI", "Tongmei", "LITE", "COHR"],
+      "bottleneck_layer": "InP substrate capacity",
+      "value_capture_layer": "Upstream compound semiconductor wafer supplier",
+      "why_missed": [
+        "small-cap material supplier hidden behind larger optical names",
+        "market often focuses on lasers and modules rather than wafer inputs"
+      ],
+      "catalysts": [
+        "capacity expansion milestones",
+        "continued silicon photonics adoption",
+        "additional optical supply-chain qualification wins"
+      ],
+      "invalidations": [
+        "capacity adds fail to convert into pricing power",
+        "geopolitical/export restrictions outweigh demand tailwind",
+        "optical demand growth shifts away from InP-heavy architectures"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 4.5,
+        "recognition_gap": 4.5,
+        "catalyst_clarity": 3.5,
+        "propagation_asymmetry": 4.0,
+        "duration_mismatch": 4.0,
+        "evidence_quality": 4.5,
+        "crowding_inverse": 4.0,
+        "valuation_nonlinearity": 4.0
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.5,
+        "downstream_valuation_gap": 4.5,
+        "microcap_rerating_potential": 4.5
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 2.5,
+        "surface_staleness": 2.5,
+        "pre_expiration_repricing_potential": 3.0,
+        "stock_vs_call_convexity_advantage": 2.5,
+        "long_dated_liquidity_quality": 2.0
+      },
+      "options_expression_signals": {
+        "convexity_need": 3.0,
+        "tenor_alignment": 3.5,
+        "vol_expansion_potential": 3.0,
+        "downside_definedness": 2.5,
+        "liquidity_path": 2.0,
+        "implementation_simplicity": 3.0,
+        "catalyst_timing_specificity": 3.0
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.0,
+        "implementation_simplicity": 4.0,
+        "balance_sheet_resilience": 2.5,
+        "dilution_risk_inverse": 2.0,
+        "thesis_linearity": 3.5,
+        "duration_tolerance": 4.0,
+        "listing_quality": 3.5
+      }
+    },
+    {
+      "name": "MTSI equity on 1.6T optical lane scaling",
+      "market_theme": "AI photonics / lasers",
+      "thesis": "MACOM is building a broader position in 1.6T optical connectivity and silicon photonics, including CW laser arrays and other components needed for higher-lane AI networking.",
+      "underlying": "MTSI",
+      "mispricing_type": "second_order_beneficiary",
+      "time_horizon": "12-24m",
+      "linked_companies": ["MTSI", "Marvell", "CPO ecosystem"],
+      "bottleneck_layer": "1.6T optical lane components and CW lasers",
+      "value_capture_layer": "Mixed-signal and photonics component supplier",
+      "why_missed": [
+        "market narrative still skews toward better-known optics incumbents",
+        "broader semiconductor mix can hide the photonics leverage"
+      ],
+      "catalysts": [
+        "1.6T design wins",
+        "silicon photonics program ramps",
+        "domestic fab modernization milestones"
+      ],
+      "invalidations": [
+        "optical product wins do not scale into revenue mix",
+        "AI networking spend shifts to competitors",
+        "photonic product cycle slips"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 3.5,
+        "recognition_gap": 4.0,
+        "catalyst_clarity": 3.5,
+        "propagation_asymmetry": 3.5,
+        "duration_mismatch": 3.5,
+        "evidence_quality": 4.0,
+        "crowding_inverse": 3.5,
+        "valuation_nonlinearity": 3.0
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.0,
+        "downstream_valuation_gap": 2.5,
+        "microcap_rerating_potential": 2.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 2.0,
+        "surface_staleness": 2.0,
+        "pre_expiration_repricing_potential": 2.5,
+        "stock_vs_call_convexity_advantage": 1.5,
+        "long_dated_liquidity_quality": 2.5
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.5,
+        "tenor_alignment": 3.0,
+        "vol_expansion_potential": 2.5,
+        "downside_definedness": 2.5,
+        "liquidity_path": 2.5,
+        "implementation_simplicity": 4.0,
+        "catalyst_timing_specificity": 2.5
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.5,
+        "implementation_simplicity": 4.5,
+        "balance_sheet_resilience": 4.0,
+        "dilution_risk_inverse": 4.0,
+        "thesis_linearity": 3.5,
+        "duration_tolerance": 4.0,
+        "listing_quality": 4.5
+      }
+    },
+    {
+      "name": "OUST equity on industrial autonomy lidar adoption",
+      "market_theme": "Robotics / autonomy",
+      "thesis": "Ouster is gaining real industrial autonomy and robotics traction through digital lidar, with supply-chain and platform relevance that may still be underappreciated outside the headline autonomous vehicle narrative.",
+      "underlying": "OUST",
+      "mispricing_type": "platform_underappreciation",
+      "time_horizon": "12-24m",
+      "linked_companies": ["OUST", "Komatsu", "industrial robotics customers"],
+      "bottleneck_layer": "3D digital lidar perception stack",
+      "value_capture_layer": "Sensor platform for robotics and autonomy deployments",
+      "why_missed": [
+        "many investors still bucket lidar with failed auto narratives",
+        "industrial and robotics wins can be overlooked versus passenger-vehicle stories"
+      ],
+      "catalysts": [
+        "additional industrial autonomy wins",
+        "warehouse and mining deployment ramps",
+        "software-enabled lidar feature adoption"
+      ],
+      "invalidations": [
+        "industrial lidar demand remains too niche",
+        "customer wins do not scale economically",
+        "competition compresses margins"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 4.0,
+        "recognition_gap": 4.0,
+        "catalyst_clarity": 3.5,
+        "propagation_asymmetry": 3.5,
+        "duration_mismatch": 3.5,
+        "evidence_quality": 4.0,
+        "crowding_inverse": 3.5,
+        "valuation_nonlinearity": 4.0
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 3.0,
+        "microcap_rerating_potential": 4.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.0,
+        "surface_staleness": 1.0,
+        "pre_expiration_repricing_potential": 1.5,
+        "stock_vs_call_convexity_advantage": 1.0,
+        "long_dated_liquidity_quality": 1.5
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.0,
+        "tenor_alignment": 2.5,
+        "vol_expansion_potential": 2.5,
+        "downside_definedness": 1.5,
+        "liquidity_path": 1.5,
+        "implementation_simplicity": 3.5,
+        "catalyst_timing_specificity": 2.5
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 3.5,
+        "implementation_simplicity": 4.0,
+        "balance_sheet_resilience": 2.5,
+        "dilution_risk_inverse": 2.5,
+        "thesis_linearity": 3.0,
+        "duration_tolerance": 3.5,
+        "listing_quality": 3.0
+      }
+    },
+    {
+      "name": "AMBA equity on edge AI robotics vision",
+      "market_theme": "AI / robotics vision",
+      "thesis": "Ambarella’s edge AI and low-power multimodal vision silicon could benefit from on-premise robotics and machine-vision adoption as physical AI shifts toward constrained edge deployments.",
+      "underlying": "AMBA",
+      "mispricing_type": "second_order_beneficiary",
+      "time_horizon": "12-24m",
+      "linked_companies": ["AMBA", "robotics OEMs", "edge AI integrators"],
+      "bottleneck_layer": "Low-power edge AI vision compute",
+      "value_capture_layer": "Specialized edge AI silicon provider",
+      "why_missed": [
+        "market attention remains concentrated on data-center AI",
+        "edge and robotics AI can be overshadowed by cloud narratives"
+      ],
+      "catalysts": [
+        "new design wins in robotics and edge AI boxes",
+        "product ramp of N1 family",
+        "evidence of broader physical-AI deployment"
+      ],
+      "invalidations": [
+        "robotics demand remains too slow to matter",
+        "edge AI stays niche relative to cloud inference",
+        "competitive pressure reduces pricing power"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 3.5,
+        "recognition_gap": 3.5,
+        "catalyst_clarity": 3.5,
+        "propagation_asymmetry": 3.5,
+        "duration_mismatch": 3.5,
+        "evidence_quality": 4.0,
+        "crowding_inverse": 3.0,
+        "valuation_nonlinearity": 3.0
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 2.0,
+        "microcap_rerating_potential": 2.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.5,
+        "surface_staleness": 1.5,
+        "pre_expiration_repricing_potential": 2.0,
+        "stock_vs_call_convexity_advantage": 1.0,
+        "long_dated_liquidity_quality": 2.5
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.5,
+        "tenor_alignment": 3.0,
+        "vol_expansion_potential": 2.5,
+        "downside_definedness": 2.0,
+        "liquidity_path": 2.5,
+        "implementation_simplicity": 4.0,
+        "catalyst_timing_specificity": 2.5
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.0,
+        "implementation_simplicity": 4.5,
+        "balance_sheet_resilience": 4.0,
+        "dilution_risk_inverse": 4.0,
+        "thesis_linearity": 3.5,
+        "duration_tolerance": 4.0,
+        "listing_quality": 4.5
+      }
+    },
+    {
+      "name": "LASR equity on defense and sensing laser ramp",
+      "market_theme": "Lasers / defense / sensing",
+      "thesis": "nLIGHT has growing leverage to high-energy lasers and laser sensing, and the market may still underappreciate how a scaled defense-laser manufacturing ramp can rerate a previously messy optical name.",
+      "underlying": "LASR",
+      "mispricing_type": "hidden_bottleneck",
+      "time_horizon": "12-24m",
+      "linked_companies": ["LASR", "DoD", "defense laser ecosystem"],
+      "bottleneck_layer": "High-energy laser manufacturing capacity",
+      "value_capture_layer": "Mission-critical laser supplier",
+      "why_missed": [
+        "legacy losses can obscure the improving defense mix",
+        "many investors do not model defense laser capacity as a constrained supply chain"
+      ],
+      "catalysts": [
+        "continued aerospace and defense revenue growth",
+        "capacity expansion utilization",
+        "additional program awards"
+      ],
+      "invalidations": [
+        "program timing slips",
+        "laser demand remains episodic rather than scaled",
+        "margins fail to improve with volume"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 3.5,
+        "recognition_gap": 4.0,
+        "catalyst_clarity": 4.0,
+        "propagation_asymmetry": 3.5,
+        "duration_mismatch": 3.5,
+        "evidence_quality": 4.5,
+        "crowding_inverse": 3.5,
+        "valuation_nonlinearity": 3.5
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.5,
+        "downstream_valuation_gap": 2.5,
+        "microcap_rerating_potential": 3.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.5,
+        "surface_staleness": 1.5,
+        "pre_expiration_repricing_potential": 2.0,
+        "stock_vs_call_convexity_advantage": 1.0,
+        "long_dated_liquidity_quality": 2.0
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.5,
+        "tenor_alignment": 3.0,
+        "vol_expansion_potential": 3.0,
+        "downside_definedness": 2.0,
+        "liquidity_path": 2.0,
+        "implementation_simplicity": 4.0,
+        "catalyst_timing_specificity": 3.0
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.0,
+        "implementation_simplicity": 4.0,
+        "balance_sheet_resilience": 3.0,
+        "dilution_risk_inverse": 3.0,
+        "thesis_linearity": 3.5,
+        "duration_tolerance": 4.0,
+        "listing_quality": 3.5
+      }
+    },
+    {
+      "name": "TER equity on physical AI robotics recovery",
+      "market_theme": "Robotics / industrial automation",
+      "thesis": "Teradyne’s robotics assets give it a real angle on physical AI and industrial automation, but the market still appears to treat robotics as a lower-quality side business versus the core test franchise.",
+      "underlying": "TER",
+      "mispricing_type": "underappreciated_optional_segment",
+      "time_horizon": "12-24m",
+      "linked_companies": ["TER", "Universal Robots", "MiR", "NVIDIA"],
+      "bottleneck_layer": "Industrial collaborative and mobile robotics deployment",
+      "value_capture_layer": "Listed parent with hidden robotics option value",
+      "why_missed": [
+        "robotics is buried inside a larger semiconductor test company",
+        "recent softness in robotics results can overshadow future physical-AI leverage"
+      ],
+      "catalysts": [
+        "robotics recovery",
+        "U.S. operations hub execution",
+        "visible physical-AI application wins"
+      ],
+      "invalidations": [
+        "robotics weakness persists",
+        "physical AI remains more narrative than revenue",
+        "test business dominates valuation unchanged"
+      ],
+      "mispricing_signals": {
+        "hiddenness": 3.0,
+        "recognition_gap": 3.5,
+        "catalyst_clarity": 3.5,
+        "propagation_asymmetry": 3.0,
+        "duration_mismatch": 3.0,
+        "evidence_quality": 3.5,
+        "crowding_inverse": 2.5,
+        "valuation_nonlinearity": 2.5
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.0,
+        "downstream_valuation_gap": 1.5,
+        "microcap_rerating_potential": 1.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.0,
+        "surface_staleness": 1.0,
+        "pre_expiration_repricing_potential": 1.5,
+        "stock_vs_call_convexity_advantage": 0.5,
+        "long_dated_liquidity_quality": 2.5
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.0,
+        "tenor_alignment": 2.5,
+        "vol_expansion_potential": 2.0,
+        "downside_definedness": 2.5,
+        "liquidity_path": 2.5,
+        "implementation_simplicity": 4.0,
+        "catalyst_timing_specificity": 2.5
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 5.0,
+        "implementation_simplicity": 4.5,
+        "balance_sheet_resilience": 4.5,
+        "dilution_risk_inverse": 5.0,
+        "thesis_linearity": 2.5,
+        "duration_tolerance": 4.0,
+        "listing_quality": 5.0
+      }
+    }
+  ]
+}
