@@ -74,6 +74,13 @@ names the same way:
 
 That makes the expression layer much less heuristic than the original handoff.
 
+The ranking layer is also now promotion-aware:
+
+- raw pick score is still preserved
+- but a separate ranking score incorporates promotion strength
+- viable `pick_candidate` parses now sort ahead of weaker `watchlist_candidate`
+  parses instead of relying on metadata only
+
 ## Why this matters
 
 Before this handoff, the structural parser and the pick engine were still

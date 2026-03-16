@@ -50,6 +50,13 @@ ASYMMETRY_SIGNAL_WEIGHTS: Dict[str, float] = {
     "microcap_rerating_potential": 0.14,
 }
 
+PROMOTION_STATUS_ORDER: Dict[str | None, float] = {
+    "exploratory_only": 0.0,
+    "watchlist_candidate": 1.0,
+    None: 1.5,
+    "pick_candidate": 2.0,
+}
+
 
 def _load_screening_module():
     services_root = Path(__file__).resolve().parents[1] / "backend" / "app" / "services"
@@ -222,6 +229,35 @@ def _pick_score(
     return round((mispricing_score * 0.54) + (expression_strength * 0.26) + asymmetry_bonus + expression_bonus, 2)
 
 
+def _promotion_bonus(promotion_status: str | None, promotion_score: float | None) -> float:
+    base_bonus = {
+        "pick_candidate": 8.0,
+        "watchlist_candidate": 1.5,
+        "exploratory_only": -10.0,
+    }.get(promotion_status, 3.5)
+    if promotion_score is None:
+        confidence_bonus = 0.0
+    else:
+        confidence_bonus = max(0.0, min(5.0, (float(promotion_score) - 50.0) / 10.0))
+    return round(base_bonus + confidence_bonus, 2)
+
+
+def _ranking_score(raw_pick_score: float, promotion_bonus: float) -> float:
+    return round(raw_pick_score + promotion_bonus, 2)
+
+
+def _expression_viability_rank(expression: str) -> int:
+    return {
+        "leaps_call": 2,
+        "shares": 1,
+        "reject": 0,
+    }.get(expression, 0)
+
+
+def _promotion_rank(promotion_status: str | None) -> float:
+    return PROMOTION_STATUS_ORDER.get(promotion_status, PROMOTION_STATUS_ORDER[None])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate ranked picks from a structured scan batch")
     parser.add_argument("input_json", help="Path to scan batch JSON")
@@ -286,17 +322,29 @@ def main() -> int:
             stock_fit_score,
             leaps_bias_score,
         )
+        promotion_status = row.get("promotion_status")
+        promotion_score = row.get("promotion_score_0_to_100")
         asymmetry_bonus = _asymmetry_bonus(
             row["mispricing_signals"],
             row.get("asymmetry_signals"),
         )
+        raw_pick_score = _pick_score(
+            mispricing_score,
+            stock_fit_score,
+            options_fit_score,
+            leaps_bias_score,
+            final_expression,
+            asymmetry_bonus,
+        )
+        promotion_bonus = _promotion_bonus(promotion_status, promotion_score)
+        ranking_score = _ranking_score(raw_pick_score, promotion_bonus)
         ranked.append(
             {
                 "name": row["name"],
                 "underlying": row["underlying"],
                 "market_theme": row.get("market_theme"),
-                "promotion_status": row.get("promotion_status"),
-                "promotion_score_0_to_100": row.get("promotion_score_0_to_100"),
+                "promotion_status": promotion_status,
+                "promotion_score_0_to_100": promotion_score,
                 "thesis": row["thesis"],
                 "bottleneck_layer": row.get("bottleneck_layer"),
                 "value_capture_layer": row.get("value_capture_layer"),
@@ -312,18 +360,25 @@ def main() -> int:
                 "stock_fit": stock_fit,
                 "final_expression": final_expression,
                 "asymmetry_bonus": asymmetry_bonus,
-                "pick_score": _pick_score(
-                    mispricing_score,
-                    stock_fit_score,
-                    options_fit_score,
-                    leaps_bias_score,
-                    final_expression,
-                    asymmetry_bonus,
-                ),
+                "pick_score": raw_pick_score,
+                "promotion_bonus": promotion_bonus,
+                "ranking_score": ranking_score,
+                "ranking_metadata": {
+                    "expression_viability_rank": _expression_viability_rank(final_expression),
+                    "promotion_rank": _promotion_rank(promotion_status),
+                },
             }
         )
 
-    ranked.sort(key=lambda row: row["pick_score"], reverse=True)
+    ranked.sort(
+        key=lambda row: (
+            row["ranking_metadata"]["expression_viability_rank"],
+            row["ranking_metadata"]["promotion_rank"],
+            row["ranking_score"],
+            row["pick_score"],
+        ),
+        reverse=True,
+    )
     output = {
         "method": "market scan -> mispricing score -> stock-vs-LEAPS choice -> ranked picks",
         "rows": ranked,

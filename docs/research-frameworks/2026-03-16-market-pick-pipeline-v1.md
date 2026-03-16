@@ -87,10 +87,15 @@ The output is not an ontology or a memo. The output is a pick list with one of:
 
 5. `Rank picks`
    Rank by:
-   - mispricing score
-   - best expression score
-   - asymmetry bonus
-   - expression bonus / penalty
+   - expression viability first
+   - then promotion strength
+   - then raw pick score
+
+   Promotion strength is now a real ranking input, not metadata only:
+
+   - `pick_candidate` parses receive a meaningful ranking bonus
+   - `watchlist_candidate` parses still rank, but below true promoted picks
+   - manual rows remain neutral rather than being treated as weakly corroborated
 
 ## Artifacts
 

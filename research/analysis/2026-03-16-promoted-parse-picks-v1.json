@@ -2,261 +2,6 @@
   "method": "market scan -> mispricing score -> stock-vs-LEAPS choice -> ranked picks",
   "rows": [
     {
-      "name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
-      "underlying": "SIVE",
-      "market_theme": "CPO / Silicon Photonics Laser Supply",
-      "promotion_status": "watchlist_candidate",
-      "promotion_score_0_to_100": 84.45,
-      "thesis": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
-      "bottleneck_layer": "InP DFB Laser Production",
-      "value_capture_layer": "InP DFB Laser Production",
-      "why_missed": [
-        "market framing appears stale relative to the structural role",
-        "upstream supplier role is not obvious from headline narratives",
-        "the thesis still needs more independent corroboration"
-      ],
-      "catalysts": [
-        "LiDAR Customer Ramp",
-        "Q4 2025 Opportunity Pipeline Expansion",
-        "SIVE Debt Refinancing"
-      ],
-      "invalidations": [
-        "the partnerships fail to convert into meaningful volume",
-        "Sivers remains unable to scale laser production competitively",
-        "balance-sheet improvement proves insufficient and dilution dominates the equity story"
-      ],
-      "parse_evidence_summary": {
-        "total_sources": 6,
-        "evidence_sources": 5,
-        "high_quality_sources": 6,
-        "independent_sources": 0,
-        "company_driven_sources": 6,
-        "source_class_diversity": 1,
-        "source_classes": [
-          "company_release"
-        ],
-        "supporting_source_classes": [
-          "company_release"
-        ],
-        "entity_count": 17,
-        "relationship_count": 15,
-        "claim_count": 6,
-        "evidence_link_count": 22,
-        "inference_count": 1,
-        "evidence_links_per_claim": 3.67,
-        "process_layer_count": 2,
-        "event_count": 6,
-        "expression_count": 1,
-        "public_company_count": 2,
-        "related_company_count": 1,
-        "related_companies": [
-          "POET"
-        ],
-        "supplied_by_count": 2,
-        "depends_on_count": 2,
-        "constrained_by_count": 0,
-        "reprices_via_count": 3,
-        "affected_by_event_count": 4,
-        "part_of_count": 2,
-        "market_miss_confidence": "medium",
-        "market_miss_confidence_score_0_to_100": 70.0,
-        "market_miss_derived_claim_count": 5,
-        "market_miss_derived_relationship_count": 10,
-        "catalyst_count": 3,
-        "invalidation_count": 3,
-        "statement": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
-        "upstream_marker_score_0_to_100": 20.0,
-        "stale_frame_marker_score_0_to_100": 20.0,
-        "messy_small_marker_score_0_to_100": 60.0
-      },
-      "market_data_checks": {
-        "snapshot_count": 0,
-        "latest_snapshot_path": null,
-        "has_long_dated_options": false,
-        "quoted_contract_count": 0,
-        "liquid_contract_count": 0,
-        "best_open_interest": 0,
-        "best_relative_spread": null,
-        "best_implied_volatility": null,
-        "watchlist_entry_present": false,
-        "watchlist_option_symbol": null,
-        "watchlist_mid": null,
-        "watchlist_open_interest": null,
-        "watchlist_relative_spread": null,
-        "watchlist_implied_volatility": null,
-        "resale_scenario_count": 0,
-        "positive_resale_scenario_count": 0,
-        "positive_resale_scenario_ratio": 0.0,
-        "flat_iv_up_positive": false,
-        "best_bullish_return_pct": null,
-        "mean_bullish_return_pct": null,
-        "rescreen_candidate_count": 0,
-        "positive_rescreen_count": 0,
-        "best_bullish_excess_vs_stock_mean": null,
-        "best_same_capital_contract": null,
-        "long_dated_liquidity_quality_score_0_to_100": 0.0
-      },
-      "asymmetry_signals": {
-        "ecosystem_centrality": 3.3,
-        "downstream_valuation_gap": 2.3,
-        "microcap_rerating_potential": 3.9
-      },
-      "mispricing": {
-        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
-        "score_type": "mispricing",
-        "score_0_to_100": 75.48,
-        "band": "high",
-        "weighted_signals": {
-          "hiddenness": 0.864,
-          "recognition_gap": 0.544,
-          "catalyst_clarity": 0.47,
-          "propagation_asymmetry": 0.476,
-          "duration_mismatch": 0.44,
-          "evidence_quality": 0.368,
-          "crowding_inverse": 0.405,
-          "valuation_nonlinearity": 0.207
-        },
-        "strongest_drivers": [
-          [
-            "hiddenness",
-            0.864
-          ],
-          [
-            "recognition_gap",
-            0.544
-          ],
-          [
-            "propagation_asymmetry",
-            0.476
-          ]
-        ],
-        "weakest_drivers": [
-          [
-            "valuation_nonlinearity",
-            0.207
-          ],
-          [
-            "evidence_quality",
-            0.368
-          ]
-        ],
-        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 75.5/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, evidence quality. This screen is a structural ranking aid, not live options pricing."
-      },
-      "options_fit": {
-        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
-        "score_type": "options_fit",
-        "score_0_to_100": 48.64,
-        "band": "moderate",
-        "weighted_signals": {
-          "convexity_need": 0.504,
-          "tenor_alignment": 0.63,
-          "vol_expansion_potential": 0.54,
-          "downside_definedness": 0.168,
-          "liquidity_path": 0.06,
-          "implementation_simplicity": 0.05,
-          "catalyst_timing_specificity": 0.48
-        },
-        "strongest_drivers": [
-          [
-            "tenor_alignment",
-            0.63
-          ],
-          [
-            "vol_expansion_potential",
-            0.54
-          ],
-          [
-            "convexity_need",
-            0.504
-          ]
-        ],
-        "weakest_drivers": [
-          [
-            "implementation_simplicity",
-            0.05
-          ],
-          [
-            "liquidity_path",
-            0.06
-          ]
-        ],
-        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 48.6/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, vol expansion potential, convexity need. The least supportive signals are implementation simplicity, liquidity path. This screen helps decide whether options are a sensible expression path."
-      },
-      "leaps_bias": {
-        "score_0_to_100": 11.44,
-        "weighted_signals": {
-          "iv_cheapness": 0.12,
-          "surface_staleness": 0.09,
-          "pre_expiration_repricing_potential": 0.192,
-          "stock_vs_call_convexity_advantage": 0.12,
-          "long_dated_liquidity_quality": 0.05
-        },
-        "strongest_drivers": [
-          [
-            "pre_expiration_repricing_potential",
-            0.192
-          ],
-          [
-            "iv_cheapness",
-            0.12
-          ],
-          [
-            "stock_vs_call_convexity_advantage",
-            0.12
-          ]
-        ],
-        "weakest_drivers": [
-          [
-            "surface_staleness",
-            0.09
-          ],
-          [
-            "long_dated_liquidity_quality",
-            0.05
-          ]
-        ]
-      },
-      "stock_fit": {
-        "score_0_to_100": 75.04,
-        "weighted_signals": {
-          "market_accessibility": 0.37,
-          "implementation_simplicity": 0.48,
-          "balance_sheet_resilience": 0.448,
-          "dilution_risk_inverse": 0.408,
-          "thesis_linearity": 0.756,
-          "duration_tolerance": 0.858,
-          "listing_quality": 0.432
-        },
-        "strongest_drivers": [
-          [
-            "duration_tolerance",
-            0.858
-          ],
-          [
-            "thesis_linearity",
-            0.756
-          ],
-          [
-            "implementation_simplicity",
-            0.48
-          ]
-        ],
-        "weakest_drivers": [
-          [
-            "dilution_risk_inverse",
-            0.408
-          ],
-          [
-            "market_accessibility",
-            0.37
-          ]
-        ]
-      },
-      "final_expression": "shares",
-      "asymmetry_bonus": 7.9,
-      "pick_score": 70.17
-    },
-    {
       "name": "MP promoted structural pick on Rare Earth Magnet Sovereignty",
       "underlying": "MP",
       "market_theme": "Rare Earth Magnet Sovereignty",
@@ -516,7 +261,274 @@
       },
       "final_expression": "leaps_call",
       "asymmetry_bonus": 5.17,
-      "pick_score": 62.97
+      "pick_score": 62.97,
+      "promotion_bonus": 12.61,
+      "ranking_score": 75.58,
+      "ranking_metadata": {
+        "expression_viability_rank": 2,
+        "promotion_rank": 2.0
+      }
+    },
+    {
+      "name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+      "underlying": "SIVE",
+      "market_theme": "CPO / Silicon Photonics Laser Supply",
+      "promotion_status": "watchlist_candidate",
+      "promotion_score_0_to_100": 84.45,
+      "thesis": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
+      "bottleneck_layer": "InP DFB Laser Production",
+      "value_capture_layer": "InP DFB Laser Production",
+      "why_missed": [
+        "market framing appears stale relative to the structural role",
+        "upstream supplier role is not obvious from headline narratives",
+        "the thesis still needs more independent corroboration"
+      ],
+      "catalysts": [
+        "LiDAR Customer Ramp",
+        "Q4 2025 Opportunity Pipeline Expansion",
+        "SIVE Debt Refinancing"
+      ],
+      "invalidations": [
+        "the partnerships fail to convert into meaningful volume",
+        "Sivers remains unable to scale laser production competitively",
+        "balance-sheet improvement proves insufficient and dilution dominates the equity story"
+      ],
+      "parse_evidence_summary": {
+        "total_sources": 6,
+        "evidence_sources": 5,
+        "high_quality_sources": 6,
+        "independent_sources": 0,
+        "company_driven_sources": 6,
+        "source_class_diversity": 1,
+        "source_classes": [
+          "company_release"
+        ],
+        "supporting_source_classes": [
+          "company_release"
+        ],
+        "entity_count": 17,
+        "relationship_count": 15,
+        "claim_count": 6,
+        "evidence_link_count": 22,
+        "inference_count": 1,
+        "evidence_links_per_claim": 3.67,
+        "process_layer_count": 2,
+        "event_count": 6,
+        "expression_count": 1,
+        "public_company_count": 2,
+        "related_company_count": 1,
+        "related_companies": [
+          "POET"
+        ],
+        "supplied_by_count": 2,
+        "depends_on_count": 2,
+        "constrained_by_count": 0,
+        "reprices_via_count": 3,
+        "affected_by_event_count": 4,
+        "part_of_count": 2,
+        "market_miss_confidence": "medium",
+        "market_miss_confidence_score_0_to_100": 70.0,
+        "market_miss_derived_claim_count": 5,
+        "market_miss_derived_relationship_count": 10,
+        "catalyst_count": 3,
+        "invalidation_count": 3,
+        "statement": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
+        "upstream_marker_score_0_to_100": 20.0,
+        "stale_frame_marker_score_0_to_100": 20.0,
+        "messy_small_marker_score_0_to_100": 60.0
+      },
+      "market_data_checks": {
+        "snapshot_count": 0,
+        "latest_snapshot_path": null,
+        "has_long_dated_options": false,
+        "quoted_contract_count": 0,
+        "liquid_contract_count": 0,
+        "best_open_interest": 0,
+        "best_relative_spread": null,
+        "best_implied_volatility": null,
+        "watchlist_entry_present": false,
+        "watchlist_option_symbol": null,
+        "watchlist_mid": null,
+        "watchlist_open_interest": null,
+        "watchlist_relative_spread": null,
+        "watchlist_implied_volatility": null,
+        "resale_scenario_count": 0,
+        "positive_resale_scenario_count": 0,
+        "positive_resale_scenario_ratio": 0.0,
+        "flat_iv_up_positive": false,
+        "best_bullish_return_pct": null,
+        "mean_bullish_return_pct": null,
+        "rescreen_candidate_count": 0,
+        "positive_rescreen_count": 0,
+        "best_bullish_excess_vs_stock_mean": null,
+        "best_same_capital_contract": null,
+        "long_dated_liquidity_quality_score_0_to_100": 0.0
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 3.3,
+        "downstream_valuation_gap": 2.3,
+        "microcap_rerating_potential": 3.9
+      },
+      "mispricing": {
+        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+        "score_type": "mispricing",
+        "score_0_to_100": 75.48,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.864,
+          "recognition_gap": 0.544,
+          "catalyst_clarity": 0.47,
+          "propagation_asymmetry": 0.476,
+          "duration_mismatch": 0.44,
+          "evidence_quality": 0.368,
+          "crowding_inverse": 0.405,
+          "valuation_nonlinearity": 0.207
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.864
+          ],
+          [
+            "recognition_gap",
+            0.544
+          ],
+          [
+            "propagation_asymmetry",
+            0.476
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "valuation_nonlinearity",
+            0.207
+          ],
+          [
+            "evidence_quality",
+            0.368
+          ]
+        ],
+        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 75.5/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are valuation nonlinearity, evidence quality. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+        "score_type": "options_fit",
+        "score_0_to_100": 48.64,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.504,
+          "tenor_alignment": 0.63,
+          "vol_expansion_potential": 0.54,
+          "downside_definedness": 0.168,
+          "liquidity_path": 0.06,
+          "implementation_simplicity": 0.05,
+          "catalyst_timing_specificity": 0.48
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.63
+          ],
+          [
+            "vol_expansion_potential",
+            0.54
+          ],
+          [
+            "convexity_need",
+            0.504
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "implementation_simplicity",
+            0.05
+          ],
+          [
+            "liquidity_path",
+            0.06
+          ]
+        ],
+        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 48.6/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, vol expansion potential, convexity need. The least supportive signals are implementation simplicity, liquidity path. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 11.44,
+        "weighted_signals": {
+          "iv_cheapness": 0.12,
+          "surface_staleness": 0.09,
+          "pre_expiration_repricing_potential": 0.192,
+          "stock_vs_call_convexity_advantage": 0.12,
+          "long_dated_liquidity_quality": 0.05
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.192
+          ],
+          [
+            "iv_cheapness",
+            0.12
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.12
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.09
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.05
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 75.04,
+        "weighted_signals": {
+          "market_accessibility": 0.37,
+          "implementation_simplicity": 0.48,
+          "balance_sheet_resilience": 0.448,
+          "dilution_risk_inverse": 0.408,
+          "thesis_linearity": 0.756,
+          "duration_tolerance": 0.858,
+          "listing_quality": 0.432
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.858
+          ],
+          [
+            "thesis_linearity",
+            0.756
+          ],
+          [
+            "implementation_simplicity",
+            0.48
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "dilution_risk_inverse",
+            0.408
+          ],
+          [
+            "market_accessibility",
+            0.37
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 7.9,
+      "pick_score": 70.17,
+      "promotion_bonus": 4.95,
+      "ranking_score": 75.12,
+      "ranking_metadata": {
+        "expression_viability_rank": 1,
+        "promotion_rank": 1.0
+      }
     }
   ]
 }
