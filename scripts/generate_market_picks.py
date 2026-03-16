@@ -295,6 +295,8 @@ def main() -> int:
                 "name": row["name"],
                 "underlying": row["underlying"],
                 "market_theme": row.get("market_theme"),
+                "promotion_status": row.get("promotion_status"),
+                "promotion_score_0_to_100": row.get("promotion_score_0_to_100"),
                 "thesis": row["thesis"],
                 "bottleneck_layer": row.get("bottleneck_layer"),
                 "value_capture_layer": row.get("value_capture_layer"),

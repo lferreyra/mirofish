@@ -26,6 +26,17 @@ The output is not an ontology or a memo. The output is a pick list with one of:
    - rare earths
    - cooling
 
+   Candidate generation can now happen in two ways:
+
+   - manual research rows
+   - auto-generated rows from promoted structural parses
+
+   Structural parses should only auto-generate candidate rows if they have
+   already cleared the graduation gate:
+
+   - `watchlist_candidate`
+   - `pick_candidate`
+
 2. `Score structural mispricing`
    For each candidate, score:
    - hiddenness
@@ -116,3 +127,8 @@ not yet a:
 
 The next gap to close is candidate generation breadth, not more downstream
 analysis infrastructure.
+
+The new structural-parse graduation layer means breadth does not have to come
+only from manual rows anymore. MiroFish can now promote parses into candidate
+rows automatically when the source mix and market-miss inference are strong
+enough.

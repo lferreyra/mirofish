@@ -1,0 +1,152 @@
+{
+  "method": "promoted structural parses -> auto-generated pick candidates",
+  "minimum_status": "watchlist_candidate",
+  "rows": [
+    {
+      "name": "MP promoted structural pick on Rare Earth Magnet Sovereignty",
+      "market_theme": "Rare Earth Magnet Sovereignty",
+      "thesis": "The market may still frame MP too narrowly as a mining story even though the company is becoming a policy-backed mine-to-magnet platform tied to the most constrained layers.",
+      "underlying": "MP",
+      "mispricing_type": "structural_information_arbitrage",
+      "time_horizon": "12-24m",
+      "linked_companies": [
+        "MP"
+      ],
+      "bottleneck_layer": "Sintered NdFeB Magnet Manufacturing",
+      "value_capture_layer": "Sintered NdFeB Magnet Manufacturing",
+      "why_missed": [
+        "market framing appears stale relative to the structural role",
+        "the market may still anchor on an outdated business description"
+      ],
+      "catalysts": [
+        "MP DoD Mine-to-Magnet Partnership"
+      ],
+      "invalidations": [
+        "MP fails to scale beyond a partial magnet-manufacturing foothold",
+        "non-China capacity expands broadly enough to collapse scarcity value",
+        "policy support does not translate into durable economics"
+      ],
+      "promotion_status": "pick_candidate",
+      "promotion_score_0_to_100": 96.1,
+      "mispricing_signals": {
+        "hiddenness": 2.6,
+        "recognition_gap": 4.8,
+        "catalyst_clarity": 5.0,
+        "propagation_asymmetry": 5.0,
+        "duration_mismatch": 4.9,
+        "evidence_quality": 4.6,
+        "crowding_inverse": 4.1,
+        "valuation_nonlinearity": 4.2
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 5.0,
+        "downstream_valuation_gap": 4.8,
+        "microcap_rerating_potential": 3.2
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.8,
+        "tenor_alignment": 5.0,
+        "vol_expansion_potential": 2.5,
+        "downside_definedness": 2.2,
+        "liquidity_path": 1.2,
+        "implementation_simplicity": 4.2,
+        "catalyst_timing_specificity": 5.0
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.2,
+        "implementation_simplicity": 4.2,
+        "balance_sheet_resilience": 4.6,
+        "dilution_risk_inverse": 4.6,
+        "thesis_linearity": 5.0,
+        "duration_tolerance": 4.8,
+        "listing_quality": 4.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.0,
+        "surface_staleness": 1.0,
+        "pre_expiration_repricing_potential": 2.2,
+        "stock_vs_call_convexity_advantage": 0.8,
+        "long_dated_liquidity_quality": 0.8
+      },
+      "notes": [
+        "Auto-generated from promoted structural parse.",
+        "Promotion status: pick_candidate."
+      ]
+    },
+    {
+      "name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+      "market_theme": "CPO / Silicon Photonics Laser Supply",
+      "thesis": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
+      "underlying": "SIVE",
+      "mispricing_type": "structural_information_arbitrage",
+      "time_horizon": "12-24m",
+      "linked_companies": [
+        "POET",
+        "SIVE"
+      ],
+      "bottleneck_layer": "InP DFB Laser Production",
+      "value_capture_layer": "InP DFB Laser Production",
+      "why_missed": [
+        "market framing appears stale relative to the structural role",
+        "upstream supplier role is not obvious from headline narratives",
+        "the thesis still needs more independent corroboration"
+      ],
+      "catalysts": [
+        "LiDAR Customer Ramp",
+        "Q4 2025 Opportunity Pipeline Expansion",
+        "SIVE Debt Refinancing"
+      ],
+      "invalidations": [
+        "the partnerships fail to convert into meaningful volume",
+        "Sivers remains unable to scale laser production competitively",
+        "balance-sheet improvement proves insufficient and dilution dominates the equity story"
+      ],
+      "promotion_status": "watchlist_candidate",
+      "promotion_score_0_to_100": 84.45,
+      "mispricing_signals": {
+        "hiddenness": 2.9,
+        "recognition_gap": 4.2,
+        "catalyst_clarity": 5.0,
+        "propagation_asymmetry": 4.7,
+        "duration_mismatch": 4.4,
+        "evidence_quality": 3.5,
+        "crowding_inverse": 3.5,
+        "valuation_nonlinearity": 4.2
+      },
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.7,
+        "downstream_valuation_gap": 4.2,
+        "microcap_rerating_potential": 4.0
+      },
+      "options_expression_signals": {
+        "convexity_need": 2.8,
+        "tenor_alignment": 5.0,
+        "vol_expansion_potential": 2.5,
+        "downside_definedness": 2.2,
+        "liquidity_path": 1.2,
+        "implementation_simplicity": 4.2,
+        "catalyst_timing_specificity": 5.0
+      },
+      "stock_expression_signals": {
+        "market_accessibility": 4.2,
+        "implementation_simplicity": 4.2,
+        "balance_sheet_resilience": 3.0,
+        "dilution_risk_inverse": 2.7,
+        "thesis_linearity": 4.7,
+        "duration_tolerance": 4.2,
+        "listing_quality": 4.0
+      },
+      "leaps_bias_signals": {
+        "iv_cheapness": 1.0,
+        "surface_staleness": 1.0,
+        "pre_expiration_repricing_potential": 2.2,
+        "stock_vs_call_convexity_advantage": 0.8,
+        "long_dated_liquidity_quality": 0.8
+      },
+      "notes": [
+        "Auto-generated from promoted structural parse.",
+        "Promotion status: watchlist_candidate."
+      ]
+    }
+  ]
+}

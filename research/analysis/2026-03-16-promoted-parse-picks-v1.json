@@ -1,0 +1,370 @@
+{
+  "method": "market scan -> mispricing score -> stock-vs-LEAPS choice -> ranked picks",
+  "rows": [
+    {
+      "name": "MP promoted structural pick on Rare Earth Magnet Sovereignty",
+      "underlying": "MP",
+      "market_theme": "Rare Earth Magnet Sovereignty",
+      "promotion_status": "pick_candidate",
+      "promotion_score_0_to_100": 96.1,
+      "thesis": "The market may still frame MP too narrowly as a mining story even though the company is becoming a policy-backed mine-to-magnet platform tied to the most constrained layers.",
+      "bottleneck_layer": "Sintered NdFeB Magnet Manufacturing",
+      "value_capture_layer": "Sintered NdFeB Magnet Manufacturing",
+      "why_missed": [
+        "market framing appears stale relative to the structural role",
+        "the market may still anchor on an outdated business description"
+      ],
+      "catalysts": [
+        "MP DoD Mine-to-Magnet Partnership"
+      ],
+      "invalidations": [
+        "MP fails to scale beyond a partial magnet-manufacturing foothold",
+        "non-China capacity expands broadly enough to collapse scarcity value",
+        "policy support does not translate into durable economics"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 5.0,
+        "downstream_valuation_gap": 4.8,
+        "microcap_rerating_potential": 3.2
+      },
+      "mispricing": {
+        "candidate_name": "MP promoted structural pick on Rare Earth Magnet Sovereignty",
+        "score_type": "mispricing",
+        "score_0_to_100": 83.94,
+        "band": "critical",
+        "weighted_signals": {
+          "hiddenness": 0.624,
+          "recognition_gap": 0.768,
+          "catalyst_clarity": 0.5,
+          "propagation_asymmetry": 0.7,
+          "duration_mismatch": 0.49,
+          "evidence_quality": 0.368,
+          "crowding_inverse": 0.369,
+          "valuation_nonlinearity": 0.378
+        },
+        "strongest_drivers": [
+          [
+            "recognition_gap",
+            0.768
+          ],
+          [
+            "propagation_asymmetry",
+            0.7
+          ],
+          [
+            "hiddenness",
+            0.624
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "evidence_quality",
+            0.368
+          ],
+          [
+            "crowding_inverse",
+            0.369
+          ]
+        ],
+        "explanation": "MP promoted structural pick on Rare Earth Magnet Sovereignty scores 83.9/100 (critical) on mispricing plausibility. The strongest weighted drivers are recognition gap, propagation asymmetry, hiddenness. The least supportive signals are evidence quality, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "MP promoted structural pick on Rare Earth Magnet Sovereignty",
+        "score_type": "options_fit",
+        "score_0_to_100": 64.52,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.504,
+          "tenor_alignment": 0.9,
+          "vol_expansion_potential": 0.45,
+          "downside_definedness": 0.308,
+          "liquidity_path": 0.144,
+          "implementation_simplicity": 0.42,
+          "catalyst_timing_specificity": 0.5
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.9
+          ],
+          [
+            "convexity_need",
+            0.504
+          ],
+          [
+            "catalyst_timing_specificity",
+            0.5
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "liquidity_path",
+            0.144
+          ],
+          [
+            "downside_definedness",
+            0.308
+          ]
+        ],
+        "explanation": "MP promoted structural pick on Rare Earth Magnet Sovereignty scores 64.5/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, convexity need, catalyst timing specificity. The least supportive signals are liquidity path, downside definedness. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 24.4,
+        "weighted_signals": {
+          "iv_cheapness": 0.24,
+          "surface_staleness": 0.18,
+          "pre_expiration_repricing_potential": 0.528,
+          "stock_vs_call_convexity_advantage": 0.192,
+          "long_dated_liquidity_quality": 0.08
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.528
+          ],
+          [
+            "iv_cheapness",
+            0.24
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.192
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.18
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.08
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 91.12,
+        "weighted_signals": {
+          "market_accessibility": 0.42,
+          "implementation_simplicity": 0.504,
+          "balance_sheet_resilience": 0.644,
+          "dilution_risk_inverse": 0.552,
+          "thesis_linearity": 0.9,
+          "duration_tolerance": 1.056,
+          "listing_quality": 0.48
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            1.056
+          ],
+          [
+            "thesis_linearity",
+            0.9
+          ],
+          [
+            "balance_sheet_resilience",
+            0.644
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "listing_quality",
+            0.48
+          ],
+          [
+            "market_accessibility",
+            0.42
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 9.59,
+      "pick_score": 80.61
+    },
+    {
+      "name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+      "underlying": "SIVE",
+      "market_theme": "CPO / Silicon Photonics Laser Supply",
+      "promotion_status": "watchlist_candidate",
+      "promotion_score_0_to_100": 84.45,
+      "thesis": "The market may still treat Sivers as a messy small Nordic photonics company even though it appears to sit upstream of multiple emerging external-light-source and optical-I/O architectures with improving manufacturing and balance-sheet readiness.",
+      "bottleneck_layer": "InP DFB Laser Production",
+      "value_capture_layer": "InP DFB Laser Production",
+      "why_missed": [
+        "market framing appears stale relative to the structural role",
+        "upstream supplier role is not obvious from headline narratives",
+        "the thesis still needs more independent corroboration"
+      ],
+      "catalysts": [
+        "LiDAR Customer Ramp",
+        "Q4 2025 Opportunity Pipeline Expansion",
+        "SIVE Debt Refinancing"
+      ],
+      "invalidations": [
+        "the partnerships fail to convert into meaningful volume",
+        "Sivers remains unable to scale laser production competitively",
+        "balance-sheet improvement proves insufficient and dilution dominates the equity story"
+      ],
+      "asymmetry_signals": {
+        "ecosystem_centrality": 4.7,
+        "downstream_valuation_gap": 4.2,
+        "microcap_rerating_potential": 4.0
+      },
+      "mispricing": {
+        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+        "score_type": "mispricing",
+        "score_0_to_100": 78.78,
+        "band": "high",
+        "weighted_signals": {
+          "hiddenness": 0.696,
+          "recognition_gap": 0.672,
+          "catalyst_clarity": 0.5,
+          "propagation_asymmetry": 0.658,
+          "duration_mismatch": 0.44,
+          "evidence_quality": 0.28,
+          "crowding_inverse": 0.315,
+          "valuation_nonlinearity": 0.378
+        },
+        "strongest_drivers": [
+          [
+            "hiddenness",
+            0.696
+          ],
+          [
+            "recognition_gap",
+            0.672
+          ],
+          [
+            "propagation_asymmetry",
+            0.658
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "evidence_quality",
+            0.28
+          ],
+          [
+            "crowding_inverse",
+            0.315
+          ]
+        ],
+        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 78.8/100 (high) on mispricing plausibility. The strongest weighted drivers are hiddenness, recognition gap, propagation asymmetry. The least supportive signals are evidence quality, crowding inverse. This screen is a structural ranking aid, not live options pricing."
+      },
+      "options_fit": {
+        "candidate_name": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply",
+        "score_type": "options_fit",
+        "score_0_to_100": 64.52,
+        "band": "moderate",
+        "weighted_signals": {
+          "convexity_need": 0.504,
+          "tenor_alignment": 0.9,
+          "vol_expansion_potential": 0.45,
+          "downside_definedness": 0.308,
+          "liquidity_path": 0.144,
+          "implementation_simplicity": 0.42,
+          "catalyst_timing_specificity": 0.5
+        },
+        "strongest_drivers": [
+          [
+            "tenor_alignment",
+            0.9
+          ],
+          [
+            "convexity_need",
+            0.504
+          ],
+          [
+            "catalyst_timing_specificity",
+            0.5
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "liquidity_path",
+            0.144
+          ],
+          [
+            "downside_definedness",
+            0.308
+          ]
+        ],
+        "explanation": "SIVE structural watchlist on CPO / Silicon Photonics Laser Supply scores 64.5/100 (moderate) on options-expression fit. The strongest weighted drivers are tenor alignment, convexity need, catalyst timing specificity. The least supportive signals are liquidity path, downside definedness. This screen helps decide whether options are a sensible expression path."
+      },
+      "leaps_bias": {
+        "score_0_to_100": 24.4,
+        "weighted_signals": {
+          "iv_cheapness": 0.24,
+          "surface_staleness": 0.18,
+          "pre_expiration_repricing_potential": 0.528,
+          "stock_vs_call_convexity_advantage": 0.192,
+          "long_dated_liquidity_quality": 0.08
+        },
+        "strongest_drivers": [
+          [
+            "pre_expiration_repricing_potential",
+            0.528
+          ],
+          [
+            "iv_cheapness",
+            0.24
+          ],
+          [
+            "stock_vs_call_convexity_advantage",
+            0.192
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "surface_staleness",
+            0.18
+          ],
+          [
+            "long_dated_liquidity_quality",
+            0.08
+          ]
+        ]
+      },
+      "stock_fit": {
+        "score_0_to_100": 78.36,
+        "weighted_signals": {
+          "market_accessibility": 0.42,
+          "implementation_simplicity": 0.504,
+          "balance_sheet_resilience": 0.42,
+          "dilution_risk_inverse": 0.324,
+          "thesis_linearity": 0.846,
+          "duration_tolerance": 0.924,
+          "listing_quality": 0.48
+        },
+        "strongest_drivers": [
+          [
+            "duration_tolerance",
+            0.924
+          ],
+          [
+            "thesis_linearity",
+            0.846
+          ],
+          [
+            "implementation_simplicity",
+            0.504
+          ]
+        ],
+        "weakest_drivers": [
+          [
+            "market_accessibility",
+            0.42
+          ],
+          [
+            "dilution_risk_inverse",
+            0.324
+          ]
+        ]
+      },
+      "final_expression": "shares",
+      "asymmetry_bonus": 9.4,
+      "pick_score": 74.31
+    }
+  ]
+}
