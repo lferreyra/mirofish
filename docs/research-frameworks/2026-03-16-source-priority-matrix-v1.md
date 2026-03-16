@@ -45,6 +45,10 @@ Each source class should be judged on five dimensions:
 
 Scores are on a `1-5` scale.
 
+Candidate venue backlog:
+
+- [Source Investigation List v1](/home/d/codex/MiroFish/docs/research-frameworks/2026-03-16-source-investigation-list-v1.md)
+
 ## Source roles
 
 Every source should be classified into one of three roles:
