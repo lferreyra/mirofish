@@ -1,0 +1,310 @@
+{
+  "name": "afl_insurance_baseline_source_bundle_v1",
+  "theme": "defensive_insurance_float",
+  "notes": [
+    "This is a stable-insurer false-positive control.",
+    "The source mix is official and high quality, but the thesis is deliberately framed as durable quality rather than structural asymmetry.",
+    "If this promotes too easily, the system is overrewarding source quality and expression readiness."
+  ],
+  "sources": [
+    {
+      "source_id": "src_afl_10k_2024",
+      "source_class": "company_filing",
+      "title": "Aflac Incorporated 2024 Form 10-K",
+      "canonical_url": "https://www.sec.gov/ixviewer/ix.html?doc=/Archives/edgar/data/4977/000000497725000055/afl-20241231.htm",
+      "publisher": "Aflac Incorporated / SEC",
+      "published_at": "2025-02-20T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "AFL"
+      ],
+      "theme_refs": [
+        "defensive_insurance_float",
+        "supplemental_insurance"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.93,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official annual filing used to anchor Aflac's insurance franchise and long-duration operating model."
+      ]
+    },
+    {
+      "source_id": "src_afl_q4_2025_results",
+      "source_class": "company_release",
+      "title": "Aflac Incorporated Reports Fourth Quarter and Full Year 2025 Results",
+      "canonical_url": "https://investors.aflac.com/news-releases/news-release-details/aflac-incorporated-reports-fourth-quarter-and-full-year-2025",
+      "publisher": "Aflac Incorporated",
+      "published_at": "2026-02-04T00:00:00Z",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "AFL"
+      ],
+      "theme_refs": [
+        "defensive_insurance_float",
+        "capital_return"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.89,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official results release highlighting earnings, capital return, and steady insurance operations."
+      ]
+    },
+    {
+      "source_id": "src_afl_investor_overview_2026",
+      "source_class": "company_release",
+      "title": "Aflac Investor Relations Overview",
+      "canonical_url": "https://investors.aflac.com/",
+      "publisher": "Aflac Incorporated",
+      "published_at": "",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "AFL"
+      ],
+      "theme_refs": [
+        "defensive_insurance_float",
+        "supplemental_insurance"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.86,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official investor overview supporting the scale and stability of Aflac's U.S. and Japan insurance franchises."
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "fragment_id": "frag_afl_dual_market_insurance_franchise",
+      "source_id": "src_afl_10k_2024",
+      "fragment_type": "filing_excerpt",
+      "section_label": "Dual-market insurance franchise",
+      "excerpt": "Aflac's 10-K reflects durable operations across its U.S. and Japan supplemental insurance franchises, supporting the idea that AFL is a stable insurer rather than a narrow bottleneck or hidden chokepoint business.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Defensive Insurance Float"
+        ],
+        "systems": [
+          "Supplemental Insurance Franchise"
+        ],
+        "process_layers": [
+          "Insurance Underwriting and Float Generation"
+        ],
+        "geographies": [
+          "United States",
+          "Japan"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Defensive Insurance Float",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "Supplemental Insurance Franchise",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Insurance Underwriting and Float Generation",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "United States",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "Geography",
+          "canonical_name": "Japan",
+          "confidence": "medium"
+        },
+        {
+          "entity_type": "ExpressionCandidate",
+          "canonical_name": "Shares: AFL",
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "insurance_float_part_of_insurance_franchise",
+          "relationship_type": "PART_OF",
+          "source_type": "ProcessLayer",
+          "source_name": "Insurance Underwriting and Float Generation",
+          "target_type": "System",
+          "target_name": "Supplemental Insurance Franchise",
+          "relationship_strength": "high",
+          "causal_role": "core_operating_layer",
+          "confidence": "high"
+        },
+        {
+          "key": "insurance_float_supplied_by_afl",
+          "relationship_type": "SUPPLIED_BY",
+          "source_type": "ProcessLayer",
+          "source_name": "Insurance Underwriting and Float Generation",
+          "target_type": "PublicCompany",
+          "target_name": "AFL",
+          "relationship_strength": "high",
+          "causal_role": "issuer_operating_exposure",
+          "confidence": "high"
+        },
+        {
+          "key": "shares_afl_for_theme",
+          "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: AFL",
+          "target_type": "Theme",
+          "target_name": "Defensive Insurance Float",
+          "relationship_strength": "high",
+          "causal_role": "direct_equity_expression",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_afl_is_stable_insurer_not_hidden_asymmetry",
+          "claim_type": "supplier_or_customer_relationship",
+          "claim_text": "AFL is a stable, diversified insurer with durable underwriting and float generation rather than a hidden structural bottleneck exposure.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "AFL",
+            "Supplemental Insurance Franchise",
+            "Insurance Underwriting and Float Generation",
+            "Shares: AFL"
+          ],
+          "relationship_keys": [
+            "insurance_float_part_of_insurance_franchise",
+            "insurance_float_supplied_by_afl",
+            "shares_afl_for_theme"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_afl_capital_return_stability",
+      "source_id": "src_afl_q4_2025_results",
+      "fragment_type": "earnings_excerpt",
+      "section_label": "Capital return and earnings stability",
+      "excerpt": "Aflac's results release emphasizes steady earnings, continued capital return, and business resilience, reinforcing that AFL is primarily a quality/defensive expression rather than a latent rerating setup.",
+      "contains_claim_candidate": true,
+      "entity_hints": [
+        {
+          "entity_type": "Event",
+          "canonical_name": "2025 Earnings and Capital Return Continuity",
+          "attributes": {
+            "event_type": "earnings_validation"
+          },
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "shares_afl_reprices_via_earnings_continuity",
+          "relationship_type": "REPRICES_VIA",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: AFL",
+          "target_type": "Event",
+          "target_name": "2025 Earnings and Capital Return Continuity",
+          "relationship_strength": "medium",
+          "causal_role": "quality_validation",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_afl_quality_not_structural_mispricing",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "AFL looks like a resilient quality insurer, but not an obvious structural information arbitrage candidate.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "AFL",
+            "Shares: AFL",
+            "2025 Earnings and Capital Return Continuity"
+          ],
+          "relationship_keys": [
+            "shares_afl_reprices_via_earnings_continuity"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_afl_obvious_public_expression",
+      "source_id": "src_afl_investor_overview_2026",
+      "fragment_type": "investor_overview_excerpt",
+      "section_label": "Obvious public expression",
+      "excerpt": "Aflac's investor overview presents a widely followed, long-duration insurance franchise with clear investor positioning, making the public expression obvious rather than hidden.",
+      "contains_claim_candidate": true,
+      "relationship_hints": [
+        {
+          "key": "shares_afl_reprices_via_investor_visibility",
+          "relationship_type": "REPRICES_VIA",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: AFL",
+          "target_type": "Theme",
+          "target_name": "Defensive Insurance Float",
+          "relationship_strength": "medium",
+          "causal_role": "widely_followed_defensive_name",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_afl_obvious_not_hidden",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "AFL is a straightforward public-market defensive expression, not a hidden or structurally underfollowed node.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "AFL",
+            "Shares: AFL",
+            "Defensive Insurance Float"
+          ],
+          "relationship_keys": [
+            "shares_afl_reprices_via_investor_visibility",
+            "shares_afl_for_theme"
+          ]
+        }
+      ],
+      "inference_candidates": [
+        {
+          "inference_key": "inf_afl_incremental_defensive_market_miss",
+          "inference_type": "market_miss",
+          "statement": "The market may modestly underappreciate AFL's defensive resilience at times, but the thesis looks incremental and low-variance rather than structurally mispriced.",
+          "claim_keys": [
+            "claim_afl_is_stable_insurer_not_hidden_asymmetry",
+            "claim_afl_quality_not_structural_mispricing",
+            "claim_afl_obvious_not_hidden"
+          ],
+          "relationship_keys": [
+            "shares_afl_for_theme",
+            "shares_afl_reprices_via_earnings_continuity",
+            "shares_afl_reprices_via_investor_visibility"
+          ],
+          "confidence": "low",
+          "falsifiers": [
+            "the insurer is already a clear quality/defensive consensus name",
+            "there is no differentiated hidden dependency or bottleneck thesis"
+          ]
+        }
+      ]
+    }
+  ]
+}

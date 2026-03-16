@@ -1,0 +1,127 @@
+{
+  "report_version": "v1",
+  "generated_at": "2026-03-16T16:14:46.078678+00:00",
+  "project_name": "afl_insurance_baseline_source_bundle_v1",
+  "graduation_status": "exploratory_only",
+  "next_promotion_target": "watchlist_candidate",
+  "blocking_gates": [
+    "structure_gate",
+    "market_miss_gate"
+  ],
+  "gap_flags": {
+    "needs_evidence_upgrade": false,
+    "needs_high_quality_sources": false,
+    "needs_industry_validation": true,
+    "needs_policy_context": false,
+    "needs_company_disclosures": true,
+    "needs_expression_validation": true,
+    "needs_cross_border_coverage": true
+  },
+  "required_source_classes": [
+    "company_filing",
+    "supplier_customer_disclosure",
+    "foreign_exchange_filing",
+    "industry_body_and_standards",
+    "technical_conference_material",
+    "market_data_snapshot",
+    "shipping_trade_flow_data"
+  ],
+  "target_companies": [
+    "Shares: AFL",
+    "AFL"
+  ],
+  "targeted_next_steps": [
+    {
+      "source_class": "company_filing",
+      "recommended_source": "SEC EDGAR Database (10-K, 10-Q, 8-K, 20-F)",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "filing",
+        "annual_report",
+        "quarterly_report",
+        "material_event"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "anchors the thesis in formal disclosures from Shares: AFL, AFL"
+    },
+    {
+      "source_class": "supplier_customer_disclosure",
+      "recommended_source": "Partnership announcements",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "partnership_release",
+        "qualification_update",
+        "production_readiness"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "confirms supplier, customer, qualification, or production-readiness edges around Shares: AFL, AFL"
+    },
+    {
+      "source_class": "foreign_exchange_filing",
+      "recommended_source": "ASX (Australian Securities Exchange)",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "exchange_filing",
+        "issuer_disclosure",
+        "market_notice"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "improves coverage for non-U.S. names tied to Shares: AFL, AFL"
+    },
+    {
+      "source_class": "industry_body_and_standards",
+      "recommended_source": "Advanced Photonics Coalition",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "industry_report",
+        "standard",
+        "roadmap",
+        "commentary"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "validates whether the bottleneck exists at the ecosystem level rather than only in company narratives"
+    },
+    {
+      "source_class": "technical_conference_material",
+      "recommended_source": "DesignCon",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "conference_slide",
+        "talk_abstract",
+        "ecosystem_demo"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "tests whether the architecture and component assumptions are actually showing up in real technical ecosystems"
+    },
+    {
+      "source_class": "market_data_snapshot",
+      "recommended_source": "LEAPS watchlist refresh workflow",
+      "recommendation": "monitor_weekly",
+      "expected_artifact_types": [
+        "price_snapshot",
+        "options_chain",
+        "liquidity_check"
+      ],
+      "target_companies": [
+        "Shares: AFL",
+        "AFL"
+      ],
+      "why_it_matters": "checks whether the proposed stock or LEAPS expression is actually tradable and justified"
+    }
+  ]
+}

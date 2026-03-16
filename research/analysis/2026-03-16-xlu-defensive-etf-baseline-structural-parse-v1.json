@@ -1,0 +1,309 @@
+{
+  "parser_version": "deterministic_v1",
+  "generated_at": "2026-03-16T16:14:24.687790+00:00",
+  "source_ids": [
+    "src_xlu_fund_page_2026_03",
+    "src_xlu_individual_page_2025_11",
+    "src_xlu_intermediary_page_2026_02"
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_event_xlu_transparent_sector_exposure",
+      "entity_type": "Event",
+      "canonical_name": "XLU Transparent Sector Exposure",
+      "aliases": [],
+      "description": "",
+      "attributes": {
+        "event_type": "fund_structure_validation"
+      },
+      "confidence": "medium"
+    },
+    {
+      "entity_id": "ent_expressioncandidate_shares_xlu",
+      "entity_type": "ExpressionCandidate",
+      "canonical_name": "Shares: XLU",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_processlayer_regulated_utility_revenue_base",
+      "entity_type": "ProcessLayer",
+      "canonical_name": "Regulated Utility Revenue Base",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_system_regulated_utilities_equity_basket",
+      "entity_type": "System",
+      "canonical_name": "Regulated Utilities Equity Basket",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    },
+    {
+      "entity_id": "ent_theme_defensive_utilities_basket",
+      "entity_type": "Theme",
+      "canonical_name": "Defensive Utilities Basket",
+      "aliases": [],
+      "description": "",
+      "attributes": {},
+      "confidence": "high"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_id": "rel_affected_by_event_ent_theme_defensive_utilities_basket_ent_event_xlu_transparent_sector_exposure",
+      "relationship_type": "AFFECTED_BY_EVENT",
+      "source_entity_id": "ent_theme_defensive_utilities_basket",
+      "target_entity_id": "ent_event_xlu_transparent_sector_exposure",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "benchmark_transparency",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_xlu_mature_sector_characteristics_relationship_rel_affected_by_event_ent_theme_defensive_utilities_basket_ent_event_xlu_transparent_sector_exposure"
+      ],
+      "notes": [],
+      "relationship_key": "theme_affected_by_xlu_transparency"
+    },
+    {
+      "relationship_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+      "source_entity_id": "ent_expressioncandidate_shares_xlu",
+      "target_entity_id": "ent_theme_defensive_utilities_basket",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "direct_etf_expression",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_xlu_broad_utilities_basket_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket"
+      ],
+      "notes": [],
+      "relationship_key": "shares_xlu_for_theme"
+    },
+    {
+      "relationship_id": "rel_part_of_ent_processlayer_regulated_utility_revenue_base_ent_system_regulated_utilities_equity_basket",
+      "relationship_type": "PART_OF",
+      "source_entity_id": "ent_processlayer_regulated_utility_revenue_base",
+      "target_entity_id": "ent_system_regulated_utilities_equity_basket",
+      "direction": "source_to_target",
+      "relationship_strength": "high",
+      "causal_role": "core_index_exposure",
+      "confidence": "high",
+      "evidence_refs": [
+        "ev_frag_xlu_broad_utilities_basket_relationship_rel_part_of_ent_processlayer_regulated_utility_revenue_base_ent_system_regulated_utilities_equity_basket"
+      ],
+      "notes": [],
+      "relationship_key": "regulated_revenue_base_part_of_xlu_basket"
+    },
+    {
+      "relationship_id": "rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "relationship_type": "REPRICES_VIA",
+      "source_entity_id": "ent_expressioncandidate_shares_xlu",
+      "target_entity_id": "ent_theme_defensive_utilities_basket",
+      "direction": "source_to_target",
+      "relationship_strength": "medium",
+      "causal_role": "defensive_sector_behavior",
+      "confidence": "medium",
+      "evidence_refs": [
+        "ev_frag_xlu_low_variance_expression_relationship_rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket"
+      ],
+      "notes": [],
+      "relationship_key": "shares_xlu_reprices_via_sector_defensiveness"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_claim_xlu_is_diversified_defensive_basket",
+      "claim_type": "supplier_or_customer_relationship",
+      "claim_text": "XLU is a broad diversified utilities basket rather than a narrow structural bottleneck exposure.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_expressioncandidate_shares_xlu",
+        "ent_processlayer_regulated_utility_revenue_base",
+        "ent_system_regulated_utilities_equity_basket"
+      ],
+      "relationship_refs": [
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+        "rel_part_of_ent_processlayer_regulated_utility_revenue_base_ent_system_regulated_utilities_equity_basket"
+      ],
+      "source_ids": [
+        "src_xlu_fund_page_2026_03"
+      ],
+      "fragment_ids": [
+        "frag_xlu_broad_utilities_basket"
+      ],
+      "notes": [],
+      "claim_key": "claim_xlu_is_diversified_defensive_basket",
+      "evidence_refs": [
+        "ev_frag_xlu_broad_utilities_basket_claim_claim_claim_xlu_is_diversified_defensive_basket"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_xlu_is_obvious_not_hidden",
+      "claim_type": "expression_fit_assertion",
+      "claim_text": "XLU is an obvious, transparent sector expression and does not look like a hidden structural information arbitrage vehicle.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_event_xlu_transparent_sector_exposure",
+        "ent_theme_defensive_utilities_basket"
+      ],
+      "relationship_refs": [
+        "rel_affected_by_event_ent_theme_defensive_utilities_basket_ent_event_xlu_transparent_sector_exposure",
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket"
+      ],
+      "source_ids": [
+        "src_xlu_individual_page_2025_11"
+      ],
+      "fragment_ids": [
+        "frag_xlu_mature_sector_characteristics"
+      ],
+      "notes": [],
+      "claim_key": "claim_xlu_is_obvious_not_hidden",
+      "evidence_refs": [
+        "ev_frag_xlu_mature_sector_characteristics_claim_claim_claim_xlu_is_obvious_not_hidden"
+      ]
+    },
+    {
+      "claim_id": "claim_claim_xlu_is_low_variance_baseline",
+      "claim_type": "expression_fit_assertion",
+      "claim_text": "XLU may serve as a defensive baseline, but it does not present a compelling structural mispricing thesis.",
+      "claim_status": "supported",
+      "claim_kind": "inferential",
+      "confidence": "high",
+      "entity_refs": [
+        "ent_expressioncandidate_shares_xlu",
+        "ent_theme_defensive_utilities_basket"
+      ],
+      "relationship_refs": [
+        "rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket"
+      ],
+      "source_ids": [
+        "src_xlu_intermediary_page_2026_02"
+      ],
+      "fragment_ids": [
+        "frag_xlu_low_variance_expression"
+      ],
+      "notes": [],
+      "claim_key": "claim_xlu_is_low_variance_baseline",
+      "evidence_refs": [
+        "ev_frag_xlu_low_variance_expression_claim_claim_claim_xlu_is_low_variance_baseline"
+      ]
+    }
+  ],
+  "evidence_links": [
+    {
+      "evidence_link_id": "ev_frag_xlu_broad_utilities_basket_claim_claim_claim_xlu_is_diversified_defensive_basket",
+      "source_id": "src_xlu_fund_page_2026_03",
+      "fragment_id": "frag_xlu_broad_utilities_basket",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_xlu_is_diversified_defensive_basket",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_low_variance_expression_claim_claim_claim_xlu_is_low_variance_baseline",
+      "source_id": "src_xlu_intermediary_page_2026_02",
+      "fragment_id": "frag_xlu_low_variance_expression",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_xlu_is_low_variance_baseline",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_mature_sector_characteristics_claim_claim_claim_xlu_is_obvious_not_hidden",
+      "source_id": "src_xlu_individual_page_2025_11",
+      "fragment_id": "frag_xlu_mature_sector_characteristics",
+      "supports_object_type": "claim",
+      "supports_object_id": "claim_claim_xlu_is_obvious_not_hidden",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_low_variance_expression_inference_inf_inf_xlu_incremental_defensive_market_miss",
+      "source_id": "src_xlu_intermediary_page_2026_02",
+      "fragment_id": "frag_xlu_low_variance_expression",
+      "supports_object_type": "inference",
+      "supports_object_id": "inf_inf_xlu_incremental_defensive_market_miss",
+      "support_mode": "supporting",
+      "strength": "contextual"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_mature_sector_characteristics_relationship_rel_affected_by_event_ent_theme_defensive_utilities_basket_ent_event_xlu_transparent_sector_exposure",
+      "source_id": "src_xlu_individual_page_2025_11",
+      "fragment_id": "frag_xlu_mature_sector_characteristics",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_affected_by_event_ent_theme_defensive_utilities_basket_ent_event_xlu_transparent_sector_exposure",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_broad_utilities_basket_relationship_rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "source_id": "src_xlu_fund_page_2026_03",
+      "fragment_id": "frag_xlu_broad_utilities_basket",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_broad_utilities_basket_relationship_rel_part_of_ent_processlayer_regulated_utility_revenue_base_ent_system_regulated_utilities_equity_basket",
+      "source_id": "src_xlu_fund_page_2026_03",
+      "fragment_id": "frag_xlu_broad_utilities_basket",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_part_of_ent_processlayer_regulated_utility_revenue_base_ent_system_regulated_utilities_equity_basket",
+      "support_mode": "supporting",
+      "strength": "direct"
+    },
+    {
+      "evidence_link_id": "ev_frag_xlu_low_variance_expression_relationship_rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "source_id": "src_xlu_intermediary_page_2026_02",
+      "fragment_id": "frag_xlu_low_variance_expression",
+      "supports_object_type": "relationship",
+      "supports_object_id": "rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+      "support_mode": "supporting",
+      "strength": "direct"
+    }
+  ],
+  "inferences": [
+    {
+      "inference_id": "inf_inf_xlu_incremental_defensive_market_miss",
+      "inference_type": "market_miss",
+      "statement": "The market may mildly underappreciate utilities defensiveness at times, but XLU appears to be a low-variance benchmark expression rather than a structural information arbitrage candidate.",
+      "derived_from_claim_ids": [
+        "claim_claim_xlu_is_diversified_defensive_basket",
+        "claim_claim_xlu_is_low_variance_baseline",
+        "claim_claim_xlu_is_obvious_not_hidden"
+      ],
+      "derived_from_relationship_ids": [
+        "rel_candidate_expression_for_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket",
+        "rel_reprices_via_ent_expressioncandidate_shares_xlu_ent_theme_defensive_utilities_basket"
+      ],
+      "confidence": "low",
+      "falsifiers": [
+        "the fund is already the obvious expression for this theme",
+        "there is no differentiated hidden dependency or bottleneck thesis embedded in the basket"
+      ],
+      "notes": [],
+      "evidence_refs": [
+        "ev_frag_xlu_low_variance_expression_inference_inf_inf_xlu_incremental_defensive_market_miss"
+      ]
+    }
+  ],
+  "summary": {
+    "entity_count": 5,
+    "relationship_count": 4,
+    "claim_count": 3,
+    "evidence_link_count": 8,
+    "inference_count": 1
+  }
+}

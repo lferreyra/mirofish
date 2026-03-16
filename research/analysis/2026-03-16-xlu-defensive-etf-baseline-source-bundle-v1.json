@@ -1,0 +1,283 @@
+{
+  "name": "xlu_defensive_etf_baseline_source_bundle_v1",
+  "theme": "defensive_utilities_basket",
+  "notes": [
+    "This is an ETF-style false-positive control.",
+    "The source mix is intentionally official and clean, but the thesis is broad, defensive, and low-asymmetry.",
+    "If this promotes too easily, the system is overrewarding source quality and expression readiness."
+  ],
+  "sources": [
+    {
+      "source_id": "src_xlu_fund_page_2026_03",
+      "source_class": "market_data_snapshot",
+      "title": "State Street Utilities Select Sector SPDR ETF XLU",
+      "canonical_url": "https://www.ssga.com/mainfund/xlu",
+      "publisher": "State Street Global Advisors",
+      "published_at": "",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "XLU"
+      ],
+      "theme_refs": [
+        "defensive_utilities_basket",
+        "regulated_utility_exposure"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.9,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official fund page describing holdings count, benchmark, sector scope, and fund characteristics."
+      ]
+    },
+    {
+      "source_id": "src_xlu_individual_page_2025_11",
+      "source_class": "market_data_snapshot",
+      "title": "The Utilities Select Sector SPDR Fund XLU",
+      "canonical_url": "https://www.ssga.com/us/en/individual/etfs/funds/the-utilities-select-sector-spdr-fund-xlu",
+      "publisher": "State Street Global Advisors",
+      "published_at": "",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "XLU"
+      ],
+      "theme_refs": [
+        "defensive_utilities_basket",
+        "regulated_utility_exposure"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.88,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official fund page describing the benchmark and utilities-sector exposure."
+      ]
+    },
+    {
+      "source_id": "src_xlu_intermediary_page_2026_02",
+      "source_class": "market_data_snapshot",
+      "title": "State Street Utilities Select Sector SPDR ETF XLU intermediary page",
+      "canonical_url": "https://www.ssga.com/us/en/intermediary/etfs/state-street-utilities-select-sector-spdr-etf-xlu",
+      "publisher": "State Street Global Advisors",
+      "published_at": "",
+      "retrieved_at": "2026-03-16T00:00:00Z",
+      "language": "en",
+      "jurisdiction": "US",
+      "ticker_refs": [
+        "XLU"
+      ],
+      "theme_refs": [
+        "defensive_utilities_basket",
+        "regulated_utility_exposure"
+      ],
+      "source_quality": "high",
+      "source_reliability_score": 0.88,
+      "usage_mode": "evidence",
+      "attachment_type": "html",
+      "notes": [
+        "Official page describing the benchmark, industry composition, and options availability."
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "fragment_id": "frag_xlu_broad_utilities_basket",
+      "source_id": "src_xlu_fund_page_2026_03",
+      "fragment_type": "fund_page_excerpt",
+      "section_label": "Broad utilities basket",
+      "excerpt": "XLU tracks the Utilities Select Sector Index and provides diversified exposure to electric utilities, water utilities, multi-utilities, renewable electricity producers, and gas utilities inside the S&P 500.",
+      "contains_claim_candidate": true,
+      "research_tags": {
+        "themes": [
+          "Defensive Utilities Basket"
+        ],
+        "systems": [
+          "Regulated Utilities Equity Basket"
+        ],
+        "process_layers": [
+          "Regulated Utility Revenue Base"
+        ]
+      },
+      "entity_hints": [
+        {
+          "entity_type": "Theme",
+          "canonical_name": "Defensive Utilities Basket",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "System",
+          "canonical_name": "Regulated Utilities Equity Basket",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ProcessLayer",
+          "canonical_name": "Regulated Utility Revenue Base",
+          "confidence": "high"
+        },
+        {
+          "entity_type": "ExpressionCandidate",
+          "canonical_name": "Shares: XLU",
+          "confidence": "high"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "regulated_revenue_base_part_of_xlu_basket",
+          "relationship_type": "PART_OF",
+          "source_type": "ProcessLayer",
+          "source_name": "Regulated Utility Revenue Base",
+          "target_type": "System",
+          "target_name": "Regulated Utilities Equity Basket",
+          "relationship_strength": "high",
+          "causal_role": "core_index_exposure",
+          "confidence": "high"
+        },
+        {
+          "key": "shares_xlu_for_theme",
+          "relationship_type": "CANDIDATE_EXPRESSION_FOR",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: XLU",
+          "target_type": "Theme",
+          "target_name": "Defensive Utilities Basket",
+          "relationship_strength": "high",
+          "causal_role": "direct_etf_expression",
+          "confidence": "high"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_xlu_is_diversified_defensive_basket",
+          "claim_type": "supplier_or_customer_relationship",
+          "claim_text": "XLU is a broad diversified utilities basket rather than a narrow structural bottleneck exposure.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "XLU",
+            "Regulated Utilities Equity Basket",
+            "Regulated Utility Revenue Base",
+            "Shares: XLU"
+          ],
+          "relationship_keys": [
+            "regulated_revenue_base_part_of_xlu_basket",
+            "shares_xlu_for_theme"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_xlu_mature_sector_characteristics",
+      "source_id": "src_xlu_individual_page_2025_11",
+      "fragment_type": "fund_page_excerpt",
+      "section_label": "Mature benchmark characteristics",
+      "excerpt": "The benchmark is defined from the utilities sector of the S&P 500, with targeted exposure and modest expense ratio, reinforcing that XLU is a transparent mature sector vehicle rather than an obscure market miss.",
+      "contains_claim_candidate": true,
+      "entity_hints": [
+        {
+          "entity_type": "Event",
+          "canonical_name": "XLU Transparent Sector Exposure",
+          "attributes": {
+            "event_type": "fund_structure_validation"
+          },
+          "confidence": "medium"
+        }
+      ],
+      "relationship_hints": [
+        {
+          "key": "theme_affected_by_xlu_transparency",
+          "relationship_type": "AFFECTED_BY_EVENT",
+          "source_type": "Theme",
+          "source_name": "Defensive Utilities Basket",
+          "target_type": "Event",
+          "target_name": "XLU Transparent Sector Exposure",
+          "relationship_strength": "medium",
+          "causal_role": "benchmark_transparency",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_xlu_is_obvious_not_hidden",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "XLU is an obvious, transparent sector expression and does not look like a hidden structural information arbitrage vehicle.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "XLU",
+            "Defensive Utilities Basket",
+            "XLU Transparent Sector Exposure"
+          ],
+          "relationship_keys": [
+            "theme_affected_by_xlu_transparency",
+            "shares_xlu_for_theme"
+          ]
+        }
+      ]
+    },
+    {
+      "fragment_id": "frag_xlu_low_variance_expression",
+      "source_id": "src_xlu_intermediary_page_2026_02",
+      "fragment_type": "fund_page_excerpt",
+      "section_label": "Low-variance expression",
+      "excerpt": "XLU offers options and broad utilities exposure, but the fund characteristics and benchmark construction imply a stable, widely understood sector expression rather than a latent rerating setup.",
+      "contains_claim_candidate": true,
+      "relationship_hints": [
+        {
+          "key": "shares_xlu_reprices_via_sector_defensiveness",
+          "relationship_type": "REPRICES_VIA",
+          "source_type": "ExpressionCandidate",
+          "source_name": "Shares: XLU",
+          "target_type": "Theme",
+          "target_name": "Defensive Utilities Basket",
+          "relationship_strength": "medium",
+          "causal_role": "defensive_sector_behavior",
+          "confidence": "medium"
+        }
+      ],
+      "claim_candidates": [
+        {
+          "claim_key": "claim_xlu_is_low_variance_baseline",
+          "claim_type": "expression_fit_assertion",
+          "claim_text": "XLU may serve as a defensive baseline, but it does not present a compelling structural mispricing thesis.",
+          "claim_status": "supported",
+          "claim_kind": "inferential",
+          "confidence": "high",
+          "entity_names": [
+            "XLU",
+            "Shares: XLU",
+            "Defensive Utilities Basket"
+          ],
+          "relationship_keys": [
+            "shares_xlu_reprices_via_sector_defensiveness"
+          ]
+        }
+      ],
+      "inference_candidates": [
+        {
+          "inference_key": "inf_xlu_incremental_defensive_market_miss",
+          "inference_type": "market_miss",
+          "statement": "The market may mildly underappreciate utilities defensiveness at times, but XLU appears to be a low-variance benchmark expression rather than a structural information arbitrage candidate.",
+          "claim_keys": [
+            "claim_xlu_is_diversified_defensive_basket",
+            "claim_xlu_is_obvious_not_hidden",
+            "claim_xlu_is_low_variance_baseline"
+          ],
+          "relationship_keys": [
+            "shares_xlu_for_theme",
+            "shares_xlu_reprices_via_sector_defensiveness"
+          ],
+          "confidence": "low",
+          "falsifiers": [
+            "the fund is already the obvious expression for this theme",
+            "there is no differentiated hidden dependency or bottleneck thesis embedded in the basket"
+          ]
+        }
+      ]
+    }
+  ]
+}

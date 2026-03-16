@@ -1,0 +1,73 @@
+{
+  "graduation_status": "exploratory_only",
+  "weighted_score_0_to_100": 65.01,
+  "gates": {
+    "source_gate": true,
+    "structure_gate": false,
+    "market_miss_gate": false,
+    "expression_gate": true,
+    "high_conviction_source_gate": true
+  },
+  "dimensions": {
+    "source_mix": {
+      "score_0_to_100": 84.0,
+      "detail": {
+        "total_sources": 3,
+        "evidence_count": 3,
+        "high_quality_count": 3,
+        "independent_count": 1,
+        "source_classes": [
+          "company_filing",
+          "company_release"
+        ]
+      }
+    },
+    "structure_quality": {
+      "score_0_to_100": 47.65,
+      "detail": {
+        "entity_count": 8,
+        "relationship_count": 5,
+        "claim_count": 3,
+        "evidence_link_count": 9,
+        "inference_count": 1,
+        "entity_types": [
+          "Event",
+          "ExpressionCandidate",
+          "Geography",
+          "ProcessLayer",
+          "PublicCompany",
+          "System",
+          "Theme"
+        ],
+        "relationship_types": [
+          "CANDIDATE_EXPRESSION_FOR",
+          "PART_OF",
+          "REPRICES_VIA",
+          "SUPPLIED_BY"
+        ]
+      }
+    },
+    "market_miss_quality": {
+      "score_0_to_100": 43.0,
+      "detail": {
+        "statement": "The market may modestly underappreciate AFL's defensive resilience at times, but the thesis looks incremental and low-variance rather than structurally mispriced.",
+        "confidence": "low",
+        "derived_claim_count": 3,
+        "derived_relationship_count": 3
+      }
+    },
+    "expression_readiness": {
+      "score_0_to_100": 100.0,
+      "detail": {
+        "expression_count": 1,
+        "expression_names": [
+          "Shares: AFL"
+        ],
+        "expression_relationships_present": [
+          "CANDIDATE_EXPRESSION_FOR",
+          "REPRICES_VIA"
+        ]
+      }
+    }
+  }
+}
