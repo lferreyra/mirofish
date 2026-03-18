@@ -15,7 +15,7 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ { graph: $t('header.viewGraph'), split: $t('header.viewSplit'), workbench: $t('header.viewWorkbench') }[mode] }}
           </button>
         </div>
       </div>
@@ -23,13 +23,16 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 2/5</span>
-          <span class="step-name">环境搭建</span>
+          <span class="step-name">{{ $t('header.stepNames.step2') }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
           <span class="dot"></span>
           {{ statusText }}
         </span>
+        <button class="lang-toggle" @click="toggleLocale">
+          {{ locale === 'zh-CN' ? 'EN' : '中' }}
+        </button>
       </div>
     </header>
 
@@ -66,6 +69,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useLocaleToggle } from '@/i18n/useLocaleToggle'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { getProject, getGraphData } from '../api/graph'
@@ -73,6 +78,8 @@ import { getSimulation, stopSimulation, getEnvStatus, closeSimulationEnv } from 
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
+const { locale, toggleLocale } = useLocaleToggle()
 
 // Props
 const props = defineProps({
@@ -109,9 +116,9 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return 'Error'
-  if (currentStatus.value === 'completed') return 'Ready'
-  return 'Preparing'
+  if (currentStatus.value === 'error') return t('header.statusError')
+  if (currentStatus.value === 'completed') return t('header.statusReady')
+  return t('header.statusPreparing')
 })
 
 // --- Helpers ---
@@ -411,6 +418,24 @@ onMounted(async () => {
 .status-indicator.error .dot { background: #F44336; }
 
 @keyframes pulse { 50% { opacity: 0.5; } }
+
+.lang-toggle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border: 1px solid #E0E0E0;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+.lang-toggle:hover {
+  border-color: #000;
+  color: #000;
+}
 
 /* Content */
 .content-area {
