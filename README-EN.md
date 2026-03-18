@@ -135,11 +135,13 @@ ZEP_API_KEY=your_zep_api_key
 ```env
 LLM_API_KEY=your_minimax_api_key
 LLM_BASE_URL=https://api.minimax.io/v1
-LLM_MODEL_NAME=MiniMax-M2.5
+LLM_MODEL_NAME=MiniMax-M2.7
 ```
 
 | Model | Description |
 |-------|-------------|
+| `MiniMax-M2.7` | Latest flagship model with enhanced reasoning and coding |
+| `MiniMax-M2.7-highspeed` | High-speed version of M2.7 for low-latency scenarios |
 | `MiniMax-M2.5` | Flagship model, 204K context window |
 | `MiniMax-M2.5-highspeed` | Same performance, faster and more agile |
 

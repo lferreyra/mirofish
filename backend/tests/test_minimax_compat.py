@@ -84,6 +84,12 @@ class TestIsMinimax:
     def test_minimax_highspeed(self):
         assert _is_minimax("MiniMax-M2.5-highspeed", "https://api.minimax.io/v1") is True
 
+    def test_minimax_m27(self):
+        assert _is_minimax("MiniMax-M2.7", "https://api.minimax.io/v1") is True
+
+    def test_minimax_m27_highspeed(self):
+        assert _is_minimax("MiniMax-M2.7-highspeed", "https://api.minimax.io/v1") is True
+
 
 class TestClampTemperature:
     def test_zero_temperature_minimax(self):
@@ -105,6 +111,14 @@ class TestClampTemperature:
     def test_max_temperature_minimax(self):
         result = _clamp_temperature(1.0, "MiniMax-M2.5", "https://api.minimax.io/v1")
         assert result == 1.0
+
+    def test_zero_temperature_minimax_m27(self):
+        result = _clamp_temperature(0.0, "MiniMax-M2.7", "https://api.minimax.io/v1")
+        assert result == 0.01
+
+    def test_valid_temperature_minimax_m27(self):
+        result = _clamp_temperature(0.7, "MiniMax-M2.7", "https://api.minimax.io/v1")
+        assert result == 0.7
 
 
 class TestInjectJsonInstruction:
