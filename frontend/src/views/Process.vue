@@ -1173,19 +1173,20 @@ onUnmounted(() => {
 
 .lang-toggle {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border: 1px solid #E0E0E0;
-  background: transparent;
-  color: #666;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border: 1.5px solid #ccc;
+  background: #f5f5f5;
+  color: #333;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   letter-spacing: 0.5px;
   transition: all 0.2s;
 }
 .lang-toggle:hover {
   border-color: #000;
+  background: #e8e8e8;
   color: #000;
 }
 

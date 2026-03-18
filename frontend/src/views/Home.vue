@@ -7,7 +7,7 @@
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           {{ $t('home.visitGithub') }} <span class="arrow">↗</span>
         </a>
-        <button class="lang-toggle" @click="toggleLocale">
+        <button class="lang-toggle" @click="toggleLocale" style="font-size:14px;font-weight:700;padding:6px 16px;border:2px solid #333;background:#f0f0f0;color:#333;border-radius:6px;cursor:pointer;">
           {{ locale === 'zh-CN' ? 'EN' : '中' }}
         </button>
       </div>
@@ -376,20 +376,21 @@ const startSimulation = () => {
 
 .lang-toggle {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border: 1px solid rgba(255,255,255,0.3);
-  background: transparent;
-  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.1);
+  color: #FFF;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   letter-spacing: 0.5px;
   transition: all 0.2s;
   margin-left: 16px;
 }
 .lang-toggle:hover {
   border-color: #FFF;
+  background: rgba(255,255,255,0.2);
   color: #FFF;
 }
 
