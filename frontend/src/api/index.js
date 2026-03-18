@@ -9,9 +9,11 @@ const service = axios.create({
   }
 })
 
-// 请求拦截器
+// 请求拦截器 - automatically attach user's language preference
 service.interceptors.request.use(
   config => {
+    const locale = localStorage.getItem('mirofish-locale') || 'zh-CN'
+    config.headers['Accept-Language'] = locale
     return config
   },
   error => {
