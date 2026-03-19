@@ -570,7 +570,7 @@ def get_graph_data(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY 未配置。此功能需要 Zep Cloud，请在 .env 中配置 ZEP_API_KEY。",
+                "error": "ZEP_API_KEY is not configured. This feature requires Zep Cloud. Please set ZEP_API_KEY in your .env file.",
                 "lite_mode": Config.LITE_MODE
             }), 503
         
@@ -599,7 +599,7 @@ def delete_graph(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY 未配置。此功能需要 Zep Cloud，请在 .env 中配置 ZEP_API_KEY。",
+                "error": "ZEP_API_KEY is not configured. This feature requires Zep Cloud. Please set ZEP_API_KEY in your .env file.",
                 "lite_mode": Config.LITE_MODE
             }), 503
         

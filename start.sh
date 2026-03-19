@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# MiroFish — Lancement rapide (one-command)
+# MiroFish — Quick launch (one-command)
 # Usage: bash start.sh
 #
 set -e
@@ -8,15 +8,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# ---------- Premier lancement : exécuter setup ----------
+# ---------- First launch: run setup ----------
 if [ ! -d "node_modules" ] || [ ! -d "frontend/node_modules" ] || [ ! -f ".env" ]; then
-    echo "Premier lancement détecté, exécution de setup.sh..."
+    echo "First launch detected, running setup.sh..."
     echo ""
     bash setup.sh
     echo ""
 fi
 
-# ---------- Détecter le mode depuis .env ----------
+# ---------- Detect mode from .env ----------
 IS_BRIDGE=false
 IS_LITE=false
 
@@ -30,21 +30,21 @@ elif ! grep -q "ZEP_API_KEY" .env 2>/dev/null || grep -q "ZEP_API_KEY=your_zep_a
     IS_LITE=true
 fi
 
-# ---------- Lancer le bon mode ----------
+# ---------- Launch the appropriate mode ----------
 if [ "$IS_BRIDGE" = true ] && [ "$IS_LITE" = true ]; then
-    echo "Lancement en mode Bridge + Lite (Claude Proxy + Backend + Frontend)..."
+    echo "Starting in Bridge + Lite mode (Claude Proxy + Backend + Frontend)..."
     echo ""
     npm run dev:bridge
 elif [ "$IS_BRIDGE" = true ]; then
-    echo "Lancement en mode Bridge (Claude Proxy + Backend + Frontend)..."
+    echo "Starting in Bridge mode (Claude Proxy + Backend + Frontend)..."
     echo ""
     npm run dev:claude
 elif [ "$IS_LITE" = true ]; then
-    echo "Lancement en mode Lite (Backend + Frontend)..."
+    echo "Starting in Lite mode (Backend + Frontend)..."
     echo ""
     npm run dev:lite
 else
-    echo "Lancement en mode complet (Backend + Frontend)..."
+    echo "Starting in full mode (Backend + Frontend)..."
     echo ""
     npm run dev
 fi
