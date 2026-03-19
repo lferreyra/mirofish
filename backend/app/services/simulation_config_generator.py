@@ -671,53 +671,53 @@ Field descriptions:
             for t, examples in type_examples.items()
         ])
         
-        # 使用配置的上下文截断长度
+        # Use configured context truncation length
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
-        
-        prompt = f"""基于以下模拟需求，生成事件配置。
 
-模拟需求: {simulation_requirement}
+        prompt = f"""Based on the following simulation requirements, generate an event configuration.
+
+Simulation requirement: {simulation_requirement}
 
 {context_truncated}
 
-## 可用实体类型及示例
+## Available Entity Types and Examples
 {type_info}
 
-## 任务
-请生成事件配置JSON：
-- 提取热点话题关键词
-- 描述舆论发展方向
-- 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
+## Task
+Generate event configuration JSON:
+- Extract trending topic keywords
+- Describe the direction of public opinion development
+- Design initial post content — **each post must specify poster_type (publisher type)**
 
-**重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
-例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
+**Important**: poster_type must be chosen from the "Available Entity Types" above so that initial posts can be assigned to the appropriate agent for publishing.
+For example: official announcements should be posted by Official/University types, news by MediaOutlet, student opinions by Student.
 
-返回JSON格式（不要markdown）：
+Return JSON format (no markdown):
 {{
-    "hot_topics": ["关键词1", "关键词2", ...],
-    "narrative_direction": "<舆论发展方向描述>",
+    "hot_topics": ["keyword1", "keyword2", ...],
+    "narrative_direction": "<description of public opinion direction>",
     "initial_posts": [
-        {{"content": "帖子内容", "poster_type": "实体类型（必须从可用类型中选择）"}},
+        {{"content": "post content", "poster_type": "entity type (must be chosen from available types)"}},
         ...
     ],
-    "reasoning": "<简要说明>"
+    "reasoning": "<brief explanation>"
 }}"""
 
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
+        system_prompt = "You are a public opinion analysis expert. Return pure JSON format. Note: poster_type must exactly match an available entity type."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
-            logger.warning(f"事件配置LLM生成失败: {e}, 使用默认配置")
+            logger.warning(f"Event config LLM generation failed: {e}, using default config")
             return {
                 "hot_topics": [],
                 "narrative_direction": "",
                 "initial_posts": [],
-                "reasoning": "使用默认配置"
+                "reasoning": "Using default config"
             }
     
     def _parse_event_config(self, result: Dict[str, Any]) -> EventConfig:
-        """解析事件配置结果"""
+        """Parse event configuration result"""
         return EventConfig(
             initial_posts=result.get("initial_posts", []),
             scheduled_events=[],
