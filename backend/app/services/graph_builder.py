@@ -274,8 +274,9 @@ class GraphBuilderService:
                     )
                 )
             
+            # Zep API allows max 10 source_targets per edge type
             if source_targets:
-                edge_definitions[name] = (edge_class, source_targets)
+                edge_definitions[name] = (edge_class, source_targets[:10])
         
         # 调用Zep API设置本体
         if entity_types or edge_definitions:
