@@ -532,35 +532,35 @@ class SimulationConfigGenerator:
         return None
     
     def _generate_time_config(self, context: str, num_entities: int) -> Dict[str, Any]:
-        """生成时间配置"""
-        # 使用配置的上下文截断长度
+        """Generate time configuration"""
+        # Use configured context truncation length
         context_truncated = context[:self.TIME_CONFIG_CONTEXT_LENGTH]
         
-        # 计算最大允许值（80%的agent数）
+        # Calculate maximum allowed value (80% of agent count)
         max_agents_allowed = max(1, int(num_entities * 0.9))
         
-        prompt = f"""基于以下模拟需求，生成时间模拟配置。
+        prompt = f"""Based on the following simulation requirements, generate a time simulation configuration.
 
 {context_truncated}
 
-## 任务
-请生成时间配置JSON。
+## Task
+Please generate a time configuration JSON.
 
-### 基本原则（仅供参考，需根据具体事件和参与群体灵活调整）：
-- 用户群体为中国人，需符合北京时间作息习惯
-- 凌晨0-5点几乎无人活动（活跃度系数0.05）
-- 早上6-8点逐渐活跃（活跃度系数0.4）
-- 工作时间9-18点中等活跃（活跃度系数0.7）
-- 晚间19-22点是高峰期（活跃度系数1.5）
-- 23点后活跃度下降（活跃度系数0.5）
-- 一般规律：凌晨低活跃、早间渐增、工作时段中等、晚间高峰
-- **重要**：以下示例值仅供参考，你需要根据事件性质、参与群体特点来调整具体时段
-  - 例如：学生群体高峰可能是21-23点；媒体全天活跃；官方机构只在工作时间
-  - 例如：突发热点可能导致深夜也有讨论，off_peak_hours 可适当缩短
+### Basic Principles (for reference only; adjust flexibly based on the specific event and participant group):
+- The user group follows Beijing time activity patterns
+- Almost no activity from 0:00-5:00 (activity multiplier 0.05)
+- Gradually active from 6:00-8:00 (activity multiplier 0.4)
+- Moderately active during work hours 9:00-18:00 (activity multiplier 0.7)
+- Peak period from 19:00-22:00 (activity multiplier 1.5)
+- Activity declines after 23:00 (activity multiplier 0.5)
+- General pattern: low activity in early morning, gradual increase in morning, moderate during work hours, peak in evening
+- **Important**: The example values below are for reference only; adjust specific time slots based on the nature of the event and characteristics of the participant group
+  - For example: student group peak may be 21:00-23:00; media is active all day; official institutions only during work hours
+  - For example: breaking news may cause late-night discussions, off_peak_hours can be shortened accordingly
 
-### 返回JSON格式（不要markdown）
+### Return JSON format (no markdown)
 
-示例：
+Example:
 {{
     "total_simulation_hours": 72,
     "minutes_per_round": 60,
@@ -570,19 +570,19 @@ class SimulationConfigGenerator:
     "off_peak_hours": [0, 1, 2, 3, 4, 5],
     "morning_hours": [6, 7, 8],
     "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    "reasoning": "针对该事件的时间配置说明"
+    "reasoning": "Time configuration notes for this event"
 }}
 
-字段说明：
-- total_simulation_hours (int): 模拟总时长，24-168小时，突发事件短、持续话题长
-- minutes_per_round (int): 每轮时长，30-120分钟，建议60分钟
-- agents_per_hour_min (int): 每小时最少激活Agent数（取值范围: 1-{max_agents_allowed}）
-- agents_per_hour_max (int): 每小时最多激活Agent数（取值范围: 1-{max_agents_allowed}）
-- peak_hours (int数组): 高峰时段，根据事件参与群体调整
-- off_peak_hours (int数组): 低谷时段，通常深夜凌晨
-- morning_hours (int数组): 早间时段
-- work_hours (int数组): 工作时段
-- reasoning (string): 简要说明为什么这样配置"""
+Field descriptions:
+- total_simulation_hours (int): Total simulation duration, 24-168 hours; shorter for breaking events, longer for ongoing topics
+- minutes_per_round (int): Duration per round, 30-120 minutes, 60 minutes recommended
+- agents_per_hour_min (int): Minimum number of agents activated per hour (range: 1-{max_agents_allowed})
+- agents_per_hour_max (int): Maximum number of agents activated per hour (range: 1-{max_agents_allowed})
+- peak_hours (int array): Peak time slots, adjust based on participant group
+- off_peak_hours (int array): Off-peak slots, usually late night and early morning
+- morning_hours (int array): Morning time slots
+- work_hours (int array): Work time slots
+- reasoning (string): Brief explanation of why this configuration was chosen"""
 
         system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合中国人作息习惯。"
         
