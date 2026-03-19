@@ -1369,13 +1369,13 @@ class SimulationRunner:
     @classmethod
     def check_env_alive(cls, simulation_id: str) -> bool:
         """
-        检查模拟环境是否存活（可以接收Interview命令）
+        Check whether the simulation environment is alive (can receive Interview commands)
 
         Args:
-            simulation_id: 模拟ID
+            simulation_id: Simulation ID
 
         Returns:
-            True 表示环境存活，False 表示环境已关闭
+            True if the environment is alive, False if the environment has closed
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
@@ -1387,13 +1387,13 @@ class SimulationRunner:
     @classmethod
     def get_env_status_detail(cls, simulation_id: str) -> Dict[str, Any]:
         """
-        获取模拟环境的详细状态信息
+        Get detailed status information of the simulation environment
 
         Args:
-            simulation_id: 模拟ID
+            simulation_id: Simulation ID
 
         Returns:
-            状态详情字典，包含 status, twitter_available, reddit_available, timestamp
+            Status detail dict containing status, twitter_available, reddit_available, timestamp
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         status_file = os.path.join(sim_dir, "env_status.json")
