@@ -395,8 +395,8 @@ const doStartSimulation = async () => {
     const params = {
       simulation_id: props.simulationId,
       platform: 'parallel',
-      force: true,  // 强制重新开始
-      enable_graph_memory_update: true  // 开启动态图谱更新
+      force: true,  // Force restart
+      enable_graph_memory_update: true  // Enable dynamic graph update
     }
     
     if (props.maxRounds) {
