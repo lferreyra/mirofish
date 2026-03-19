@@ -603,74 +603,74 @@ class OasisProfileGenerator:
         return content
     
     def _try_fix_json(self, content: str, entity_name: str, entity_type: str, entity_summary: str = "") -> Dict[str, Any]:
-        """尝试修复损坏的JSON"""
+        """Attempt to repair corrupted JSON"""
         import re
-        
-        # 1. 首先尝试修复被截断的情况
+
+        # 1. First try to fix truncation
         content = self._fix_truncated_json(content)
-        
-        # 2. 尝试提取JSON部分
+
+        # 2. Try to extract the JSON portion
         json_match = re.search(r'\{[\s\S]*\}', content)
         if json_match:
             json_str = json_match.group()
-            
-            # 3. 处理字符串中的换行符问题
-            # 找到所有字符串值并替换其中的换行符
+
+            # 3. Handle newline characters inside strings
+            # Find all string values and replace embedded newlines
             def fix_string_newlines(match):
                 s = match.group(0)
-                # 替换字符串内的实际换行符为空格
+                # Replace actual newlines inside the string with spaces
                 s = s.replace('\n', ' ').replace('\r', ' ')
-                # 替换多余空格
+                # Collapse excess whitespace
                 s = re.sub(r'\s+', ' ', s)
                 return s
-            
-            # 匹配JSON字符串值
+
+            # Match JSON string values
             json_str = re.sub(r'"[^"\\]*(?:\\.[^"\\]*)*"', fix_string_newlines, json_str)
-            
-            # 4. 尝试解析
+
+            # 4. Try to parse
             try:
                 result = json.loads(json_str)
                 result["_fixed"] = True
                 return result
             except json.JSONDecodeError as e:
-                # 5. 如果还是失败，尝试更激进的修复
+                # 5. If still failing, try a more aggressive repair
                 try:
-                    # 移除所有控制字符
+                    # Remove all control characters
                     json_str = re.sub(r'[\x00-\x1f\x7f-\x9f]', ' ', json_str)
-                    # 替换所有连续空白
+                    # Collapse all consecutive whitespace
                     json_str = re.sub(r'\s+', ' ', json_str)
                     result = json.loads(json_str)
                     result["_fixed"] = True
                     return result
                 except:
                     pass
-        
-        # 6. 尝试从内容中提取部分信息
+
+        # 6. Try to extract partial information from the content
         bio_match = re.search(r'"bio"\s*:\s*"([^"]*)"', content)
-        persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # 可能被截断
-        
+        persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # may be truncated
+
         bio = bio_match.group(1) if bio_match else (entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}")
-        persona = persona_match.group(1) if persona_match else (entity_summary or f"{entity_name}是一个{entity_type}。")
-        
-        # 如果提取到了有意义的内容，标记为已修复
+        persona = persona_match.group(1) if persona_match else (entity_summary or f"{entity_name} is a {entity_type}.")
+
+        # If meaningful content was extracted, mark as fixed
         if bio_match or persona_match:
-            logger.info(f"从损坏的JSON中提取了部分信息")
+            logger.info(f"Extracted partial information from corrupted JSON")
             return {
                 "bio": bio,
                 "persona": persona,
                 "_fixed": True
             }
-        
-        # 7. 完全失败，返回基础结构
-        logger.warning(f"JSON修复失败，返回基础结构")
+
+        # 7. Complete failure — return basic structure
+        logger.warning(f"JSON repair failed, returning basic structure")
         return {
             "bio": entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}",
-            "persona": entity_summary or f"{entity_name}是一个{entity_type}。"
+            "persona": entity_summary or f"{entity_name} is a {entity_type}."
         }
     
     def _get_system_prompt(self, is_individual: bool) -> str:
-        """获取系统提示词"""
-        base_prompt = "你是社交媒体用户画像生成专家。生成详细、真实的人设用于舆论模拟,最大程度还原已有现实情况。必须返回有效的JSON格式，所有字符串值不能包含未转义的换行符。使用中文。"
+        """Get the system prompt"""
+        base_prompt = "You are an expert in generating social media user personas. Generate detailed, realistic personas for public opinion simulation, reproducing real-world situations as faithfully as possible. You must return valid JSON; all string values must not contain unescaped newline characters. Use Chinese."
         return base_prompt
     
     def _build_individual_persona_prompt(
@@ -681,45 +681,45 @@ class OasisProfileGenerator:
         entity_attributes: Dict[str, Any],
         context: str
     ) -> str:
-        """构建个人实体的详细人设提示词"""
-        
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
-        
-        return f"""为实体生成详细的社交媒体用户人设,最大程度还原已有现实情况。
+        """Build the detailed persona prompt for an individual entity"""
 
-实体名称: {entity_name}
-实体类型: {entity_type}
-实体摘要: {entity_summary}
-实体属性: {attrs_str}
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
+        context_str = context[:3000] if context else "No additional context"
 
-上下文信息:
+        return f"""Generate a detailed social media user persona for the entity below, reproducing real-world situations as faithfully as possible.
+
+Entity name: {entity_name}
+Entity type: {entity_type}
+Entity summary: {entity_summary}
+Entity attributes: {attrs_str}
+
+Contextual information:
 {context_str}
 
-请生成JSON，包含以下字段:
+Please generate JSON with the following fields:
 
-1. bio: 社交媒体简介，200字
-2. persona: 详细人设描述（2000字的纯文本），需包含:
-   - 基本信息（年龄、职业、教育背景、所在地）
-   - 人物背景（重要经历、与事件的关联、社会关系）
-   - 性格特征（MBTI类型、核心性格、情绪表达方式）
-   - 社交媒体行为（发帖频率、内容偏好、互动风格、语言特点）
-   - 立场观点（对话题的态度、可能被激怒/感动的内容）
-   - 独特特征（口头禅、特殊经历、个人爱好）
-   - 个人记忆（人设的重要部分，要介绍这个个体与事件的关联，以及这个个体在事件中的已有动作与反应）
-3. age: 年龄数字（必须是整数）
-4. gender: 性别，必须是英文: "male" 或 "female"
-5. mbti: MBTI类型（如INTJ、ENFP等）
-6. country: 国家（使用中文，如"中国"）
-7. profession: 职业
-8. interested_topics: 感兴趣话题数组
+1. bio: Social media bio, ~200 characters
+2. persona: Detailed persona description (2000-character plain text), including:
+   - Basic information (age, occupation, educational background, location)
+   - Background (key experiences, connection to events, social relationships)
+   - Personality traits (MBTI type, core character, emotional expression style)
+   - Social media behavior (posting frequency, content preferences, interaction style, language characteristics)
+   - Stance and opinions (attitude toward topics, content that might provoke or move them)
+   - Distinctive traits (catchphrases, unique experiences, personal hobbies)
+   - Personal memory (an important part of the persona: describe this individual's connection to events and their existing actions and reactions in those events)
+3. age: Age as a number (must be an integer)
+4. gender: Gender in English: "male" or "female"
+5. mbti: MBTI type (e.g. INTJ, ENFP)
+6. country: Country (in Chinese, e.g. "中国")
+7. profession: Occupation
+8. interested_topics: Array of topics of interest
 
-重要:
-- 所有字段值必须是字符串或数字，不要使用换行符
-- persona必须是一段连贯的文字描述
-- 使用中文（除了gender字段必须用英文male/female）
-- 内容要与实体信息保持一致
-- age必须是有效的整数，gender必须是"male"或"female"
+Important:
+- All field values must be strings or numbers; do not use newline characters
+- persona must be a single continuous text description
+- Use Chinese (except the gender field which must be English: male/female)
+- Content must be consistent with the entity information
+- age must be a valid integer; gender must be "male" or "female"
 """
 
     def _build_group_persona_prompt(
@@ -730,45 +730,45 @@ class OasisProfileGenerator:
         entity_attributes: Dict[str, Any],
         context: str
     ) -> str:
-        """构建群体/机构实体的详细人设提示词"""
-        
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
-        
-        return f"""为机构/群体实体生成详细的社交媒体账号设定,最大程度还原已有现实情况。
+        """Build the detailed persona prompt for a group/organization entity"""
 
-实体名称: {entity_name}
-实体类型: {entity_type}
-实体摘要: {entity_summary}
-实体属性: {attrs_str}
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
+        context_str = context[:3000] if context else "No additional context"
 
-上下文信息:
+        return f"""Generate detailed social media account settings for the institution/group entity below, reproducing real-world situations as faithfully as possible.
+
+Entity name: {entity_name}
+Entity type: {entity_type}
+Entity summary: {entity_summary}
+Entity attributes: {attrs_str}
+
+Contextual information:
 {context_str}
 
-请生成JSON，包含以下字段:
+Please generate JSON with the following fields:
 
-1. bio: 官方账号简介，200字，专业得体
-2. persona: 详细账号设定描述（2000字的纯文本），需包含:
-   - 机构基本信息（正式名称、机构性质、成立背景、主要职能）
-   - 账号定位（账号类型、目标受众、核心功能）
-   - 发言风格（语言特点、常用表达、禁忌话题）
-   - 发布内容特点（内容类型、发布频率、活跃时间段）
-   - 立场态度（对核心话题的官方立场、面对争议的处理方式）
-   - 特殊说明（代表的群体画像、运营习惯）
-   - 机构记忆（机构人设的重要部分，要介绍这个机构与事件的关联，以及这个机构在事件中的已有动作与反应）
-3. age: 固定填30（机构账号的虚拟年龄）
-4. gender: 固定填"other"（机构账号使用other表示非个人）
-5. mbti: MBTI类型，用于描述账号风格，如ISTJ代表严谨保守
-6. country: 国家（使用中文，如"中国"）
-7. profession: 机构职能描述
-8. interested_topics: 关注领域数组
+1. bio: Official account bio, ~200 characters, professional and appropriate
+2. persona: Detailed account profile description (2000-character plain text), including:
+   - Institution basic information (official name, institution type, founding background, primary functions)
+   - Account positioning (account type, target audience, core purpose)
+   - Communication style (language characteristics, common expressions, taboo topics)
+   - Content publication features (content types, posting frequency, active time periods)
+   - Stance and attitude (official position on core topics, approach to handling controversies)
+   - Special notes (profile of the represented group, operational habits)
+   - Institutional memory (an important part of the institutional persona: describe this institution's connection to events and its existing actions and reactions in those events)
+3. age: Fixed value 30 (virtual age for institutional accounts)
+4. gender: Fixed value "other" (institutional accounts use "other" to indicate non-individual)
+5. mbti: MBTI type to describe the account style, e.g. ISTJ represents methodical and conservative
+6. country: Country (in Chinese, e.g. "中国")
+7. profession: Description of the institution's function
+8. interested_topics: Array of fields of interest
 
-重要:
-- 所有字段值必须是字符串或数字，不允许null值
-- persona必须是一段连贯的文字描述，不要使用换行符
-- 使用中文（除了gender字段必须用英文"other"）
-- age必须是整数30，gender必须是字符串"other"
-- 机构账号发言要符合其身份定位"""
+Important:
+- All field values must be strings or numbers; null values are not allowed
+- persona must be a single continuous text description; do not use newline characters
+- Use Chinese (except the gender field which must be English: "other")
+- age must be the integer 30; gender must be the string "other"
+- Statements from institutional accounts must match their identity positioning"""
     
     def _generate_profile_rule_based(
         self,
@@ -777,9 +777,9 @@ class OasisProfileGenerator:
         entity_summary: str,
         entity_attributes: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """使用规则生成基础人设"""
-        
-        # 根据实体类型生成不同的人设
+        """Generate a basic persona using rules"""
+
+        # Generate a different persona depending on the entity type
         entity_type_lower = entity_type.lower()
         
         if entity_type_lower in ["student", "alumni"]:
