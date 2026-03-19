@@ -857,7 +857,7 @@ CHAT_OBSERVATION_SUFFIX = "\n\nPlease answer the question concisely."
 
 
 # ═══════════════════════════════════════════════════════════════
-# ReportAgent 主类
+# ReportAgent Main Class
 # ═══════════════════════════════════════════════════════════════
 
 
@@ -1153,7 +1153,7 @@ class ReportAgent:
         if progress_callback:
             progress_callback("planning", 0, "Analyzing simulation requirements...")
         
-        # 首先获取模拟上下文
+        # First retrieve simulation context
         context = self.zep_tools.get_simulation_context(
             graph_id=self.graph_id,
             simulation_requirement=self.simulation_requirement
@@ -1299,7 +1299,7 @@ class ReportAgent:
                     f"Deep retrieval and writing in progress ({tool_calls_count}/{self.MAX_TOOL_CALLS_PER_SECTION})"
                 )
             
-            # 调用LLM
+            # Call LLM
             response = self.llm.chat(
                 messages=messages,
                 temperature=0.5,
@@ -1997,7 +1997,7 @@ class ReportManager:
             "logs": logs,
             "total_lines": total_lines,
             "from_line": from_line,
-            "has_more": False  # 已读取到末尾
+            "has_more": False  # Read to end of file
         }
     
     @classmethod
@@ -2059,7 +2059,7 @@ class ReportManager:
             "logs": logs,
             "total_lines": total_lines,
             "from_line": from_line,
-            "has_more": False  # 已读取到末尾
+            "has_more": False  # Read to end of file
         }
     
     @classmethod
@@ -2328,7 +2328,7 @@ class ReportManager:
             line = lines[i]
             stripped = line.strip()
             
-            # 检查是否是标题行
+            # Check if line is a heading
             heading_match = re.match(r'^(#{1,6})\s+(.+)$', stripped)
             
             if heading_match:
