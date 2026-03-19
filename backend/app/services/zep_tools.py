@@ -1278,35 +1278,35 @@ Return the sub-question list in JSON format."""
         custom_questions: List[str] = None
     ) -> InterviewResult:
         """
-        【InterviewAgents - 深度采访】
-        
-        调用真实的OASIS采访API，采访模拟中正在运行的Agent：
-        1. 自动读取人设文件，了解所有模拟Agent
-        2. 使用LLM分析采访需求，智能选择最相关的Agent
-        3. 使用LLM生成采访问题
-        4. 调用 /api/simulation/interview/batch 接口进行真实采访（双平台同时采访）
-        5. 整合所有采访结果，生成采访报告
-        
-        【重要】此功能需要模拟环境处于运行状态（OASIS环境未关闭）
-        
-        【使用场景】
-        - 需要从不同角色视角了解事件看法
-        - 需要收集多方意见和观点
-        - 需要获取模拟Agent的真实回答（非LLM模拟）
-        
+        [InterviewAgents - Deep Interview]
+
+        Calls the real OASIS interview API to interview Agents currently running in the simulation:
+        1. Automatically reads persona files to understand all simulated Agents
+        2. Uses LLM to analyze interview requirements and intelligently select the most relevant Agents
+        3. Uses LLM to generate interview questions
+        4. Calls the /api/simulation/interview/batch endpoint for real interviews (dual-platform simultaneously)
+        5. Integrates all interview results and generates an interview report
+
+        [Important] This feature requires the simulation environment to be in a running state (OASIS environment not closed)
+
+        [Use cases]
+        - Need to understand event perspectives from different role viewpoints
+        - Need to collect opinions and viewpoints from multiple parties
+        - Need to get real answers from simulated Agents (not LLM simulated)
+
         Args:
-            simulation_id: 模拟ID（用于定位人设文件和调用采访API）
-            interview_requirement: 采访需求描述（非结构化，如"了解学生对事件的看法"）
-            simulation_requirement: 模拟需求背景（可选）
-            max_agents: 最多采访的Agent数量
-            custom_questions: 自定义采访问题（可选，若不提供则自动生成）
-            
+            simulation_id: Simulation ID (used to locate persona files and call the interview API)
+            interview_requirement: Interview requirement description (unstructured, e.g. "understand students' views on the event")
+            simulation_requirement: Simulation requirement background (optional)
+            max_agents: Maximum number of Agents to interview
+            custom_questions: Custom interview questions (optional, auto-generated if not provided)
+
         Returns:
-            InterviewResult: 采访结果
+            InterviewResult: Interview result
         """
         from .simulation_runner import SimulationRunner
-        
-        logger.info(f"InterviewAgents 深度采访（真实API）: {interview_requirement[:50]}...")
+
+        logger.info(f"InterviewAgents deep interview (real API): {interview_requirement[:50]}...")
         
         result = InterviewResult(
             interview_topic=interview_requirement,
