@@ -50,7 +50,7 @@ service.interceptors.response.use(
   }
 )
 
-// 带重试的请求函数
+// Request function with retry logic
 export const requestWithRetry = async (requestFn, maxRetries = 3, delay = 1000) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
