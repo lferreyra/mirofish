@@ -1552,39 +1552,39 @@ class SimulationRunner:
         timeout: float = 180.0
     ) -> Dict[str, Any]:
         """
-        采访所有Agent（全局采访）
+        Interview all Agents (global interview)
 
-        使用相同的问题采访模拟中的所有Agent
+        Interview all Agents in the simulation using the same question
 
         Args:
-            simulation_id: 模拟ID
-            prompt: 采访问题（所有Agent使用相同问题）
-            platform: 指定平台（可选）
-                - "twitter": 只采访Twitter平台
-                - "reddit": 只采访Reddit平台
-                - None: 双平台模拟时每个Agent同时采访两个平台
-            timeout: 超时时间（秒）
+            simulation_id: Simulation ID
+            prompt: Interview question (all Agents use the same question)
+            platform: Specify platform (optional)
+                - "twitter": Only interview Twitter platform
+                - "reddit": Only interview Reddit platform
+                - None: In dual-platform simulation, each Agent interviews both platforms simultaneously
+            timeout: Timeout in seconds
 
         Returns:
-            全局采访结果字典
+            Global interview result dict
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"Simulation does not exist: {simulation_id}")
 
-        # 从配置文件获取所有Agent信息
+        # Get all Agent information from configuration file
         config_path = os.path.join(sim_dir, "simulation_config.json")
         if not os.path.exists(config_path):
-            raise ValueError(f"模拟配置不存在: {simulation_id}")
+            raise ValueError(f"Simulation configuration does not exist: {simulation_id}")
 
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
 
         agent_configs = config.get("agent_configs", [])
         if not agent_configs:
-            raise ValueError(f"模拟配置中没有Agent: {simulation_id}")
+            raise ValueError(f"No Agents in simulation configuration: {simulation_id}")
 
-        # 构建批量采访列表
+        # Build batch interview list
         interviews = []
         for agent_config in agent_configs:
             agent_id = agent_config.get("agent_id")
@@ -1594,7 +1594,7 @@ class SimulationRunner:
                     "prompt": prompt
                 })
 
-        logger.info(f"发送全局Interview命令: simulation_id={simulation_id}, agent_count={len(interviews)}, platform={platform}")
+        logger.info(f"Sending global Interview command: simulation_id={simulation_id}, agent_count={len(interviews)}, platform={platform}")
 
         return cls.interview_agents_batch(
             simulation_id=simulation_id,
@@ -1610,45 +1610,46 @@ class SimulationRunner:
         timeout: float = 30.0
     ) -> Dict[str, Any]:
         """
-        关闭模拟环境（而不是停止模拟进程）
-        
-        向模拟发送关闭环境命令，使其优雅退出等待命令模式
-        
+        Close the simulation environment (rather than stopping the simulation process)
+
+        Sends a close environment command to the simulation, causing it to gracefully exit
+        the command-waiting mode
+
         Args:
-            simulation_id: 模拟ID
-            timeout: 超时时间（秒）
-            
+            simulation_id: Simulation ID
+            timeout: Timeout in seconds
+
         Returns:
-            操作结果字典
+            Operation result dict
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
-        
+            raise ValueError(f"Simulation does not exist: {simulation_id}")
+
         ipc_client = SimulationIPCClient(sim_dir)
-        
+
         if not ipc_client.check_env_alive():
             return {
                 "success": True,
-                "message": "环境已经关闭"
+                "message": "Environment is already closed"
             }
-        
-        logger.info(f"发送关闭环境命令: simulation_id={simulation_id}")
+
+        logger.info(f"Sending close environment command: simulation_id={simulation_id}")
         
         try:
             response = ipc_client.send_close_env(timeout=timeout)
             
             return {
                 "success": response.status.value == "completed",
-                "message": "环境关闭命令已发送",
+                "message": "Environment close command sent",
                 "result": response.result,
                 "timestamp": response.timestamp
             }
         except TimeoutError:
-            # 超时可能是因为环境正在关闭
+            # Timeout may be because the environment is closing
             return {
                 "success": True,
-                "message": "环境关闭命令已发送（等待响应超时，环境可能正在关闭）"
+                "message": "Environment close command sent (timed out waiting for response, environment may be closing)"
             }
     
     @classmethod
