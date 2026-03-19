@@ -59,8 +59,9 @@ def get_graph_entities(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
-            }), 500
+                "error": "ZEP_API_KEY is not configured. This feature requires Zep Cloud. Please set ZEP_API_KEY in your .env file.",
+                "lite_mode": True
+            }), 503
         
         entity_types_str = request.args.get('entity_types', '')
         entity_types = [t.strip() for t in entity_types_str.split(',') if t.strip()] if entity_types_str else None
@@ -96,8 +97,9 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
-            }), 500
+                "error": "ZEP_API_KEY is not configured. This feature requires Zep Cloud. Please set ZEP_API_KEY in your .env file.",
+                "lite_mode": True
+            }), 503
         
         reader = ZepEntityReader()
         entity = reader.get_entity_with_context(graph_id, entity_uuid)
@@ -129,8 +131,9 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
-            }), 500
+                "error": "ZEP_API_KEY is not configured. This feature requires Zep Cloud. Please set ZEP_API_KEY in your .env file.",
+                "lite_mode": True
+            }), 503
         
         enrich = request.args.get('enrich', 'true').lower() == 'true'
         
