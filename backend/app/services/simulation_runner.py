@@ -1660,7 +1660,7 @@ class SimulationRunner:
         agent_id: Optional[int] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """从单个数据库获取Interview历史"""
+        """Get Interview history from a single database"""
         import sqlite3
         
         if not os.path.exists(db_path):
@@ -1706,7 +1706,7 @@ class SimulationRunner:
             conn.close()
             
         except Exception as e:
-            logger.error(f"读取Interview历史失败 ({platform_name}): {e}")
+            logger.error(f"Failed to read Interview history ({platform_name}): {e}")
         
         return results
 
@@ -1719,29 +1719,29 @@ class SimulationRunner:
         limit: int = 100
     ) -> List[Dict[str, Any]]:
         """
-        获取Interview历史记录（从数据库读取）
-        
+        Get Interview history records (read from database)
+
         Args:
-            simulation_id: 模拟ID
-            platform: 平台类型（reddit/twitter/None）
-                - "reddit": 只获取Reddit平台的历史
-                - "twitter": 只获取Twitter平台的历史
-                - None: 获取两个平台的所有历史
-            agent_id: 指定Agent ID（可选，只获取该Agent的历史）
-            limit: 每个平台返回数量限制
-            
+            simulation_id: Simulation ID
+            platform: Platform type (reddit/twitter/None)
+                - "reddit": Only get Reddit platform history
+                - "twitter": Only get Twitter platform history
+                - None: Get all history from both platforms
+            agent_id: Specify Agent ID (optional, only get history for that Agent)
+            limit: Return count limit per platform
+
         Returns:
-            Interview历史记录列表
+            Interview history record list
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
-        
+
         results = []
-        
-        # 确定要查询的平台
+
+        # Determine which platforms to query
         if platform in ("reddit", "twitter"):
             platforms = [platform]
         else:
-            # 不指定platform时，查询两个平台
+            # When platform is not specified, query both platforms
             platforms = ["twitter", "reddit"]
         
         for p in platforms:
@@ -1754,10 +1754,10 @@ class SimulationRunner:
             )
             results.extend(platform_results)
         
-        # 按时间降序排序
+        # Sort by timestamp descending
         results.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-        
-        # 如果查询了多个平台，限制总数
+
+        # If multiple platforms were queried, limit the total count
         if len(platforms) > 1 and len(results) > limit:
             results = results[:limit]
         
