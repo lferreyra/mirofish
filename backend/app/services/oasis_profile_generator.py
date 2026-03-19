@@ -539,64 +539,64 @@ class OasisProfileGenerator:
                 
                 content = response.choices[0].message.content
                 
-                # 检查是否被截断（finish_reason不是'stop'）
+                # Check whether the output was truncated (finish_reason is not 'stop')
                 finish_reason = response.choices[0].finish_reason
                 if finish_reason == 'length':
-                    logger.warning(f"LLM输出被截断 (attempt {attempt+1}), 尝试修复...")
+                    logger.warning(f"LLM output truncated (attempt {attempt+1}), attempting repair...")
                     content = self._fix_truncated_json(content)
-                
-                # 尝试解析JSON
+
+                # Attempt to parse JSON
                 try:
                     result = json.loads(content)
-                    
-                    # 验证必需字段
+
+                    # Validate required fields
                     if "bio" not in result or not result["bio"]:
                         result["bio"] = entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}"
                     if "persona" not in result or not result["persona"]:
-                        result["persona"] = entity_summary or f"{entity_name}是一个{entity_type}。"
-                    
+                        result["persona"] = entity_summary or f"{entity_name} is a {entity_type}."
+
                     return result
-                    
+
                 except json.JSONDecodeError as je:
-                    logger.warning(f"JSON解析失败 (attempt {attempt+1}): {str(je)[:80]}")
-                    
-                    # 尝试修复JSON
+                    logger.warning(f"JSON parsing failed (attempt {attempt+1}): {str(je)[:80]}")
+
+                    # Attempt to repair JSON
                     result = self._try_fix_json(content, entity_name, entity_type, entity_summary)
                     if result.get("_fixed"):
                         del result["_fixed"]
                         return result
-                    
+
                     last_error = je
-                    
+
             except Exception as e:
-                logger.warning(f"LLM调用失败 (attempt {attempt+1}): {str(e)[:80]}")
+                logger.warning(f"LLM call failed (attempt {attempt+1}): {str(e)[:80]}")
                 last_error = e
                 import time
-                time.sleep(1 * (attempt + 1))  # 指数退避
-        
-        logger.warning(f"LLM生成人设失败（{max_attempts}次尝试）: {last_error}, 使用规则生成")
+                time.sleep(1 * (attempt + 1))  # Exponential backoff
+
+        logger.warning(f"LLM persona generation failed ({max_attempts} attempts): {last_error}, falling back to rule-based generation")
         return self._generate_profile_rule_based(
             entity_name, entity_type, entity_summary, entity_attributes
         )
     
     def _fix_truncated_json(self, content: str) -> str:
-        """修复被截断的JSON（输出被max_tokens限制截断）"""
+        """Repair JSON that was truncated (output cut off by max_tokens limit)"""
         import re
-        
-        # 如果JSON被截断，尝试闭合它
+
+        # If the JSON was truncated, attempt to close it
         content = content.strip()
-        
-        # 计算未闭合的括号
+
+        # Count unclosed brackets
         open_braces = content.count('{') - content.count('}')
         open_brackets = content.count('[') - content.count(']')
-        
-        # 检查是否有未闭合的字符串
-        # 简单检查：如果最后一个引号后没有逗号或闭合括号，可能是字符串被截断
+
+        # Check for unclosed strings
+        # Simple check: if the last character is not a comma or closing bracket, the string may be truncated
         if content and content[-1] not in '",}]':
-            # 尝试闭合字符串
+            # Attempt to close the string
             content += '"'
-        
-        # 闭合括号
+
+        # Close brackets
         content += ']' * open_brackets
         content += '}' * open_braces
         

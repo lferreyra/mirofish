@@ -766,17 +766,17 @@ Return JSON format (no markdown):
             poster_type = post.get("poster_type", "").lower()
             content = post.get("content", "")
             
-            # 尝试找到匹配的 agent
+            # Try to find a matching agent
             matched_agent_id = None
-            
-            # 1. 直接匹配
+
+            # 1. Direct match
             if poster_type in agents_by_type:
                 agents = agents_by_type[poster_type]
                 idx = used_indices.get(poster_type, 0) % len(agents)
                 matched_agent_id = agents[idx].agent_id
                 used_indices[poster_type] = idx + 1
             else:
-                # 2. 使用别名匹配
+                # 2. Match using aliases
                 for alias_key, aliases in type_aliases.items():
                     if poster_type in aliases or alias_key == poster_type:
                         for alias in aliases:
@@ -789,11 +789,11 @@ Return JSON format (no markdown):
                     if matched_agent_id is not None:
                         break
             
-            # 3. 如果仍未找到，使用影响力最高的 agent
+            # 3. If still not found, use the agent with the highest influence
             if matched_agent_id is None:
-                logger.warning(f"未找到类型 '{poster_type}' 的匹配 Agent，使用影响力最高的 Agent")
+                logger.warning(f"No matching agent found for type '{poster_type}', using highest-influence agent")
                 if agent_configs:
-                    # 按影响力排序，选择影响力最高的
+                    # Sort by influence and select the highest
                     sorted_agents = sorted(agent_configs, key=lambda a: a.influence_weight, reverse=True)
                     matched_agent_id = sorted_agents[0].agent_id
                 else:
@@ -805,7 +805,7 @@ Return JSON format (no markdown):
                 "poster_agent_id": matched_agent_id
             })
             
-            logger.info(f"初始帖子分配: poster_type='{poster_type}' -> agent_id={matched_agent_id}")
+            logger.info(f"Initial post assignment: poster_type='{poster_type}' -> agent_id={matched_agent_id}")
         
         event_config.initial_posts = updated_posts
         return event_config
@@ -817,9 +817,9 @@ Return JSON format (no markdown):
         start_idx: int,
         simulation_requirement: str
     ) -> List[AgentActivityConfig]:
-        """分批生成Agent配置"""
-        
-        # 构建实体信息（使用配置的摘要长度）
+        """Generate agent configurations in batches"""
+
+        # Build entity information (using configured summary length)
         entity_list = []
         summary_len = self.AGENT_SUMMARY_LENGTH
         for i, e in enumerate(entities):
