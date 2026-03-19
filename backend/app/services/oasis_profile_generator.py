@@ -475,22 +475,22 @@ class OasisProfileGenerator:
         zep_results = self._search_zep_for_entity(entity)
         
         if zep_results.get("facts"):
-            # 去重：排除已存在的事实
+            # Deduplicate: exclude already-existing facts
             new_facts = [f for f in zep_results["facts"] if f not in existing_facts]
             if new_facts:
-                context_parts.append("### Zep检索到的事实信息\n" + "\n".join(f"- {f}" for f in new_facts[:15]))
-        
+                context_parts.append("### Facts Retrieved from Zep\n" + "\n".join(f"- {f}" for f in new_facts[:15]))
+
         if zep_results.get("node_summaries"):
-            context_parts.append("### Zep检索到的相关节点\n" + "\n".join(f"- {s}" for s in zep_results["node_summaries"][:10]))
+            context_parts.append("### Related Nodes Retrieved from Zep\n" + "\n".join(f"- {s}" for s in zep_results["node_summaries"][:10]))
         
         return "\n\n".join(context_parts)
     
     def _is_individual_entity(self, entity_type: str) -> bool:
-        """判断是否是个人类型实体"""
+        """Determine whether the entity is an individual-type entity"""
         return entity_type.lower() in self.INDIVIDUAL_ENTITY_TYPES
     
     def _is_group_entity(self, entity_type: str) -> bool:
-        """判断是否是群体/机构类型实体"""
+        """Determine whether the entity is a group/organization-type entity"""
         return entity_type.lower() in self.GROUP_ENTITY_TYPES
     
     def _generate_profile_with_llm(
