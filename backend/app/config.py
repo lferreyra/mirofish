@@ -31,6 +31,8 @@ class Config:
     LLM_API_KEY = os.environ.get('LLM_API_KEY')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
+    # 部分模型（如火山引擎豆包）不支持 response_format.json_object，设为 false 时仅靠提示词要求返回 JSON
+    LLM_SUPPORTS_JSON_MODE = os.environ.get('LLM_JSON_MODE', 'true').lower() == 'true'
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')

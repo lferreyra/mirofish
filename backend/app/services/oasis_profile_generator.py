@@ -524,20 +524,26 @@ class OasisProfileGenerator:
         max_attempts = 3
         last_error = None
         
+        use_json_mode = getattr(Config, 'LLM_SUPPORTS_JSON_MODE', True)
         for attempt in range(max_attempts):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
+                kwargs = {
+                    "model": self.model_name,
+                    "messages": [
                         {"role": "system", "content": self._get_system_prompt(is_individual)},
                         {"role": "user", "content": prompt}
                     ],
-                    response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
-                    # 不设置max_tokens，让LLM自由发挥
-                )
+                    "temperature": 0.7 - (attempt * 0.1)
+                }
+                if use_json_mode:
+                    kwargs["response_format"] = {"type": "json_object"}
+                response = self.client.chat.completions.create(**kwargs)
                 
                 content = response.choices[0].message.content
+                if not use_json_mode:
+                    import re
+                    content = re.sub(r'^```(?:json)?\s*\n?', '', content.strip(), flags=re.IGNORECASE)
+                    content = re.sub(r'\n?```\s*$', '', content).strip()
                 
                 # 检查是否被截断（finish_reason不是'stop'）
                 finish_reason = response.choices[0].finish_reason

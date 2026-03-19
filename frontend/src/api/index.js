@@ -12,6 +12,10 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
+    // 发送 FormData 时不带 Content-Type，让浏览器自动添加 multipart/form-data 和 boundary
+    if (config.data && typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
     return config
   },
   error => {

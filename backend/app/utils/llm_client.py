@@ -4,8 +4,9 @@ LLM客户端封装
 """
 
 import json
+import os
 import re
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List, Optional
 from openai import OpenAI
 
 from ..config import Config
@@ -71,7 +72,8 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        use_json_mode: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         发送聊天请求并返回JSON
@@ -80,15 +82,20 @@ class LLMClient:
             messages: 消息列表
             temperature: 温度参数
             max_tokens: 最大token数
+            use_json_mode: 是否使用 response_format.json_object；None 时从 Config.LLM_SUPPORTS_JSON_MODE 读取
             
         Returns:
             解析后的JSON对象
         """
+        if use_json_mode is None:
+            # 每次调用时读取，避免进程启动时 .env 未加载导致豆包等模型仍传 json_object
+            use_json_mode = os.environ.get('LLM_JSON_MODE', 'true').strip().lower() == 'true'
+        response_format = {"type": "json_object"} if use_json_mode else None
         response = self.chat(
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format={"type": "json_object"}
+            response_format=response_format
         )
         # 清理markdown代码块标记
         cleaned_response = response.strip()

@@ -48,9 +48,29 @@
 
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
+        <!-- 无待上传时：/process/new 直接显示本地上传表单 -->
+        <div v-if="showInlineUpload" class="inline-upload-card">
+          <h3 class="inline-upload-title">本地生成</h3>
+          <p class="inline-upload-desc">请上传种子文档并填写模拟需求，或 <a href="/">返回首页</a> 操作。</p>
+          <form @submit.prevent="submitInlineUpload" class="inline-upload-form">
+            <div class="form-group">
+              <label>种子文档（PDF / MD / TXT）</label>
+              <input type="file" ref="inlineFileInput" accept=".pdf,.md,.txt" multiple @change="onInlineFilesChange" class="file-input" />
+              <span v-if="inlineFiles.length" class="file-hint">{{ inlineFiles.length }} 个文件已选</span>
+            </div>
+            <div class="form-group">
+              <label>模拟需求描述</label>
+              <textarea v-model="inlineRequirement" placeholder="例：基于该事件模拟各方在社交媒体上的发声与互动，预测舆论走向。" rows="4" class="textarea-input"></textarea>
+            </div>
+            <p v-if="error" class="inline-error">{{ error }}</p>
+            <button type="submit" class="submit-btn" :disabled="!canSubmitInline || loading">
+              {{ loading ? '生成中...' : '开始生成' }}
+            </button>
+          </form>
+        </div>
         <!-- Step 1: 图谱构建 -->
         <Step1GraphBuild 
-          v-if="currentStep === 1"
+          v-else-if="currentStep === 1"
           :currentPhase="currentPhase"
           :projectData="projectData"
           :ontologyProgress="ontologyProgress"
@@ -81,7 +101,7 @@ import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
-import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import { getPendingUpload, setPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
 const router = useRouter()
@@ -104,6 +124,13 @@ const currentPhase = ref(-1) // -1: Upload, 0: Ontology, 1: Build, 2: Complete
 const ontologyProgress = ref(null)
 const buildProgress = ref(null)
 const systemLogs = ref([])
+
+// 直接访问 /process/new 时的本地上传表单
+const showInlineUpload = ref(false)
+const inlineFiles = ref([])
+const inlineRequirement = ref('')
+const inlineFileInput = ref(null)
+const canSubmitInline = computed(() => inlineFiles.value.length > 0 && (inlineRequirement.value || '').trim().length > 0)
 
 // Polling timers
 let pollTimer = null
@@ -180,17 +207,36 @@ const handleGoBack = () => {
 const initProject = async () => {
   addLog('Project view initialized.')
   if (currentProjectId.value === 'new') {
-    await handleNewProject()
+    const pending = getPendingUpload()
+    if (pending.isPending && pending.files.length > 0) {
+      await handleNewProject()
+    } else {
+      showInlineUpload.value = true
+      addLog('No pending upload. Show inline upload form.')
+    }
   } else {
     await loadProject()
   }
 }
 
+const onInlineFilesChange = (e) => {
+  const list = e.target.files ? Array.from(e.target.files) : []
+  inlineFiles.value = list.filter(f => /\.(pdf|md|txt)$/i.test(f.name))
+}
+
+const submitInlineUpload = async () => {
+  if (!canSubmitInline.value || loading.value) return
+  setPendingUpload(inlineFiles.value, inlineRequirement.value.trim())
+  showInlineUpload.value = false
+  await handleNewProject()
+}
+
 const handleNewProject = async () => {
   const pending = getPendingUpload()
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No pending files found.'
-    addLog('Error: No pending files found for new project.')
+    showInlineUpload.value = true
+    error.value = ''
+    addLog('No pending files. Show inline upload form.')
     return
   }
   
@@ -209,18 +255,23 @@ const handleNewProject = async () => {
       clearPendingUpload()
       currentProjectId.value = res.data.project_id
       projectData.value = res.data
-      
+
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
       addLog(`Ontology generated successfully for project ${res.data.project_id}`)
       await startBuildGraph()
     } else {
-      error.value = res.error || 'Ontology generation failed'
+      error.value = res.error || '本体生成失败，请检查后端与 LLM 配置'
       addLog(`Error generating ontology: ${error.value}`)
+      showInlineUpload.value = true
     }
   } catch (err) {
-    error.value = err.message
-    addLog(`Exception in handleNewProject: ${err.message}`)
+    const backendError = err.response?.data?.error
+    const msg = backendError || err.message || '请求失败，请确认后端已启动（端口 5001）'
+    error.value = msg
+    addLog(`Exception in handleNewProject: ${msg}`)
+    if (err.response?.data?.traceback) addLog(err.response.data.traceback)
+    showInlineUpload.value = true
   } finally {
     loading.value = false
   }
@@ -536,5 +587,85 @@ onUnmounted(() => {
 
 .panel-wrapper.left {
   border-right: 1px solid #EAEAEA;
+}
+
+/* 本地上传表单（/process/new 无待上传时） */
+.inline-upload-card {
+  padding: 24px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.inline-upload-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #000;
+}
+.inline-upload-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 20px 0;
+}
+.inline-upload-desc a {
+  color: #FF5722;
+  text-decoration: none;
+}
+.inline-upload-desc a:hover {
+  text-decoration: underline;
+}
+.inline-upload-form .form-group {
+  margin-bottom: 16px;
+}
+.inline-upload-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+.inline-upload-form .file-input {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.inline-upload-form .file-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+.inline-upload-form .textarea-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  resize: vertical;
+  font-family: inherit;
+}
+.inline-upload-form .inline-error {
+  color: #c62828;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+}
+.inline-upload-form .submit-btn {
+  padding: 10px 24px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inline-upload-form .submit-btn:hover:not(:disabled) {
+  background: #333;
+}
+.inline-upload-form .submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 </style>
