@@ -19,7 +19,10 @@ else:
 
 class Config:
     """Flask配置类"""
-    
+
+    # 轻量模式：无需 Zep Cloud，通过 Claude Code Bridge 运行
+    LITE_MODE = os.environ.get('LITE_MODE', 'false').lower() == 'true'
+
     # Flask配置
     SECRET_KEY = os.environ.get('SECRET_KEY', 'mirofish-secret-key')
     DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
@@ -64,13 +67,19 @@ class Config:
     REPORT_AGENT_TEMPERATURE = float(os.environ.get('REPORT_AGENT_TEMPERATURE', '0.5'))
     
     @classmethod
+    def is_zep_available(cls) -> bool:
+        """检查 Zep Cloud 是否可用"""
+        return bool(cls.ZEP_API_KEY)
+
+    @classmethod
     def validate(cls):
         """验证必要配置"""
         errors = []
         # 使用 Claude Code Proxy 时，API key 可以是任意值（如 "not-needed"）
         if not cls.LLM_API_KEY:
             errors.append("LLM_API_KEY 未配置")
-        if not cls.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY 未配置")
+        # 轻量模式下不需要 Zep
+        if not cls.LITE_MODE and not cls.ZEP_API_KEY:
+            errors.append("ZEP_API_KEY 未配置 (设置 LITE_MODE=true 可跳过)")
         return errors
 

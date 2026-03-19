@@ -71,7 +71,12 @@ def create_app(config_class=Config):
     # 健康检查
     @app.route('/health')
     def health():
-        return {'status': 'ok', 'service': 'MiroFish Backend'}
+        return {
+            'status': 'ok',
+            'service': 'MiroFish Backend',
+            'lite_mode': Config.LITE_MODE,
+            'zep_available': Config.is_zep_available()
+        }
     
     if should_log_startup:
         logger.info("MiroFish Backend 启动完成")

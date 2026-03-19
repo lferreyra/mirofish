@@ -62,10 +62,35 @@ MiroFish/
 
 ## Development Setup
 
+### Quick Start — Mode Bridge (Recommended)
+
+The fastest way to run MiroFish locally, using Claude Code CLI as the LLM backend. No API keys required (only a Claude Max subscription).
+
+```bash
+# One command: setup + launch
+bash start.sh
+
+# Or interactive setup first, then launch
+bash setup.sh          # Guided setup (checks prereqs, configures .env)
+npm run dev:bridge     # Launch: Claude Proxy (8082) + Backend (5001) + Frontend (3000)
+```
+
+**Available launch modes:**
+
+| Command | Description | Requires |
+|---------|-------------|----------|
+| `npm run dev:bridge` | Bridge + Lite mode (recommended for local dev) | Claude CLI |
+| `npm run dev:lite` | Lite mode with external LLM API | LLM API key |
+| `npm run dev:claude` | Bridge + full mode (with Zep) | Claude CLI + Zep key |
+| `npm run dev` | Full mode | LLM API key + Zep key |
+
+**Lite mode** (`LITE_MODE=true`): Runs without Zep Cloud. Graph building and simulation features are disabled but the app starts and serves the frontend.
+
 ### Prerequisites
 - Node.js >= 18
 - Python >= 3.11
 - `uv` (Python package manager, https://docs.astral.sh/uv/)
+- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`) — for bridge mode
 
 ### Install Dependencies
 ```bash
@@ -79,12 +104,14 @@ npm run setup:backend  # Python deps via uv
 
 ### Environment Configuration
 Copy `.env.example` to `.env` at the project root and fill in:
-- `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL_NAME` — Required. Any OpenAI-compatible LLM API.
-- `ZEP_API_KEY` — Required. Zep Cloud for graph memory.
+- `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL_NAME` — Required. Any OpenAI-compatible LLM API. (Not needed in bridge mode.)
+- `ZEP_API_KEY` — Optional in lite mode. Zep Cloud for graph memory.
+- `LITE_MODE` — Set to `true` to skip Zep Cloud dependency.
 - `LLM_BOOST_*` — Optional. Accelerated LLM for specific tasks.
 
 ### Run Development Servers
 ```bash
+npm run dev:bridge # Recommended: Claude Bridge + Lite mode
 npm run dev        # Starts both backend (port 5001) and frontend (port 3000) concurrently
 npm run backend    # Backend only: cd backend && uv run python run.py
 npm run frontend   # Frontend only: cd frontend && npm run dev

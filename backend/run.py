@@ -32,7 +32,17 @@ def main():
             print(f"  - {err}")
         print("\n请检查 .env 文件中的配置")
         sys.exit(1)
-    
+
+    # 轻量模式提示
+    if Config.LITE_MODE:
+        print("=" * 50)
+        print("  LITE MODE — 轻量模式")
+        print("=" * 50)
+        if not Config.ZEP_API_KEY:
+            print("  Zep Cloud 未配置，图谱/模拟功能不可用")
+        print(f"  LLM via: {Config.LLM_BASE_URL}")
+        print("=" * 50)
+
     # 创建应用
     app = create_app()
     

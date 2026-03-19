@@ -570,8 +570,9 @@ def get_graph_data(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
-            }), 500
+                "error": "ZEP_API_KEY 未配置。此功能需要 Zep Cloud，请在 .env 中配置 ZEP_API_KEY。",
+                "lite_mode": Config.LITE_MODE
+            }), 503
         
         builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
         graph_data = builder.get_graph_data(graph_id)
@@ -598,8 +599,9 @@ def delete_graph(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
-            }), 500
+                "error": "ZEP_API_KEY 未配置。此功能需要 Zep Cloud，请在 .env 中配置 ZEP_API_KEY。",
+                "lite_mode": Config.LITE_MODE
+            }), 503
         
         builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
         builder.delete_graph(graph_id)
