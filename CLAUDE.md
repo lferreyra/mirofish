@@ -143,10 +143,11 @@ Test dependencies: `pytest`, `pytest-asyncio` (in dev dependency group).
 
 ## Ports
 
-| Service  | Port |
-|----------|------|
-| Frontend | 3000 |
-| Backend  | 5001 |
+| Service       | Port |
+|---------------|------|
+| Frontend      | 3000 |
+| Backend       | 5001 |
+| Claude Proxy  | 8082 |
 
 ## Docker Deployment
 
@@ -159,6 +160,22 @@ docker compose up -d
 docker build -t mirofish .
 docker run -p 3000:3000 -p 5001:5001 --env-file .env mirofish
 ```
+
+## Claude Code Proxy (Optional)
+
+An OpenAI-compatible proxy that routes LLM requests through the `claude` CLI, allowing MiroFish to use Claude via the Max subscription plan (no API key needed).
+
+```bash
+# Quick start with proxy
+npm run dev:claude    # Starts proxy + backend + frontend
+
+# Or configure manually in .env:
+# LLM_BASE_URL=http://localhost:8082/v1
+# LLM_API_KEY=not-needed
+# LLM_MODEL_NAME=claude-sonnet-4-6
+```
+
+See `claude-proxy/README.md` for full documentation.
 
 ## Important Notes for AI Assistants
 
