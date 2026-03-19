@@ -520,7 +520,7 @@ class OasisProfileGenerator:
                 entity_name, entity_type, entity_summary, entity_attributes, context
             )
 
-        # 尝试多次生成，直到成功或达到最大重试次数
+        # Attempt generation multiple times until success or max retries reached
         max_attempts = 3
         last_error = None
         
@@ -533,8 +533,8 @@ class OasisProfileGenerator:
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
-                    # 不设置max_tokens，让LLM自由发挥
+                    temperature=0.7 - (attempt * 0.1)  # Lower temperature on each retry
+                    # Do not set max_tokens; let the LLM generate freely
                 )
                 
                 content = response.choices[0].message.content
@@ -932,7 +932,7 @@ class OasisProfileGenerator:
                 return idx, profile, None
                 
             except Exception as e:
-logger.error(f"Failed to generate persona for entity {entity.name}: {str(e)}")
+                logger.error(f"Failed to generate persona for entity {entity.name}: {str(e)}")
                 # Create a basic fallback profile
                 fallback_profile = OasisAgentProfile(
                     user_id=idx,
@@ -945,9 +945,9 @@ logger.error(f"Failed to generate persona for entity {entity.name}: {str(e)}")
                 )
                 return idx, fallback_profile, str(e)
         
-logger.info(f"Starting parallel generation of {total} Agent personas (parallel workers: {parallel_count})...")
+        logger.info(f"Starting parallel generation of {total} Agent personas (parallel workers: {parallel_count})...")
         print(f"\n{'='*60}")
-print(f"Starting Agent persona generation - {total} entities total, parallel workers: {parallel_count}")
+        print(f"Starting Agent persona generation - {total} entities total, parallel workers: {parallel_count}")
         print(f"{'='*60}\n")
         
         # Execute in parallel using a thread pool
@@ -978,16 +978,16 @@ print(f"Starting Agent persona generation - {total} entities total, parallel wor
                         progress_callback(
                             current, 
                             total, 
-f"Completed {current}/{total}: {entity.name} ({entity_type})"
+                            f"Completed {current}/{total}: {entity.name} ({entity_type})"
                         )
                     
                     if error:
-logger.warning(f"[{current}/{total}] {entity.name} using fallback persona: {error}")
+                        logger.warning(f"[{current}/{total}] {entity.name} using fallback persona: {error}")
                     else:
-logger.info(f"[{current}/{total}] Successfully generated persona: {entity.name} ({entity_type})")
+                        logger.info(f"[{current}/{total}] Successfully generated persona: {entity.name} ({entity_type})")
                         
                 except Exception as e:
-logger.error(f"Exception while processing entity {entity.name}: {str(e)}")
+                    logger.error(f"Exception while processing entity {entity.name}: {str(e)}")
                     with lock:
                         completed_count[0] += 1
                     profiles[idx] = OasisAgentProfile(
@@ -1003,7 +1003,7 @@ logger.error(f"Exception while processing entity {entity.name}: {str(e)}")
                     save_profiles_realtime()
         
         print(f"\n{'='*60}")
-print(f"Persona generation complete! Generated {len([p for p in profiles if p])} Agents")
+        print(f"Persona generation complete! Generated {len([p for p in profiles if p])} Agents")
         print(f"{'='*60}\n")
         
         return profiles
@@ -1111,7 +1111,7 @@ print(f"Persona generation complete! Generated {len([p for p in profiles if p])}
                 ]
                 writer.writerow(row)
         
-logger.info(f"Saved {len(profiles)} Twitter profiles to {file_path} (OASIS CSV format)")
+        logger.info(f"Saved {len(profiles)} Twitter profiles to {file_path} (OASIS CSV format)")
     
     def _normalize_gender(self, gender: Optional[str]) -> str:
         """
@@ -1185,7 +1185,7 @@ logger.info(f"Saved {len(profiles)} Twitter profiles to {file_path} (OASIS CSV f
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         
-logger.info(f"Saved {len(profiles)} Reddit profiles to {file_path} (JSON format, including user_id field)")
+        logger.info(f"Saved {len(profiles)} Reddit profiles to {file_path} (JSON format, including user_id field)")
     
     # Keep old method name as alias for backward compatibility
     def save_profiles_to_json(
@@ -1195,6 +1195,6 @@ logger.info(f"Saved {len(profiles)} Reddit profiles to {file_path} (JSON format,
         platform: str = "reddit"
     ):
         """[Deprecated] Please use the save_profiles() method instead"""
-logger.warning("save_profiles_to_json is deprecated, please use save_profiles instead")
+        logger.warning("save_profiles_to_json is deprecated, please use save_profiles instead")
         self.save_profiles(profiles, file_path, platform)
 

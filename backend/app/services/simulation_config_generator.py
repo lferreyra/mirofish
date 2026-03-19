@@ -731,14 +731,14 @@ Return JSON format (no markdown):
         agent_configs: List[AgentActivityConfig]
     ) -> EventConfig:
         """
-        为初始帖子分配合适的发布者 Agent
-        
-        根据每个帖子的 poster_type 匹配最合适的 agent_id
+        Assign suitable poster agents to initial posts.
+
+        Matches the most appropriate agent_id for each post based on its poster_type.
         """
         if not event_config.initial_posts:
             return event_config
         
-        # 按实体类型建立 agent 索引
+        # Build agent index by entity type
         agents_by_type: Dict[str, List[AgentActivityConfig]] = {}
         for agent in agent_configs:
             etype = agent.entity_type.lower()
@@ -746,7 +746,7 @@ Return JSON format (no markdown):
                 agents_by_type[etype] = []
             agents_by_type[etype].append(agent)
         
-        # 类型映射表（处理 LLM 可能输出的不同格式）
+        # Type alias table (handles different formats the LLM might output)
         type_aliases = {
             "official": ["official", "university", "governmentagency", "government"],
             "university": ["university", "official"],
@@ -758,7 +758,7 @@ Return JSON format (no markdown):
             "person": ["person", "student", "alumni"],
         }
         
-        # 记录每种类型已使用的 agent 索引，避免重复使用同一个 agent
+        # Track used agent indices per type to avoid reusing the same agent
         used_indices: Dict[str, int] = {}
         
         updated_posts = []
