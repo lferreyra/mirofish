@@ -1282,80 +1282,81 @@ class SimulationRunner:
     @classmethod
     def register_cleanup(cls):
         """
-        注册清理函数
-        
-        在 Flask 应用启动时调用，确保服务器关闭时清理所有模拟进程
+        Register cleanup function
+
+        Called when the Flask application starts to ensure all simulation processes
+        are cleaned up when the server shuts down
         """
         global _cleanup_registered
-        
+
         if _cleanup_registered:
             return
-        
-        # Flask debug 模式下，只在 reloader 子进程中注册清理（实际运行应用的进程）
-        # WERKZEUG_RUN_MAIN=true 表示是 reloader 子进程
-        # 如果不是 debug 模式，则没有这个环境变量，也需要注册
+
+        # In Flask debug mode, only register cleanup in the reloader child process (the process actually running the app)
+        # WERKZEUG_RUN_MAIN=true indicates it is the reloader child process
+        # If not in debug mode, this environment variable is absent but registration is still needed
         is_reloader_process = os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
         is_debug_mode = os.environ.get('FLASK_DEBUG') == '1' or os.environ.get('WERKZEUG_RUN_MAIN') is not None
-        
-        # 在 debug 模式下，只在 reloader 子进程中注册；非 debug 模式下始终注册
+
+        # In debug mode, only register in the reloader child process; always register in non-debug mode
         if is_debug_mode and not is_reloader_process:
-            _cleanup_registered = True  # 标记已注册，防止子进程再次尝试
+            _cleanup_registered = True  # Mark as registered to prevent child process from trying again
             return
-        
-        # 保存原有的信号处理器
+
+        # Save original signal handlers
         original_sigint = signal.getsignal(signal.SIGINT)
         original_sigterm = signal.getsignal(signal.SIGTERM)
-        # SIGHUP 只在 Unix 系统存在（macOS/Linux），Windows 没有
+        # SIGHUP only exists on Unix systems (macOS/Linux), not on Windows
         original_sighup = None
         has_sighup = hasattr(signal, 'SIGHUP')
         if has_sighup:
             original_sighup = signal.getsignal(signal.SIGHUP)
-        
+
         def cleanup_handler(signum=None, frame=None):
-            """信号处理器：先清理模拟进程，再调用原处理器"""
-            # 只有在有进程需要清理时才打印日志
+            """Signal handler: clean up simulation processes first, then call original handler"""
+            # Only print log if there are processes to clean up
             if cls._processes or cls._graph_memory_enabled:
-                logger.info(f"收到信号 {signum}，开始清理...")
+                logger.info(f"Received signal {signum}, starting cleanup...")
             cls.cleanup_all_simulations()
-            
-            # 调用原有的信号处理器，让 Flask 正常退出
+
+            # Call the original signal handler to let Flask exit normally
             if signum == signal.SIGINT and callable(original_sigint):
                 original_sigint(signum, frame)
             elif signum == signal.SIGTERM and callable(original_sigterm):
                 original_sigterm(signum, frame)
             elif has_sighup and signum == signal.SIGHUP:
-                # SIGHUP: 终端关闭时发送
+                # SIGHUP: sent when terminal closes
                 if callable(original_sighup):
                     original_sighup(signum, frame)
                 else:
-                    # 默认行为：正常退出
+                    # Default behavior: normal exit
                     sys.exit(0)
             else:
-                # 如果原处理器不可调用（如 SIG_DFL），则使用默认行为
+                # If the original handler is not callable (e.g. SIG_DFL), use default behavior
                 raise KeyboardInterrupt
-        
-        # 注册 atexit 处理器（作为备用）
+
+        # Register atexit handler (as fallback)
         atexit.register(cls.cleanup_all_simulations)
-        
-        # 注册信号处理器（仅在主线程中）
+
+        # Register signal handlers (main thread only)
         try:
-            # SIGTERM: kill 命令默认信号
+            # SIGTERM: default signal for kill command
             signal.signal(signal.SIGTERM, cleanup_handler)
             # SIGINT: Ctrl+C
             signal.signal(signal.SIGINT, cleanup_handler)
-            # SIGHUP: 终端关闭（仅 Unix 系统）
+            # SIGHUP: terminal close (Unix systems only)
             if has_sighup:
                 signal.signal(signal.SIGHUP, cleanup_handler)
         except ValueError:
-            # 不在主线程中，只能使用 atexit
-            logger.warning("无法注册信号处理器（不在主线程），仅使用 atexit")
+            # Not in main thread, can only use atexit
+            logger.warning("Cannot register signal handlers (not in main thread), using atexit only")
         
         _cleanup_registered = True
     
     @classmethod
     def get_running_simulations(cls) -> List[str]:
         """
-        获取所有正在运行的模拟ID列表
+        Get a list of all currently running simulation IDs
         """
         running = []
         for sim_id, process in cls._processes.items():
@@ -1363,7 +1364,7 @@ class SimulationRunner:
                 running.append(sim_id)
         return running
     
-    # ============== Interview 功能 ==============
+    # ============== Interview Features ==============
     
     @classmethod
     def check_env_alive(cls, simulation_id: str) -> bool:
