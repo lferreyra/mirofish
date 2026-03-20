@@ -3,7 +3,7 @@
     <!-- Top Control Bar -->
     <div class="control-bar">
       <div class="status-group">
-        <!-- Twitter 平台进度 -->
+        <!-- Twitter 平台Progres -->
         <div class="platform-status twitter" :class="{ active: runStatus.twitter_running, completed: runStatus.twitter_completed }">
           <div class="platform-header">
             <svg class="platform-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,7 +44,7 @@
           </div>
         </div>
         
-        <!-- Reddit 平台进度 -->
+        <!-- Reddit 平台Progres -->
         <div class="platform-status reddit" :class="{ active: runStatus.reddit_running, completed: runStatus.reddit_completed }">
           <div class="platform-header">
             <svg class="platform-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -314,7 +314,7 @@ const router = useRouter()
 
 // State
 const isGeneratingReport = ref(false)
-const phase = ref(0) // 0: 未开始, 1: 运行中, 2: 已完成
+const phase = ref(0) // 0: 未开始, 1: În rulare, 2: Finalizat
 const isStarting = ref(false)
 const isStopping = ref(false)
 const startError = ref(null)
@@ -410,7 +410,7 @@ const doStartSimulation = async () => {
     
     if (res.success && res.data) {
       if (res.data.force_restarted) {
-        addLog('✓ 已清理旧的模拟日志，重新开始模拟')
+        addLog('✓ 已清理旧的模拟Jurnal，重新开始模拟')
       }
       addLog('✓ 模拟引擎启动成功')
       addLog(`  ├─ PID: ${res.data.process_pid || '-'}`)
@@ -445,7 +445,7 @@ const handleStopSimulation = async () => {
     const res = await stopSimulation({ simulation_id: props.simulationId })
     
     if (res.success) {
-      addLog('✓ 模拟已停止')
+      addLog('✓ 模拟Oprit')
       phase.value = 2
       stopPolling()
       emit('update-status', 'completed')
@@ -482,7 +482,7 @@ const stopPolling = () => {
   }
 }
 
-// 追踪各平台的上一次轮次，用于检测变化并输出日志
+// 追踪各平台的上一次轮次，用于检测变化并输出Jurnal
 const prevTwitterRound = ref(0)
 const prevRedditRound = ref(0)
 
@@ -497,7 +497,7 @@ const fetchRunStatus = async () => {
       
       runStatus.value = data
       
-      // 分别检测各平台的轮次变化并输出日志
+      // 分别检测各平台的轮次变化并输出Jurnal
       if (data.twitter_current_round > prevTwitterRound.value) {
         addLog(`[Plaza] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
         prevTwitterRound.value = data.twitter_current_round
@@ -508,7 +508,7 @@ const fetchRunStatus = async () => {
         prevRedditRound.value = data.reddit_current_round
       }
       
-      // 检测模拟是否已完成（通过 runner_status 或平台完成状态判断）
+      // 检测模拟是否Finalizat（通过 runner_status 或平台完成状态判断）
       const isCompleted = data.runner_status === 'completed' || data.runner_status === 'stopped'
       
       // 额外检查：如果后端还没来得及更新 runner_status，但平台已经报告完成
@@ -519,18 +519,18 @@ const fetchRunStatus = async () => {
         if (platformsCompleted && !isCompleted) {
           addLog('✓ 检测到所有平台模拟已结束')
         }
-        addLog('✓ 模拟已完成')
+        addLog('✓ 模拟Finalizat')
         phase.value = 2
         stopPolling()
         emit('update-status', 'completed')
       }
     }
   } catch (err) {
-    console.warn('获取运行状态失败:', err)
+    console.warn('获取Stare rulare失败:', err)
   }
 }
 
-// 检查所有启用的平台是否已完成
+// 检查所有启用的平台是否Finalizat
 const checkPlatformsCompleted = (data) => {
   // 如果没有任何平台数据，返回 false
   if (!data) return false
@@ -547,7 +547,7 @@ const checkPlatformsCompleted = (data) => {
   // 如果没有任何平台被启用，返回 false
   if (!twitterEnabled && !redditEnabled) return false
   
-  // 检查所有启用的平台是否都已完成
+  // 检查所有启用的平台是否都Finalizat
   if (twitterEnabled && !twitterCompleted) return false
   if (redditEnabled && !redditCompleted) return false
   
@@ -580,7 +580,7 @@ const fetchRunStatusDetail = async () => {
         }
       })
       
-      // 不自动滚动，让用户自由查看时间轴
+      // 不Derulare automată，让用户自由查看时间轴
       // 新动作会在底部追加
     }
   } catch (err) {
@@ -685,7 +685,7 @@ watch(() => props.systemLogs?.length, () => {
 })
 
 onMounted(() => {
-  addLog('Step3 模拟运行初始化')
+  addLog('Step3 Rulare simulare初始化')
   if (props.simulationId) {
     doStartSimulation()
   }

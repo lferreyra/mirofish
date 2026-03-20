@@ -141,7 +141,7 @@
                 <path d="M9 11l3 3L22 4"></path>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
               </svg>
-              <span>发送问卷调查到世界中</span>
+              <span>Trimite问卷调查到世界中</span>
             </button>
           </div>
         </div>
@@ -209,7 +209,7 @@
                   </div>
                   <div class="tool-content">
                     <div class="tool-name">InterviewSubAgent 虚拟访谈</div>
-                    <div class="tool-desc">自主式访谈，能够并行与模拟世界中个体进行多轮对话，采集非结构化的观点数据与心理状态</div>
+                    <div class="tool-desc">自主式访谈，能够并行与模拟世界中个体进行多轮对话，采集非结构化的Opinie数据与心理状态</div>
                   </div>
                 </div>
               </div>
@@ -250,7 +250,7 @@
                 </svg>
               </div>
               <p class="empty-text">
-                {{ chatTarget === 'report_agent' ? '与 Report Agent 对话，深入了解报告内容' : '与模拟个体对话，了解他们的观点' }}
+                {{ chatTarget === 'report_agent' ? '与 Report Agent 对话，深入了解报告Conținut' : '与模拟个体对话，了解他们的Opinie' }}
               </p>
             </div>
             <div 
@@ -369,7 +369,7 @@
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
-              <span v-else>发送问卷</span>
+              <span v-else>Trimite问卷</span>
             </button>
           </div>
 
@@ -377,7 +377,7 @@
           <div v-if="surveyResults.length > 0" class="survey-results">
             <div class="results-header">
               <span class="results-title">调查结果</span>
-              <span class="results-count">{{ surveyResults.length }} 条回复</span>
+              <span class="results-count">{{ surveyResults.length }} 条Răspuns</span>
             </div>
             <div class="results-list">
               <div 
@@ -609,7 +609,7 @@ const renderMarkdown = (content) => {
   // 清理块级元素后紧跟的段落开始标签前的 <br>
   html = html.replace(/(<\/ol>|<\/ul>|<\/blockquote>)<br>(<p|<div)/g, '$1$2')
 
-  // 修复非连续有序列表的编号：当单项 <ol> 被段落内容隔开时，保持编号递增
+  // 修复非连续有序列表的编号：当单项 <ol> 被段落Conținut隔开时，保持编号递增
   const tokens = html.split(/(<ol class="md-ol">(?:<li class="md-oli"[^>]*>[\s\S]*?<\/li>)+<\/ol>)/g)
   let olCounter = 0
   let inSequence = false
@@ -662,7 +662,7 @@ const sendMessage = async () => {
       await sendToAgent(message)
     }
   } catch (err) {
-    addLog(`发送失败: ${err.message}`)
+    addLog(`Trimite失败: ${err.message}`)
     chatHistory.value.push({
       role: 'assistant',
       content: `抱歉，发生了错误: ${err.message}`,
@@ -677,7 +677,7 @@ const sendMessage = async () => {
 }
 
 const sendToReportAgent = async (message) => {
-  addLog(`向 Report Agent 发送: ${message.substring(0, 50)}...`)
+  addLog(`向 Report Agent Trimite: ${message.substring(0, 50)}...`)
   
   // Build chat history for API
   const historyForApi = chatHistory.value
@@ -700,7 +700,7 @@ const sendToReportAgent = async (message) => {
       content: res.data.response || res.data.answer || '无响应',
       timestamp: new Date().toISOString()
     })
-    addLog('Report Agent 已回复')
+    addLog('Report Agent 已Răspuns')
   } else {
     throw new Error(res.error || '请求失败')
   }
@@ -711,7 +711,7 @@ const sendToAgent = async (message) => {
     throw new Error('请先选择一个模拟个体')
   }
   
-  addLog(`向 ${selectedAgent.value.username} 发送: ${message.substring(0, 50)}...`)
+  addLog(`向 ${selectedAgent.value.username} Trimite: ${message.substring(0, 50)}...`)
   
   // Build prompt with chat history
   let prompt = message
@@ -734,16 +734,16 @@ const sendToAgent = async (message) => {
   
   if (res.success && res.data) {
     // 正确的数据路径: res.data.result.results 是一个对象字典
-    // 格式: {"twitter_0": {...}, "reddit_0": {...}} 或单平台 {"reddit_0": {...}}
+    // 格式: {"twitter_0": {...}, "reddit_0": {...}} 或单Platformă {"reddit_0": {...}}
     const resultData = res.data.result || res.data
     const resultsDict = resultData.results || resultData
     
-    // 将对象字典转换为数组，优先获取 reddit 平台的回复
+    // 将对象字典转换为数组，优先获取 reddit Platformă的Răspuns
     let responseContent = null
     const agentId = selectedAgentIndex.value
     
     if (typeof resultsDict === 'object' && !Array.isArray(resultsDict)) {
-      // 优先使用 reddit 平台回复，其次 twitter
+      // 优先使用 reddit PlatformăRăspuns，其次 twitter
       const redditKey = `reddit_${agentId}`
       const twitterKey = `twitter_${agentId}`
       const agentResult = resultsDict[redditKey] || resultsDict[twitterKey] || Object.values(resultsDict)[0]
@@ -761,7 +761,7 @@ const sendToAgent = async (message) => {
         content: responseContent,
         timestamp: new Date().toISOString()
       })
-      addLog(`${selectedAgent.value.username} 已回复`)
+      addLog(`${selectedAgent.value.username} 已Răspuns`)
     } else {
       throw new Error('无响应数据')
     }
@@ -803,7 +803,7 @@ const submitSurvey = async () => {
   if (selectedAgents.value.size === 0 || !surveyQuestion.value.trim()) return
   
   isSurveying.value = true
-  addLog(`发送问卷给 ${selectedAgents.value.size} 个对象...`)
+  addLog(`Trimite问卷给 ${selectedAgents.value.size} 个对象...`)
   
   try {
     const interviews = Array.from(selectedAgents.value).map(idx => ({
@@ -829,7 +829,7 @@ const submitSurvey = async () => {
         const agentIdx = interview.agent_id
         const agent = profiles.value[agentIdx]
         
-        // 优先使用 reddit 平台回复，其次 twitter
+        // 优先使用 reddit PlatformăRăspuns，其次 twitter
         let responseContent = '无响应'
         
         if (typeof resultsDict === 'object' && !Array.isArray(resultsDict)) {
@@ -857,12 +857,12 @@ const submitSurvey = async () => {
       }
       
       surveyResults.value = surveyResultsList
-      addLog(`收到 ${surveyResults.value.length} 条回复`)
+      addLog(`收到 ${surveyResults.value.length} 条Răspuns`)
     } else {
       throw new Error(res.error || '请求失败')
     }
   } catch (err) {
-    addLog(`问卷发送失败: ${err.message}`)
+    addLog(`问卷Trimite失败: ${err.message}`)
   } finally {
     isSurveying.value = false
   }
@@ -935,7 +935,7 @@ const handleClickOutside = (e) => {
 
 // Lifecycle
 onMounted(() => {
-  addLog('Step5 深度互动初始化')
+  addLog('Step5 Interacțiune avansată初始化')
   loadReportData()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)
