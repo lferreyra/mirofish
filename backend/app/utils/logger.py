@@ -1,13 +1,33 @@
 """
 Logging configuration module.
 Provides unified logging with output to both console and file.
+Supports optional JSON structured logging via LOG_FORMAT=json env var.
 """
 
 import os
 import sys
+import json
 import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+
+
+class JSONFormatter(logging.Formatter):
+    """Structured JSON log formatter for production use."""
+
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+        if record.exc_info and record.exc_info[0]:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry, ensure_ascii=False)
 
 
 def _ensure_utf8_stdout():
@@ -63,6 +83,10 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
         datefmt='%H:%M:%S'
     )
     
+    # Check if JSON logging is enabled
+    use_json = os.environ.get('LOG_FORMAT', '').lower() == 'json'
+    json_formatter = JSONFormatter() if use_json else None
+
     # 1. File handler - detailed logs (named by date, with rotation)
     log_filename = datetime.now().strftime('%Y-%m-%d') + '.log'
     file_handler = RotatingFileHandler(
@@ -72,7 +96,7 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
         encoding='utf-8'
     )
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(detailed_formatter)
+    file_handler.setFormatter(json_formatter if use_json else detailed_formatter)
     
     # 2. Console handler - concise logs (INFO and above)
     # Ensure UTF-8 encoding on Windows to avoid garbled characters

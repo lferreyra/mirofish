@@ -99,10 +99,22 @@ def create_app(config_class=Config):
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
 
-    # Health check
+    # Health check with DB connectivity verification
     @app.route('/health')
     def health():
-        return {'status': 'ok', 'service': 'MiroFish Backend'}
+        status = {
+            'status': 'ok',
+            'service': 'MiroFish Backend',
+            'version': '0.1.0',
+        }
+        # Verify DB connection
+        try:
+            db.fetchone("SELECT 1")
+            status['db'] = 'ok'
+        except Exception:
+            status['db'] = 'error'
+            status['status'] = 'degraded'
+        return status
 
     if should_log_startup:
         logger.info("MiroFish Backend started successfully")
