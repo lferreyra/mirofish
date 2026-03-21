@@ -2423,149 +2423,187 @@ class ReportManager:
         return '\n'.join(result_lines)
     
     @classmethod
+    def _get_db(cls):
+        from ..database import get_db
+        return get_db()
+
+    @classmethod
     def save_report(cls, report: Report) -> None:
-        """保存报告元信息和完整报告"""
+        """Save report metadata to SQLite and content files to disk."""
         cls._ensure_report_folder(report.report_id)
-        
-        # 保存元信息JSON
+
+        # Save to SQLite
+        db = cls._get_db()
+        db.execute(
+            """INSERT OR REPLACE INTO reports
+            (report_id, simulation_id, graph_id, simulation_requirement,
+             status, outline, created_at, completed_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                report.report_id,
+                report.simulation_id,
+                report.graph_id,
+                report.simulation_requirement,
+                report.status.value,
+                json.dumps(report.outline.to_dict(), ensure_ascii=False) if report.outline else None,
+                report.created_at,
+                report.completed_at,
+                report.error,
+            )
+        )
+
+        # Save meta.json for backwards compatibility
         with open(cls._get_report_path(report.report_id), 'w', encoding='utf-8') as f:
             json.dump(report.to_dict(), f, ensure_ascii=False, indent=2)
-        
-        # 保存大纲
+
+        # Save outline
         if report.outline:
             cls.save_outline(report.report_id, report.outline)
-        
-        # 保存完整Markdown报告
+
+        # Save full Markdown report
         if report.markdown_content:
             with open(cls._get_report_markdown_path(report.report_id), 'w', encoding='utf-8') as f:
                 f.write(report.markdown_content)
-        
-        logger.info(f"报告已保存: {report.report_id}")
+
+        logger.info(f"Report saved: {report.report_id}")
     
     @classmethod
-    def get_report(cls, report_id: str) -> Optional[Report]:
-        """获取报告"""
-        path = cls._get_report_path(report_id)
-        
-        if not os.path.exists(path):
-            # 兼容旧格式：检查直接存储在reports目录下的文件
-            old_path = os.path.join(cls.REPORTS_DIR, f"{report_id}.json")
-            if os.path.exists(old_path):
-                path = old_path
-            else:
-                return None
-        
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # 重建Report对象
+    def _build_report_from_data(cls, data: Dict[str, Any], report_id: str) -> Report:
+        """Build a Report object from a dict (shared by DB and file loading)."""
         outline = None
         if data.get('outline'):
             outline_data = data['outline']
-            sections = []
-            for s in outline_data.get('sections', []):
-                sections.append(ReportSection(
-                    title=s['title'],
-                    content=s.get('content', '')
-                ))
-            outline = ReportOutline(
-                title=outline_data['title'],
-                summary=outline_data['summary'],
-                sections=sections
-            )
-        
-        # 如果markdown_content为空，尝试从full_report.md读取
+            if isinstance(outline_data, str):
+                try:
+                    outline_data = json.loads(outline_data)
+                except (json.JSONDecodeError, TypeError):
+                    outline_data = None
+            if outline_data:
+                sections = []
+                for s in outline_data.get('sections', []):
+                    sections.append(ReportSection(
+                        title=s['title'],
+                        content=s.get('content', '')
+                    ))
+                outline = ReportOutline(
+                    title=outline_data['title'],
+                    summary=outline_data['summary'],
+                    sections=sections
+                )
+
+        # Load markdown content from file
         markdown_content = data.get('markdown_content', '')
         if not markdown_content:
             full_report_path = cls._get_report_markdown_path(report_id)
             if os.path.exists(full_report_path):
                 with open(full_report_path, 'r', encoding='utf-8') as f:
                     markdown_content = f.read()
-        
+
         return Report(
-            report_id=data['report_id'],
-            simulation_id=data['simulation_id'],
-            graph_id=data['graph_id'],
-            simulation_requirement=data['simulation_requirement'],
-            status=ReportStatus(data['status']),
+            report_id=data.get('report_id', report_id),
+            simulation_id=data.get('simulation_id', ''),
+            graph_id=data.get('graph_id', ''),
+            simulation_requirement=data.get('simulation_requirement', ''),
+            status=ReportStatus(data.get('status', 'pending')),
             outline=outline,
             markdown_content=markdown_content,
             created_at=data.get('created_at', ''),
             completed_at=data.get('completed_at', ''),
             error=data.get('error')
         )
+
+    @classmethod
+    def get_report(cls, report_id: str) -> Optional[Report]:
+        """Get report from DB with fallback to file."""
+        # Try SQLite first
+        db = cls._get_db()
+        row = db.fetchone("SELECT * FROM reports WHERE report_id = ?", (report_id,))
+        if row:
+            return cls._build_report_from_data(dict(row), report_id)
+
+        # Fallback to file
+        path = cls._get_report_path(report_id)
+        if not os.path.exists(path):
+            old_path = os.path.join(cls.REPORTS_DIR, f"{report_id}.json")
+            if os.path.exists(old_path):
+                path = old_path
+            else:
+                return None
+
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        report = cls._build_report_from_data(data, report_id)
+        # Migrate to DB
+        cls.save_report(report)
+        return report
     
     @classmethod
     def get_report_by_simulation(cls, simulation_id: str) -> Optional[Report]:
-        """根据模拟ID获取报告"""
+        """Get report by simulation ID."""
+        db = cls._get_db()
+        row = db.fetchone(
+            "SELECT * FROM reports WHERE simulation_id = ? ORDER BY created_at DESC LIMIT 1",
+            (simulation_id,)
+        )
+        if row:
+            return cls._build_report_from_data(dict(row), row['report_id'])
+
+        # Fallback to directory scan
         cls._ensure_reports_dir()
-        
         for item in os.listdir(cls.REPORTS_DIR):
             item_path = os.path.join(cls.REPORTS_DIR, item)
-            # 新格式：文件夹
             if os.path.isdir(item_path):
                 report = cls.get_report(item)
                 if report and report.simulation_id == simulation_id:
                     return report
-            # 兼容旧格式：JSON文件
             elif item.endswith('.json'):
                 report_id = item[:-5]
                 report = cls.get_report(report_id)
                 if report and report.simulation_id == simulation_id:
                     return report
-        
         return None
-    
+
     @classmethod
     def list_reports(cls, simulation_id: Optional[str] = None, limit: int = 50) -> List[Report]:
-        """列出报告"""
-        cls._ensure_reports_dir()
-        
-        reports = []
-        for item in os.listdir(cls.REPORTS_DIR):
-            item_path = os.path.join(cls.REPORTS_DIR, item)
-            # 新格式：文件夹
-            if os.path.isdir(item_path):
-                report = cls.get_report(item)
-                if report:
-                    if simulation_id is None or report.simulation_id == simulation_id:
-                        reports.append(report)
-            # 兼容旧格式：JSON文件
-            elif item.endswith('.json'):
-                report_id = item[:-5]
-                report = cls.get_report(report_id)
-                if report:
-                    if simulation_id is None or report.simulation_id == simulation_id:
-                        reports.append(report)
-        
-        # 按创建时间倒序
-        reports.sort(key=lambda r: r.created_at, reverse=True)
-        
-        return reports[:limit]
-    
+        """List reports from SQLite."""
+        db = cls._get_db()
+        if simulation_id:
+            rows = db.fetchall(
+                "SELECT * FROM reports WHERE simulation_id = ? ORDER BY created_at DESC LIMIT ?",
+                (simulation_id, limit)
+            )
+        else:
+            rows = db.fetchall(
+                "SELECT * FROM reports ORDER BY created_at DESC LIMIT ?",
+                (limit,)
+            )
+
+        return [cls._build_report_from_data(dict(row), row['report_id']) for row in rows]
+
     @classmethod
     def delete_report(cls, report_id: str) -> bool:
-        """删除报告（整个文件夹）"""
+        """Delete report from DB and filesystem."""
         import shutil
-        
+
+        # Delete from DB
+        db = cls._get_db()
+        db.execute("DELETE FROM reports WHERE report_id = ?", (report_id,))
+
         folder_path = cls._get_report_folder(report_id)
-        
-        # 新格式：删除整个文件夹
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             shutil.rmtree(folder_path)
-            logger.info(f"报告文件夹已删除: {report_id}")
+            logger.info(f"Report deleted: {report_id}")
             return True
-        
-        # 兼容旧格式：删除单独的文件
+
+        # Legacy format
         deleted = False
         old_json_path = os.path.join(cls.REPORTS_DIR, f"{report_id}.json")
         old_md_path = os.path.join(cls.REPORTS_DIR, f"{report_id}.md")
-        
         if os.path.exists(old_json_path):
             os.remove(old_json_path)
             deleted = True
         if os.path.exists(old_md_path):
             os.remove(old_md_path)
             deleted = True
-        
         return deleted

@@ -75,13 +75,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import { usePersistedState, saveNavigationContext } from '../utils/persistedState'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,9 +90,19 @@ const router = useRouter()
 // Layout State
 const viewMode = ref('split') // graph | split | workbench
 
-// Step State
-const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
+// Step State - persisted to localStorage per project
+const projectKey = route.params.projectId || 'new'
+const currentStep = usePersistedState(`mirofish_step_${projectKey}`, 1)
 const stepNames = ['图谱构建', '环境搭建', '开始模拟', '报告生成', '深度互动']
+
+// Persist navigation context when step changes
+watch(currentStep, (step) => {
+  saveNavigationContext({
+    route: 'Process',
+    projectId: currentProjectId.value,
+    step,
+  })
+})
 
 // Data State
 const currentProjectId = ref(route.params.projectId)

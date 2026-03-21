@@ -4,6 +4,7 @@
 """
 
 import os
+import secrets
 from dotenv import load_dotenv
 
 # 加载项目根目录的 .env 文件
@@ -21,8 +22,8 @@ class Config:
     """Flask配置类"""
     
     # Flask配置
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'mirofish-secret-key')
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
@@ -39,6 +40,9 @@ class Config:
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown'}
+
+    # Database
+    DB_PATH = os.path.join(UPLOAD_FOLDER, 'mirofish.db')
     
     # 文本处理配置
     DEFAULT_CHUNK_SIZE = 500  # 默认切块大小
