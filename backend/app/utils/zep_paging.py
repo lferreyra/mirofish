@@ -6,6 +6,7 @@ Zep 的 node/edge 列表接口使用 UUID cursor 分页，
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable
 from typing import Any
@@ -21,6 +22,28 @@ _DEFAULT_PAGE_SIZE = 100
 _MAX_NODES = 2000
 _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_RETRY_DELAY = 2.0  # seconds, doubles each retry
+
+
+def _extract_status_code(error_message: str) -> int | None:
+    """Extract HTTP status_code from a Zep exception string."""
+    match = re.search(r"status_code:\s*(\d+)", error_message)
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
+def _extract_retry_after_seconds(error_message: str) -> float | None:
+    """Extract Retry-After seconds from a Zep exception string."""
+    match = re.search(r"retry-after':\s*'?(\d+)'?", error_message, flags=re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return None
 
 
 def _fetch_page_with_retry(
@@ -41,16 +64,32 @@ def _fetch_page_with_retry(
     for attempt in range(max_retries):
         try:
             return api_call(*args, **kwargs)
-        except (ConnectionError, TimeoutError, OSError, InternalServerError) as e:
+        except Exception as e:
+            error_message = str(e)
+            status_code = _extract_status_code(error_message)
+            is_transient = isinstance(e, (ConnectionError, TimeoutError, OSError, InternalServerError))
+            is_rate_limited = status_code == 429
+
+            if status_code is not None and 400 <= status_code < 500 and not is_rate_limited:
+                raise
+
+            if not is_transient and not is_rate_limited:
+                raise
+
             last_exception = e
             if attempt < max_retries - 1:
+                wait_seconds = delay
+                retry_after_seconds = _extract_retry_after_seconds(error_message)
+                if retry_after_seconds is not None:
+                    wait_seconds = max(wait_seconds, retry_after_seconds)
+
                 logger.warning(
-                    f"Zep {page_description} attempt {attempt + 1} failed: {str(e)[:100]}, retrying in {delay:.1f}s..."
+                    f"Zep {page_description} attempt {attempt + 1} failed: {error_message[:100]}, retrying in {wait_seconds:.1f}s..."
                 )
-                time.sleep(delay)
-                delay *= 2
+                time.sleep(wait_seconds)
+                delay = max(delay * 2, wait_seconds * 2)
             else:
-                logger.error(f"Zep {page_description} failed after {max_retries} attempts: {str(e)}")
+                logger.error(f"Zep {page_description} failed after {max_retries} attempts: {error_message}")
 
     assert last_exception is not None
     raise last_exception
