@@ -113,60 +113,118 @@ class SimulationState:
 
 class SimulationManager:
     """
-    模拟管理器
-    
-    核心功能：
-    1. 从Zep图谱读取实体并过滤
-    2. 生成OASIS Agent Profile
-    3. 使用LLM智能生成模拟配置参数
-    4. 准备预设脚本所需的所有文件
+    Simulation manager.
+    SQLite-backed persistence with file storage for large blobs (profiles, configs).
     """
-    
+
     # 模拟数据存储目录
     SIMULATION_DATA_DIR = os.path.join(
-        os.path.dirname(__file__), 
+        os.path.dirname(__file__),
         '../../uploads/simulations'
     )
-    
+
     def __init__(self):
         # 确保目录存在
         os.makedirs(self.SIMULATION_DATA_DIR, exist_ok=True)
-        
-        # 内存中的模拟状态缓存
-        self._simulations: Dict[str, SimulationState] = {}
-    
+
+    @staticmethod
+    def _get_db():
+        from ..database import get_db
+        return get_db()
+
     def _get_simulation_dir(self, simulation_id: str) -> str:
         """获取模拟数据目录"""
         sim_dir = os.path.join(self.SIMULATION_DATA_DIR, simulation_id)
         os.makedirs(sim_dir, exist_ok=True)
         return sim_dir
-    
+
     def _save_simulation_state(self, state: SimulationState):
-        """保存模拟状态到文件"""
+        """Save simulation state to SQLite and state.json."""
+        state.updated_at = datetime.now().isoformat()
+
+        db = self._get_db()
+        db.execute(
+            """INSERT OR REPLACE INTO simulations
+            (simulation_id, project_id, graph_id, enable_twitter, enable_reddit,
+             status, entities_count, profiles_count, entity_types,
+             config_generated, config_reasoning, current_round,
+             twitter_status, reddit_status, created_at, updated_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                state.simulation_id,
+                state.project_id,
+                state.graph_id,
+                state.enable_twitter,
+                state.enable_reddit,
+                state.status.value,
+                state.entities_count,
+                state.profiles_count,
+                json.dumps(state.entity_types),
+                state.config_generated,
+                state.config_reasoning,
+                state.current_round,
+                state.twitter_status,
+                state.reddit_status,
+                state.created_at,
+                state.updated_at,
+                state.error,
+            )
+        )
+
+        # Also write state.json for backwards compatibility
         sim_dir = self._get_simulation_dir(state.simulation_id)
         state_file = os.path.join(sim_dir, "state.json")
-        
-        state.updated_at = datetime.now().isoformat()
-        
-        with open(state_file, 'w', encoding='utf-8') as f:
-            json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
-        
-        self._simulations[state.simulation_id] = state
-    
+        try:
+            with open(state_file, 'w', encoding='utf-8') as f:
+                json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
+        except OSError:
+            pass
+
     def _load_simulation_state(self, simulation_id: str) -> Optional[SimulationState]:
-        """从文件加载模拟状态"""
-        if simulation_id in self._simulations:
-            return self._simulations[simulation_id]
-        
+        """Load simulation state from SQLite, with fallback to file."""
+        db = self._get_db()
+        row = db.fetchone(
+            "SELECT * FROM simulations WHERE simulation_id = ?",
+            (simulation_id,)
+        )
+        if row:
+            entity_types = []
+            if row['entity_types']:
+                try:
+                    entity_types = json.loads(row['entity_types'])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            return SimulationState(
+                simulation_id=row['simulation_id'],
+                project_id=row['project_id'],
+                graph_id=row['graph_id'],
+                enable_twitter=bool(row['enable_twitter']),
+                enable_reddit=bool(row['enable_reddit']),
+                status=SimulationStatus(row['status']),
+                entities_count=row['entities_count'] or 0,
+                profiles_count=row['profiles_count'] or 0,
+                entity_types=entity_types,
+                config_generated=bool(row['config_generated']),
+                config_reasoning=row['config_reasoning'] or '',
+                current_round=row['current_round'] or 0,
+                twitter_status=row['twitter_status'] or 'not_started',
+                reddit_status=row['reddit_status'] or 'not_started',
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                error=row['error'],
+            )
+
+        # Fallback: try loading from state.json
         sim_dir = self._get_simulation_dir(simulation_id)
         state_file = os.path.join(sim_dir, "state.json")
-        
+
         if not os.path.exists(state_file):
             return None
-        
+
         with open(state_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         state = SimulationState(
             simulation_id=simulation_id,
             project_id=data.get("project_id", ""),
@@ -186,8 +244,9 @@ class SimulationManager:
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             error=data.get("error"),
         )
-        
-        self._simulations[simulation_id] = state
+
+        # Migrate to DB for next time
+        self._save_simulation_state(state)
         return state
     
     def create_simulation(
@@ -456,25 +515,49 @@ class SimulationManager:
             raise
     
     def get_simulation(self, simulation_id: str) -> Optional[SimulationState]:
-        """获取模拟状态"""
+        """Get simulation state."""
         return self._load_simulation_state(simulation_id)
-    
+
     def list_simulations(self, project_id: Optional[str] = None) -> List[SimulationState]:
-        """列出所有模拟"""
+        """List all simulations, optionally filtered by project_id."""
+        db = self._get_db()
+        if project_id:
+            rows = db.fetchall(
+                "SELECT * FROM simulations WHERE project_id = ? ORDER BY created_at DESC",
+                (project_id,)
+            )
+        else:
+            rows = db.fetchall("SELECT * FROM simulations ORDER BY created_at DESC")
+
         simulations = []
-        
-        if os.path.exists(self.SIMULATION_DATA_DIR):
-            for sim_id in os.listdir(self.SIMULATION_DATA_DIR):
-                # 跳过隐藏文件（如 .DS_Store）和非目录文件
-                sim_path = os.path.join(self.SIMULATION_DATA_DIR, sim_id)
-                if sim_id.startswith('.') or not os.path.isdir(sim_path):
-                    continue
-                
-                state = self._load_simulation_state(sim_id)
-                if state:
-                    if project_id is None or state.project_id == project_id:
-                        simulations.append(state)
-        
+        for row in rows:
+            entity_types = []
+            if row['entity_types']:
+                try:
+                    entity_types = json.loads(row['entity_types'])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            simulations.append(SimulationState(
+                simulation_id=row['simulation_id'],
+                project_id=row['project_id'],
+                graph_id=row['graph_id'],
+                enable_twitter=bool(row['enable_twitter']),
+                enable_reddit=bool(row['enable_reddit']),
+                status=SimulationStatus(row['status']),
+                entities_count=row['entities_count'] or 0,
+                profiles_count=row['profiles_count'] or 0,
+                entity_types=entity_types,
+                config_generated=bool(row['config_generated']),
+                config_reasoning=row['config_reasoning'] or '',
+                current_round=row['current_round'] or 0,
+                twitter_status=row['twitter_status'] or 'not_started',
+                reddit_status=row['reddit_status'] or 'not_started',
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                error=row['error'],
+            ))
+
         return simulations
     
     def get_profiles(self, simulation_id: str, platform: str = "reddit") -> List[Dict[str, Any]]:

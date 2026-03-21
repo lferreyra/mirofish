@@ -39,6 +39,11 @@ def create_app(config_class=Config):
         logger.info("MiroFish Backend 启动中...")
         logger.info("=" * 50)
     
+    # Initialize database
+    from .database import Database
+    db = Database(app.config.get('DB_PATH', Config.DB_PATH))
+    db.init_db()
+
     # 启用CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     

@@ -39,6 +39,9 @@ class Config:
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown'}
+
+    # Database
+    DB_PATH = os.path.join(UPLOAD_FOLDER, 'mirofish.db')
     
     # 文本处理配置
     DEFAULT_CHUNK_SIZE = 500  # 默认切块大小
