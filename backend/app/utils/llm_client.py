@@ -48,16 +48,16 @@ class LLMClient:
         response_format: Optional[Dict] = None
     ) -> str:
         """
-        发送聊天请求
+        Send a chat request.
         
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            response_format: 响应格式（如JSON模式）
+            messages: List of messages
+            temperature: Temperature parameter
+            max_tokens: Maximum number of tokens
+            response_format: Response format (e.g. JSON mode)
             
         Returns:
-            模型响应文本
+            Model response text
         """
         kwargs = {
             "model": self.model,
@@ -97,15 +97,15 @@ class LLMClient:
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
         """
-        发送聊天请求并返回JSON
+        Send a chat request and return JSON.
         
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
+            messages: List of messages
+            temperature: Temperature parameter
+            max_tokens: Maximum number of tokens
             
         Returns:
-            解析后的JSON对象
+            Parsed JSON object
         """
         response = self.chat(
             messages=messages,
@@ -113,7 +113,7 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
-        # 清理markdown代码块标记
+        # Clean markdown code block markers
         cleaned_response = response.strip()
         cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
         cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
@@ -122,5 +122,5 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            raise ValueError(f"Invalid JSON returned by LLM: {cleaned_response}")
 
