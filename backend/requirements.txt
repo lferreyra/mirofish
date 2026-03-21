@@ -13,14 +13,15 @@ flask-cors>=6.0.0
 # OpenAI SDK（统一使用 OpenAI 格式调用 LLM）
 openai>=1.0.0
 
-# ============= Graphiti + Neo4j =============
-graphiti-core>=0.21.0
+# ============= Neo4j 图谱存储 =============
 neo4j>=5.23.0
 
 # ============= OASIS 社交媒体模拟 =============
 # OASIS 社交模拟框架
 camel-oasis==0.2.5
 camel-ai==0.2.78
+# Intel Mac 兼容：PyTorch 2.3+ 不再提供 macOS x86_64 wheel
+torch<2.3; sys_platform == "darwin" and platform_machine == "x86_64"
 
 # ============= 文件处理 =============
 PyMuPDF>=1.24.0

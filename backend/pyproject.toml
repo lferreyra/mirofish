@@ -2,7 +2,7 @@
 name = "mirofish-backend"
 version = "0.1.0"
 description = "MiroFish - 简洁通用的群体智能引擎，预测万物"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 license = { text = "AGPL-3.0" }
 authors = [
     { name = "MiroFish Team" }
@@ -16,13 +16,14 @@ dependencies = [
     # LLM 相关
     "openai>=1.0.0",
     
-    # Graphiti + Neo4j
-    "graphiti-core>=0.21.0",
+    # Neo4j graph store
     "neo4j>=5.23.0",
     
     # OASIS 社交媒体模拟
     "camel-oasis==0.2.5",
     "camel-ai==0.2.78",
+    # Intel Mac 兼容：PyTorch 2.3+ 不再提供 macOS x86_64 wheel
+    "torch<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     
     # 文件处理
     "PyMuPDF>=1.24.0",
@@ -54,3 +55,8 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["app", "zep_cloud"]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]

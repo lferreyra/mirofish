@@ -36,11 +36,27 @@ def _now_iso() -> str:
 
 
 def _ensure_dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            return {}
+    return {}
 
 
 def _ensure_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else ([] if value is None else [value])
+
+
+def _dict_to_json(value: Any) -> str:
+    try:
+        return json.dumps(_ensure_dict(value), ensure_ascii=False)
+    except Exception:
+        return "{}"
 
 
 def _normalize_labels(labels: Any) -> list[str]:
@@ -89,6 +105,24 @@ def _run_coro_safely(coro):
         return None
     except RuntimeError:
         return asyncio.run(coro)
+
+
+def _humanize_ingest_error(err: Exception) -> str:
+    """Convert low-level storage exceptions to actionable Chinese messages."""
+    raw = str(err) or err.__class__.__name__
+    lower = raw.lower()
+
+    if "property values can only be of primitive types" in lower:
+        return (
+            "Neo4j写入失败：检测到不支持的属性类型（Map/Object）。"
+            "系统已改为JSON字符串存储属性；请重试当前构建任务。"
+        )
+    if "connection" in lower and "neo4j" in lower:
+        return "Neo4j连接失败，请检查 NEO4J_URI/NEO4J_USER/NEO4J_PASSWORD 与数据库状态。"
+    if "authentication" in lower or "unauthorized" in lower:
+        return "Neo4j认证失败，请检查 NEO4J_USER/NEO4J_PASSWORD 是否正确。"
+
+    return f"图谱写入失败：{raw}"
 
 
 @dataclass
@@ -316,7 +350,9 @@ class _GraphAPI:
                 if ep_text.strip():
                     self._ingest_episode(graph_id=graph_id, episode_uuid=episode_uuid, text=ep_text)
             except Exception as e:
-                raise InternalServerError(f"Episode ingest failed: {e}") from e
+                friendly = _humanize_ingest_error(e)
+                logger.exception("Episode ingest failed: %s", e)
+                raise InternalServerError(f"Episode ingest failed: {friendly}") from e
 
             if self._graphiti_mirror:
                 self._graphiti_mirror.add_episode(graph_id=graph_id, episode_uuid=episode_uuid, text=ep_text)
@@ -477,12 +513,15 @@ class _GraphAPI:
     # ===== Internal conversion =====
 
     def _node_from_props(self, props: dict[str, Any]) -> _NodeObj:
+        attrs = _ensure_dict(props.get("attributes_json"))
+        if not attrs:
+            attrs = _ensure_dict(props.get("attributes"))
         return _NodeObj(
             uuid_=str(props.get("uuid", "")),
             name=str(props.get("name", "")),
             labels=_normalize_labels(props.get("labels")),
             summary=str(props.get("summary", "")),
-            attributes=_ensure_dict(props.get("attributes")),
+            attributes=attrs,
             created_at=props.get("created_at"),
         )
 
@@ -490,13 +529,16 @@ class _GraphAPI:
         source = dict(record["s"])
         rel = dict(record["r"])
         target = dict(record["t"])
+        attrs = _ensure_dict(rel.get("attributes_json"))
+        if not attrs:
+            attrs = _ensure_dict(rel.get("attributes"))
         return _EdgeObj(
             uuid_=str(rel.get("uuid", "")),
             name=str(rel.get("name", "")),
             fact=str(rel.get("fact", "")),
             source_node_uuid=str(source.get("uuid", "")),
             target_node_uuid=str(target.get("uuid", "")),
-            attributes=_ensure_dict(rel.get("attributes")),
+            attributes=attrs,
             created_at=rel.get("created_at"),
             valid_at=rel.get("valid_at"),
             invalid_at=rel.get("invalid_at"),
@@ -771,6 +813,7 @@ class _GraphAPI:
         labels = _normalize_labels(["Entity", entity_type])
         summary = str(entity.get("summary", "") or "")
         attributes = _ensure_dict(entity.get("attributes"))
+        attributes_json = _dict_to_json(attributes)
 
         name_lc = name.lower()
         node_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{graph_id}:{name_lc}"))
@@ -790,8 +833,11 @@ class _GraphAPI:
             if existing:
                 props = dict(existing["n"])
                 merged_labels = list(dict.fromkeys(_normalize_labels(props.get("labels")) + labels))
-                merged_attrs = _ensure_dict(props.get("attributes"))
+                merged_attrs = _ensure_dict(props.get("attributes_json"))
+                if not merged_attrs:
+                    merged_attrs = _ensure_dict(props.get("attributes"))
                 merged_attrs.update(attributes)
+                merged_attrs_json = _dict_to_json(merged_attrs)
                 merged_summary = str(props.get("summary") or summary or "")
                 session.run(
                     """
@@ -799,7 +845,7 @@ class _GraphAPI:
                     SET n.name = $name,
                         n.labels = $labels,
                         n.summary = $summary,
-                        n.attributes = $attributes,
+                        n.attributes_json = $attributes_json,
                         n.updated_at = $now
                     """,
                     graph_id=graph_id,
@@ -807,7 +853,7 @@ class _GraphAPI:
                     name=name,
                     labels=merged_labels,
                     summary=merged_summary,
-                    attributes=merged_attrs,
+                    attributes_json=merged_attrs_json,
                     now=now,
                 )
                 return str(props.get("uuid", node_uuid))
@@ -821,7 +867,7 @@ class _GraphAPI:
                     name_lc: $name_lc,
                     labels: $labels,
                     summary: $summary,
-                    attributes: $attributes,
+                    attributes_json: $attributes_json,
                     created_at: $now,
                     updated_at: $now
                 })
@@ -832,7 +878,7 @@ class _GraphAPI:
                 name_lc=name_lc,
                 labels=labels,
                 summary=summary,
-                attributes=attributes,
+                attributes_json=attributes_json,
                 now=now,
             )
 
@@ -876,6 +922,7 @@ class _GraphAPI:
         edge_name = str(relation.get("type", "")).strip() or default_edge_type
         fact = str(relation.get("fact", "")).strip() or f"{source_name} {edge_name} {target_name}"
         attributes = _ensure_dict(relation.get("attributes"))
+        attributes_json = _dict_to_json(attributes)
 
         rel_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{graph_id}:{source_uuid}:{edge_name}:{target_uuid}:{fact}"))
         now = _now_iso()
@@ -888,7 +935,7 @@ class _GraphAPI:
                 MERGE (s)-[r:MIRO_EDGE {graph_id: $graph_id, uuid: $uuid}]->(t)
                 ON CREATE SET r.name = $name,
                               r.fact = $fact,
-                              r.attributes = $attributes,
+                              r.attributes_json = $attributes_json,
                               r.created_at = $now,
                               r.valid_at = $now,
                               r.invalid_at = null,
@@ -897,7 +944,10 @@ class _GraphAPI:
                               r.updated_at = $now
                 ON MATCH SET r.name = CASE WHEN r.name IS NULL OR r.name = '' THEN $name ELSE r.name END,
                              r.fact = CASE WHEN r.fact IS NULL OR r.fact = '' THEN $fact ELSE r.fact END,
-                             r.attributes = CASE WHEN r.attributes IS NULL THEN $attributes ELSE r.attributes END,
+                             r.attributes_json = CASE
+                                 WHEN r.attributes_json IS NULL OR r.attributes_json = '' THEN $attributes_json
+                                 ELSE r.attributes_json
+                             END,
                              r.episode_ids = CASE
                                  WHEN $episode_uuid IN coalesce(r.episode_ids, []) THEN coalesce(r.episode_ids, [])
                                  ELSE coalesce(r.episode_ids, []) + $episode_uuid
@@ -910,7 +960,7 @@ class _GraphAPI:
                 uuid=rel_uuid,
                 name=edge_name,
                 fact=fact,
-                attributes=attributes,
+                attributes_json=attributes_json,
                 episode_uuid=episode_uuid,
                 now=now,
             )

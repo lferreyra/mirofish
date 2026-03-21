@@ -100,7 +100,7 @@ Click the image to watch MiroFish's deep prediction of the lost ending based on 
 | Tool | Version | Description | Check Installation |
 |------|---------|-------------|-------------------|
 | **Node.js** | 18+ | Frontend runtime, includes npm | `node -v` |
-| **Python** | ≥3.11, ≤3.12 | Backend runtime | `python --version` |
+| **Python** | 3.11.x (required) | Backend runtime | `python --version` |
 | **uv** | Latest | Python package manager | `uv --version` |
 
 #### 1. Configure Environment Variables
@@ -122,7 +122,7 @@ LLM_API_KEY=your_api_key
 LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_MODEL_NAME=qwen-plus
 
-# Graphiti + Neo4j private graph config
+# Neo4j private graph config (Graphiti optional enhancement)
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=mirofish123
@@ -145,6 +145,15 @@ npm run setup
 # Install Python dependencies (backend, auto-creates virtual environment)
 npm run setup:backend
 ```
+
+> Intel Mac (`macOS x86_64`) note:
+> The project now pins `torch<2.3` for Intel macOS to avoid missing wheels in newer PyTorch versions.
+> If you previously failed installation, clean and retry:
+>
+> ```bash
+> rm -rf backend/.venv backend/uv.lock .uv-cache
+> npm run setup:backend
+> ```
 
 #### 3. Start Services
 
