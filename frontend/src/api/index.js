@@ -9,9 +9,13 @@ const service = axios.create({
   }
 })
 
-// 请求拦截器
+// Request interceptor - add auth header if API key is configured
 service.interceptors.request.use(
   config => {
+    const apiKey = import.meta.env.VITE_API_KEY
+    if (apiKey) {
+      config.headers['Authorization'] = `Bearer ${apiKey}`
+    }
     return config
   },
   error => {
