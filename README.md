@@ -122,9 +122,11 @@ LLM_API_KEY=your_api_key
 LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_MODEL_NAME=qwen-plus
 
-# Zep Cloud 配置
-# 每月免费额度即可支撑简单使用：https://app.getzep.com/
-ZEP_API_KEY=your_zep_api_key
+# Graphiti + Neo4j 私有化图谱配置
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=mirofish123
+GRAPHITI_ENABLED=true
 ```
 
 #### 2. 安装依赖
@@ -168,13 +170,14 @@ npm run frontend  # 仅启动前端
 # 1. 配置环境变量（同源码部署）
 cp .env.example .env
 
-# 2. 拉取镜像并启动
-docker compose up -d
+# 2. 构建并启动
+docker compose up -d --build
 ```
 
-默认会读取根目录下的 `.env`，并映射端口 `3000（前端）/5001（后端）`
-
-> 在 `docker-compose.yml` 中已通过注释提供加速镜像地址，可按需替换
+默认会读取根目录下的 `.env`，并映射端口：
+- `3000`（前端）
+- `5001`（后端）
+- `7474/7687`（Neo4j）
 
 ## 📬 更多交流
 

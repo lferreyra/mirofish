@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 
 from zep_cloud.client import Zep
 
-from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 
@@ -79,10 +78,7 @@ class ZepEntityReader:
     """
     
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
-        
+        self.api_key = api_key
         self.client = Zep(api_key=self.api_key)
     
     def _call_with_retry(
@@ -433,5 +429,3 @@ class ZepEntityReader:
             enrich_with_edges=enrich_with_edges
         )
         return result.entities
-
-

@@ -16,8 +16,9 @@ dependencies = [
     # LLM 相关
     "openai>=1.0.0",
     
-    # Zep Cloud
-    "zep-cloud==3.13.0",
+    # Graphiti + Neo4j
+    "graphiti-core>=0.21.0",
+    "neo4j>=5.23.0",
     
     # OASIS 社交媒体模拟
     "camel-oasis==0.2.5",
@@ -52,4 +53,4 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "zep_cloud"]
