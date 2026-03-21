@@ -230,12 +230,8 @@ def list_tasks():
     """
     tasks = TaskManager().list_tasks()
     serialized_tasks = [task if isinstance(task, dict) else task.to_dict() for task in tasks]
-    
-    return jsonify({
-        "success": True,
-        "data": serialized_tasks,
-        "count": len(tasks)
-    })
+
+    return jsonify(serialized_tasks)
 
 
 # ============== Graph Data API ==============
