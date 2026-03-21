@@ -642,9 +642,9 @@ class OasisProfileGenerator:
                     result = json.loads(json_str)
                     result["_fixed"] = True
                     return result
-                except:
+                except (json.JSONDecodeError, ValueError, TypeError):
                     pass
-        
+
         # 6. 尝试从内容中提取部分信息
         bio_match = re.search(r'"bio"\s*:\s*"([^"]*)"', content)
         persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # 可能被截断
