@@ -5,6 +5,7 @@ Generated locale files are cached to disk.
 """
 
 import json
+import re
 from pathlib import Path
 
 from ..utils.llm_client import LLMClient
@@ -29,6 +30,10 @@ def get_locale(lang: str) -> dict:
     """
     # Normalize: 'hu-HU' -> 'hu'
     lang = lang.split("-")[0].lower()
+
+    # Validate: only standard BCP 47 primary language subtags (2-3 alpha chars)
+    if not re.match(r'^[a-z]{2,3}$', lang):
+        raise ValueError(f"Invalid language code: {lang!r}")
 
     if lang == BASE_LOCALE:
         return _load_base()
