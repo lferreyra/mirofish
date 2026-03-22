@@ -30,6 +30,10 @@
           <span class="dot"></span>
           {{ statusText }}
         </span>
+        <div class="step-divider"></div>
+        <button class="lang-toggle" @click="toggleLocale">
+          {{ locale === 'en' ? t('lang.zh') : t('lang.en') }}
+        </button>
       </div>
     </header>
 
@@ -77,6 +81,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
@@ -85,6 +90,13 @@ import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
 const router = useRouter()
+const { t, locale } = useI18n()
+
+const toggleLocale = () => {
+  const newLocale = locale.value === 'en' ? 'zh-CN' : 'en'
+  locale.value = newLocale
+  localStorage.setItem('locale', newLocale)
+}
 
 // Layout State
 const viewMode = ref('split') // graph | split | workbench
@@ -536,5 +548,24 @@ onUnmounted(() => {
 
 .panel-wrapper.left {
   border-right: 1px solid #EAEAEA;
+}
+
+.lang-toggle {
+  background: transparent;
+  border: 1px solid #E0E0E0;
+  color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.lang-toggle:hover {
+  border-color: #999;
+  color: #000;
 }
 </style>

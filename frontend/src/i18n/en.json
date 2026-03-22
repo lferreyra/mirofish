@@ -1,0 +1,22 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "generating": "Generating",
+    "waiting": "Waiting",
+    "processing": "Processing",
+    "failed": "Failed"
+  },
+  "lang": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

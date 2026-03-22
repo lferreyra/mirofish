@@ -1,35 +1,38 @@
 <template>
   <div class="home-container">
     <!-- Top navigation bar -->
-    <nav class=”navbar”>
-      <div class=”nav-brand”>MIROFISH</div>
-      <div class=”nav-links”>
-        <a href=”https://github.com/666ghj/MiroFish” target=”_blank” class=”github-link”>
-          Visit our GitHub <span class=”arrow”>↗</span>
+    <nav class="navbar">
+      <div class="nav-brand">MIROFISH</div>
+      <div class="nav-links">
+        <button class="lang-toggle" @click="toggleLocale">
+          {{ locale === 'en' ? t('lang.zh') : t('lang.en') }}
+        </button>
+        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
+          Visit our GitHub <span class="arrow">↗</span>
         </a>
       </div>
     </nav>
 
-    <div class=”main-content”>
+    <div class="main-content">
       <!-- Upper half: Hero section -->
-      <section class=”hero-section”>
-        <div class=”hero-left”>
-          <div class=”tag-row”>
-            <span class=”orange-tag”>Simple & Universal Collective Intelligence Engine</span>
-            <span class=”version-text”>/ v0.1-preview</span>
+      <section class="hero-section">
+        <div class="hero-left">
+          <div class="tag-row">
+            <span class="orange-tag">Simple & Universal Collective Intelligence Engine</span>
+            <span class="version-text">/ v0.1-preview</span>
           </div>
 
-          <h1 class=”main-title”>
+          <h1 class="main-title">
             Upload any report<br>
-            <span class=”gradient-text”>Simulate the future instantly</span>
+            <span class="gradient-text">Simulate the future instantly</span>
           </h1>
 
-          <div class=”hero-desc”>
+          <div class="hero-desc">
             <p>
-              Even from a single paragraph, <span class=”highlight-bold”>MiroFish</span> extracts reality seeds and automatically constructs a parallel world of up to <span class=”highlight-orange”>1M+ Agents</span>. Inject variables from a god's-eye view and discover <span class=”highlight-code”>”local optima”</span> within complex collective dynamics.
+              Even from a single paragraph, <span class="highlight-bold">MiroFish</span> extracts reality seeds and automatically constructs a parallel world of up to <span class="highlight-orange">1M+ Agents</span>. Inject variables from a god's-eye view and discover <span class="highlight-code">"local optima"</span> within complex collective dynamics.
             </p>
-            <p class=”slogan-text”>
-              Let the future play out in Agent swarms — let decisions win after a hundred trials<span class=”blinking-cursor”>_</span>
+            <p class="slogan-text">
+              Let the future play out in Agent swarms — let decisions win after a hundred trials<span class="blinking-cursor">_</span>
             </p>
           </div>
            
@@ -209,9 +212,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 
 const router = useRouter()
+const { t, locale } = useI18n()
+
+const toggleLocale = () => {
+  const newLocale = locale.value === 'en' ? 'zh-CN' : 'en'
+  locale.value = newLocale
+  localStorage.setItem('locale', newLocale)
+}
 
 // Form data
 const formData = ref({
@@ -351,6 +362,24 @@ const startSimulation = () => {
 .nav-links {
   display: flex;
   align-items: center;
+}
+
+.lang-toggle {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-right: 20px;
+  letter-spacing: 0.5px;
+}
+
+.lang-toggle:hover {
+  opacity: 0.8;
 }
 
 .github-link {
