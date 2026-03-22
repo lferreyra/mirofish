@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "github": "Visit our GitHub",
+    "mirofish": "MIROFISH"
+  },
+  "home": {
+    "tag": "Simple Universal Swarm Intelligence Engine",
+    "version": "/ v0.1-Preview",
+    "title_line1": "Upload Any Report",
+    "title_line2": "Predict the Future",
+    "desc1": "Even from a single paragraph, MiroFish can automatically generate a parallel world with up to million-scale Agents based on real-world seeds. Inject variables from a god's-eye view to find the \"local optimum\" in complex group interactions.",
+    "slogan": "Let the future be rehearsed in Agent swarms, and decisions forged through simulation",
+    "status_label": "System Status",
+    "status_ready": "Ready",
+    "status_desc": "Prediction engine on standby. Upload unstructured data to initialize the simulation sequence.",
+    "metric_cost_value": "Low Cost",
+    "metric_cost_label": "~$5 per simulation",
+    "metric_scale_value": "Scalable",
+    "metric_scale_label": "Up to million-scale Agents",
+    "workflow_title": "Workflow Sequence",
+    "step1_title": "Graph Build",
+    "step1_desc": "Reality seed extraction & individual/group memory injection & GraphRAG build",
+    "step2_title": "Environment Setup",
+    "step2_desc": "Entity-relation extraction & persona generation & environment config Agent injection",
+    "step3_title": "Run Simulation",
+    "step3_desc": "Dual-platform parallel simulation & auto-parse prediction requirements & dynamic temporal memory updates",
+    "step4_title": "Report Generation",
+    "step4_desc": "ReportAgent uses a rich toolset for deep interaction with the post-simulation environment",
+    "step5_title": "Deep Interaction",
+    "step5_desc": "Chat with any agent in the simulated world & interact with ReportAgent",
+    "seed_label": "01 / Reality Seed",
+    "seed_formats": "Supported formats: PDF, MD, TXT",
+    "upload_title": "Drag & Drop Files",
+    "upload_hint": "or click to browse",
+    "input_params": "Input Parameters",
+    "prompt_label": ">_ 02 / Simulation Prompt",
+    "prompt_placeholder": "// Enter your simulation or prediction requirement in natural language (e.g. If a major company announces layoffs, what public sentiment trends would emerge?)",
+    "engine_badge": "Engine: MiroFish-V1.0",
+    "launch_btn": "Launch Engine",
+    "launching_btn": "Initializing..."
+  },
+  "history": {
+    "title": "History Database",
+    "empty": "No simulation history found.",
+    "status_completed": "Completed",
+    "status_running": "Running",
+    "status_failed": "Failed",
+    "view_btn": "View",
+    "delete_btn": "Delete"
+  },
+  "graph": {
+    "building": "Building knowledge graph...",
+    "complete": "Graph build complete",
+    "error": "Graph build failed"
+  },
+  "simulation": {
+    "preparing": "Preparing simulation...",
+    "running": "Simulation running",
+    "complete": "Simulation complete",
+    "failed": "Simulation failed",
+    "twitter_platform": "Twitter",
+    "reddit_platform": "Reddit",
+    "rounds": "Rounds",
+    "agents": "Agents",
+    "start_btn": "Start Simulation",
+    "stop_btn": "Stop"
+  },
+  "report": {
+    "generating": "Generating report...",
+    "complete": "Report ready",
+    "download_btn": "Download",
+    "interact_btn": "Interact with ReportAgent"
+  },
+  "interaction": {
+    "placeholder": "Ask a question...",
+    "send_btn": "Send",
+    "select_agent": "Select an agent",
+    "report_agent": "ReportAgent"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}
