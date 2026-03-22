@@ -15,7 +15,7 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('view.graph'), split: $t('view.split'), workbench: $t('view.workbench') }[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 5/5</span>
-          <span class="step-name">Deep Interaction</span>
+          <span class="step-name">{{ $t('steps.deep_interaction') }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -64,6 +64,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import GraphPanel from '../components/GraphPanel.vue'
 import Step5Interaction from '../components/Step5Interaction.vue'
 import { getProject, getGraphData } from '../api/graph'
@@ -109,10 +111,10 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return 'Error'
-  if (currentStatus.value === 'completed') return 'Completed'
-  if (currentStatus.value === 'processing') return 'Processing'
-  return 'Ready'
+  if (currentStatus.value === 'error') return t('status.error')
+  if (currentStatus.value === 'completed') return t('status.completed')
+  if (currentStatus.value === 'processing') return t('status.processing')
+  return t('status.ready')
 })
 
 // --- Helpers ---

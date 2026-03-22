@@ -85,5 +85,29 @@
     "next": "Next",
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "view": {
+    "graph": "Graph",
+    "split": "Split",
+    "workbench": "Workbench"
+  },
+  "steps": {
+    "graph_build": "Graph Build",
+    "env_setup": "Environment Setup",
+    "run_simulation": "Run Simulation",
+    "report_generation": "Report Generation",
+    "deep_interaction": "Deep Interaction"
+  },
+  "status": {
+    "error": "Error",
+    "ready": "Ready",
+    "preparing": "Preparing",
+    "running": "Running",
+    "completed": "Completed",
+    "generating": "Generating",
+    "processing": "Processing",
+    "initializing": "Initializing",
+    "building_graph": "Building Graph",
+    "generating_ontology": "Generating Ontology"
   }
 }
