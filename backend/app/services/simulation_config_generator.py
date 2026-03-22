@@ -22,6 +22,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..prompts import load_prompt
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
@@ -212,15 +213,17 @@ class SimulationConfigGenerator:
         self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        model_name: Optional[str] = None
+        model_name: Optional[str] = None,
+        locale: str = 'en'
     ):
         self.api_key = api_key or Config.LLM_API_KEY
         self.base_url = base_url or Config.LLM_BASE_URL
         self.model_name = model_name or Config.LLM_MODEL_NAME
-        
+        self.locale = locale
+
         if not self.api_key:
             raise ValueError("LLM_API_KEY is not configured")
-        
+
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
@@ -507,51 +510,11 @@ class SimulationConfigGenerator:
 
         max_agents_allowed = max(1, int(num_entities * 0.9))
 
-        prompt = f"""Based on the simulation requirements below, generate a time simulation config.
-
-{context_truncated}
-
-## Task
-Generate a time config JSON.
-
-### General principles (use as reference; adjust based on the specific event and participant group):
-- The user base is Chinese; configs must reflect Beijing time daily schedule habits
-- 00:00–05:00: Almost no activity (activity multiplier 0.05)
-- 06:00–08:00: Gradually active (activity multiplier 0.4)
-- 09:00–18:00: Moderate activity during work hours (activity multiplier 0.7)
-- 19:00–22:00: Evening peak — most active (activity multiplier 1.5)
-- 23:00 onwards: Declining activity (activity multiplier 0.5)
-- **Important**: These are reference values only — adjust based on event type and participant group characteristics
-  - Example: Student groups peak at 21:00–23:00; media is active all day; government agencies only during work hours
-  - Example: Breaking news may trigger late-night discussions, so off_peak_hours can be shortened
-
-### Return JSON format (no markdown)
-
-Example:
-{{
-    "total_simulation_hours": 72,
-    "minutes_per_round": 60,
-    "agents_per_hour_min": 5,
-    "agents_per_hour_max": 50,
-    "peak_hours": [19, 20, 21, 22],
-    "off_peak_hours": [0, 1, 2, 3, 4, 5],
-    "morning_hours": [6, 7, 8],
-    "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    "reasoning": "Time config rationale for this event"
-}}
-
-Field descriptions:
-- total_simulation_hours (int): Total simulation duration, 24–168 hours; shorter for breaking news, longer for sustained topics
-- minutes_per_round (int): Duration per round, 30–120 minutes; 60 minutes recommended
-- agents_per_hour_min (int): Minimum agents activated per hour (range: 1–{max_agents_allowed})
-- agents_per_hour_max (int): Maximum agents activated per hour (range: 1–{max_agents_allowed})
-- peak_hours (int array): Peak hours — adjust based on participant group
-- off_peak_hours (int array): Off-peak hours — typically late night
-- morning_hours (int array): Morning hours
-- work_hours (int array): Work hours
-- reasoning (string): Brief explanation of the configuration choices"""
-
-        system_prompt = "You are a social media simulation expert. Return pure JSON. Time configs must reflect Chinese daily schedule habits."
+        prompt = load_prompt('config_time', self.locale).format(
+            context_truncated=context_truncated,
+            max_agents_allowed=max_agents_allowed,
+        )
+        system_prompt = load_prompt('config_time_system', self.locale)
 
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -632,36 +595,12 @@ Field descriptions:
 
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
 
-        prompt = f"""Based on the simulation requirements below, generate an event configuration.
-
-Simulation requirement: {simulation_requirement}
-
-{context_truncated}
-
-## Available entity types and examples
-{type_info}
-
-## Task
-Generate an event config JSON:
-- Extract trending topic keywords
-- Describe the direction of opinion development
-- Design initial post content; **each post must specify poster_type (the poster's entity type)**
-
-**Important**: poster_type must be chosen from the "Available entity types" listed above so that the initial post can be assigned to the correct agent.
-Examples: official statements should be posted by Official/University types; news by MediaOutlet; student opinions by Student.
-
-Return JSON format (no markdown):
-{{
-    "hot_topics": ["keyword1", "keyword2", ...],
-    "narrative_direction": "<description of how opinion develops>",
-    "initial_posts": [
-        {{"content": "Post content", "poster_type": "EntityType (must match an available type)"}},
-        ...
-    ],
-    "reasoning": "<brief explanation>"
-}}"""
-
-        system_prompt = "You are a public opinion analyst. Return pure JSON. poster_type must exactly match an available entity type."
+        prompt = load_prompt('config_event', self.locale).format(
+            simulation_requirement=simulation_requirement,
+            context_truncated=context_truncated,
+            type_info=type_info,
+        )
+        system_prompt = load_prompt('config_event_system', self.locale)
 
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -784,43 +723,11 @@ Return JSON format (no markdown):
                 "summary": e.summary[:summary_len] if e.summary else ""
             })
 
-        prompt = f"""Based on the information below, generate social media activity configs for each entity.
-
-Simulation requirement: {simulation_requirement}
-
-## Entity list
-```json
-{json.dumps(entity_list, ensure_ascii=False, indent=2)}
-```
-
-## Task
-Generate an activity config for each entity. Key guidelines:
-- **Time must match China daily schedule**: Almost no activity 00:00–05:00; most active 19:00–22:00
-- **Official institutions** (University/GovernmentAgency): Low activity (0.1–0.3), active during work hours (9–17), slow response (60–240 min), high influence (2.5–3.0)
-- **Media** (MediaOutlet): Medium activity (0.4–0.6), active all day (8–23), fast response (5–30 min), high influence (2.0–2.5)
-- **Individuals** (Student/Person/Alumni): High activity (0.6–0.9), mainly evening (18–23), fast response (1–15 min), low influence (0.8–1.2)
-- **Public figures/experts**: Medium activity (0.4–0.6), medium-high influence (1.5–2.0)
-
-Return JSON format (no markdown):
-{{
-    "agent_configs": [
-        {{
-            "agent_id": <must match the input agent_id>,
-            "activity_level": <0.0–1.0>,
-            "posts_per_hour": <posting frequency>,
-            "comments_per_hour": <comment frequency>,
-            "active_hours": [<list of active hours, following China daily schedule>],
-            "response_delay_min": <minimum response delay in minutes>,
-            "response_delay_max": <maximum response delay in minutes>,
-            "sentiment_bias": <-1.0 to 1.0>,
-            "stance": "<supportive/opposing/neutral/observer>",
-            "influence_weight": <influence weight>
-        }},
-        ...
-    ]
-}}"""
-
-        system_prompt = "You are a social media behavior analyst. Return pure JSON. Configs must reflect Chinese daily schedule habits."
+        prompt = load_prompt('config_agent', self.locale).format(
+            simulation_requirement=simulation_requirement,
+            entity_list_json=json.dumps(entity_list, ensure_ascii=False, indent=2),
+        )
+        system_prompt = load_prompt('config_agent_system', self.locale)
 
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)

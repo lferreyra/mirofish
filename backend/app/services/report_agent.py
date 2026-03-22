@@ -22,6 +22,7 @@ from enum import Enum
 from ..config import Config
 from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
+from ..prompts import load_prompt
 from .zep_tools import (
     ZepToolsService, 
     SearchResult, 
@@ -460,417 +461,6 @@ class Report:
         }
 
 
-# ═══════════════════════════════════════════════════════════════
-# Prompt template constants
-# ═══════════════════════════════════════════════════════════════
-
-# ── Tool descriptions ──
-
-TOOL_DESC_INSIGHT_FORGE = """\
-[Deep-Insight Retrieval — Powerful Search Tool]
-This is our powerful retrieval function designed for in-depth analysis. It will:
-1. Automatically decompose your question into multiple sub-questions.
-2. Retrieve information from the simulation graph along multiple dimensions.
-3. Integrate results from semantic search, entity analysis, and relationship tracing.
-4. Return the most comprehensive and deeply-indexed content available.
-
-[When to use]
-- Deep analysis of a specific topic.
-- Understanding multiple aspects of an event.
-- Gathering rich source material to support a report section.
-
-[Returns]
-- Raw matching facts (directly quotable)
-- Core entity insights
-- Relationship-chain analysis"""
-
-TOOL_DESC_PANORAMA_SEARCH = """\
-[Breadth Search — Get the Full Picture]
-This tool retrieves a complete panoramic view of the simulation results, especially
-useful for understanding how events evolved over time. It will:
-1. Retrieve all relevant nodes and relationships.
-2. Distinguish currently valid facts from historical/expired facts.
-3. Help you understand how public opinion has developed.
-
-[When to use]
-- Understanding the full development arc of an event.
-- Comparing public sentiment at different stages.
-- Getting comprehensive entity and relationship information.
-
-[Returns]
-- Currently valid facts (latest simulation results)
-- Historical/expired facts (evolution record)
-- All involved entities"""
-
-TOOL_DESC_QUICK_SEARCH = """\
-[Simple Search — Quick Retrieval]
-A lightweight, fast retrieval tool suited for simple, direct information queries.
-
-[When to use]
-- Quickly locating a specific piece of information.
-- Verifying a fact.
-- Simple information lookup.
-
-[Returns]
-- A list of facts most relevant to the query"""
-
-TOOL_DESC_INTERVIEW_AGENTS = """\
-[In-Depth Interview — Real Agent Interviews (Dual Platform)]
-Calls the OASIS simulation environment's interview API to conduct real interviews
-with live simulation agents. This is NOT an LLM simulation — it calls the actual
-interview interface and returns raw agent responses.
-By default it interviews on both Twitter and Reddit simultaneously for broader coverage.
-
-How it works:
-1. Automatically reads persona files to learn about all simulation agents.
-2. Intelligently selects agents most relevant to the interview topic
-   (e.g. students, media, officials).
-3. Auto-generates interview questions.
-4. Calls /api/simulation/interview/batch to conduct real interviews on both platforms.
-5. Aggregates all results and provides a multi-perspective analysis.
-
-[When to use]
-- Understanding different stakeholder views on an event
-  (What do students think? Media? Officials?).
-- Collecting opinions and positions from multiple parties.
-- Obtaining authentic answers from simulation agents (from the OASIS environment).
-- Making the report more vivid with "interview transcripts".
-
-[Returns]
-- Identity information of the interviewed agents
-- Each agent's responses on both Twitter and Reddit
-- Key quotes (directly quotable)
-- Interview summary and perspective comparison
-
-[IMPORTANT] Requires the OASIS simulation environment to be running."""
-
-# ── Outline planning prompt ──
-
-PLAN_SYSTEM_PROMPT = """\
-You are an expert writer of "Future Prediction Reports" with a god's-eye view of the
-simulation world — you can observe the behavior, statements, and interactions of every
-agent inside the simulation.
-
-[Core concept]
-We built a simulation world and injected a specific "simulation requirement" as a variable.
-The resulting evolution of the simulation world is a prediction of what may happen in the
-future. What you are observing is not "experimental data" — it is a "rehearsal of the future."
-
-[Your task]
-Write a "Future Prediction Report" that answers:
-1. Under the conditions we set, what happened in the future?
-2. How did each type of agent (population group) react and act?
-3. What noteworthy future trends and risks did this simulation reveal?
-
-[Report framing]
-- ✅ This is a simulation-based future prediction report revealing "if this, then what future"
-- ✅ Focus on predicted outcomes: event trajectory, group reactions, emergent phenomena,
-     potential risks
-- ✅ Agent behavior in the simulation is a prediction of future human behavior
-- ❌ Not an analysis of the current real-world situation
-- ❌ Not a generic public-opinion summary
-
-[Section count constraints]
-- Minimum 2 sections, maximum 5 sections
-- No sub-sections; each section is written as complete prose
-- Content should be concise and focused on core prediction findings
-- Section structure is designed by you based on the prediction results
-
-Output a JSON-format report outline as follows:
-{
-    "title": "Report title",
-    "summary": "Report summary (one sentence capturing the core prediction finding)",
-    "sections": [
-        {
-            "title": "Section title",
-            "description": "Description of section content"
-        }
-    ]
-}
-
-Note: the sections array must have at least 2 and at most 5 elements!"""
-
-PLAN_USER_PROMPT_TEMPLATE = """\
-[Prediction scenario]
-Variable injected into the simulation world (simulation requirement): {simulation_requirement}
-
-[Simulation world scale]
-- Number of entities participating in the simulation: {total_nodes}
-- Number of relationships generated between entities: {total_edges}
-- Entity type distribution: {entity_types}
-- Number of active agents: {total_entities}
-
-[Sample of simulated future facts]
-{related_facts_json}
-
-Please examine this future rehearsal with a god's-eye view:
-1. Under the conditions we set, what state did the future reach?
-2. How did each population group (agent) react and act?
-3. What noteworthy future trends did this simulation reveal?
-
-Design the most appropriate section structure based on the prediction results.
-
-[Reminder] Section count: minimum 2, maximum 5 — content must be concise and focused on core prediction findings."""
-
-# ── Section generation prompt ──
-
-SECTION_SYSTEM_PROMPT_TEMPLATE = """\
-You are an expert writer of "Future Prediction Reports" and are currently writing one section.
-
-Report title: {report_title}
-Report summary: {report_summary}
-Prediction scenario (simulation requirement): {simulation_requirement}
-
-Section to write: {section_title}
-
-═══════════════════════════════════════════════════════════════
-[Core concept]
-═══════════════════════════════════════════════════════════════
-
-The simulation world is a rehearsal of the future. We injected specific conditions
-(the simulation requirement) and the behavior and interactions of agents in the simulation
-are predictions of future human behavior.
-
-Your task:
-- Reveal what happened in the future under the specified conditions.
-- Predict how each population group (agent) reacted and acted.
-- Identify noteworthy future trends, risks, and opportunities.
-
-❌ Do NOT write this as an analysis of the current real-world situation.
-✅ Focus on "what the future will be like" — the simulation result IS the predicted future.
-
-═══════════════════════════════════════════════════════════════
-[Most important rules — must be followed]
-═══════════════════════════════════════════════════════════════
-
-1. [You MUST call tools to observe the simulation world]
-   - You are observing the future rehearsal with a god's-eye view.
-   - All content must come from events and agent behavior in the simulation world.
-   - You are FORBIDDEN from using your own knowledge to write report content.
-   - Each section must call tools at least 3 times (max 5) to observe the simulated world,
-     which represents the future.
-
-2. [You MUST quote agents' original statements and behavior]
-   - Agent statements and actions are predictions of future human behavior.
-   - Use block-quote format in the report to present these predictions, e.g.:
-     > "A certain population group will say: [original content]..."
-   - These quotes are the core evidence of the simulation prediction.
-
-3. [Language consistency — quoted content must be translated to the report language]
-   - Tool results may contain English or mixed Chinese-English text.
-   - If the simulation requirement and source material are in Chinese, the entire report
-     must be written in Chinese.
-   - When quoting English or mixed-language content returned by tools, you must translate
-     it into fluent Chinese before writing it into the report.
-   - Translate faithfully — keep the original meaning and ensure natural phrasing.
-   - This rule applies to both body text and block-quote (> format) content.
-
-4. [Faithfully represent prediction results]
-   - Report content must reflect the simulation results that represent the future.
-   - Do not add information that does not exist in the simulation.
-   - If information on some aspect is insufficient, say so honestly.
-
-═══════════════════════════════════════════════════════════════
-[⚠️ Formatting rules — extremely important!]
-═══════════════════════════════════════════════════════════════
-
-[One section = the smallest content unit]
-- Each section is the smallest block unit of the report.
-- ❌ FORBIDDEN: any Markdown headings inside a section (#, ##, ###, #### etc.)
-- ❌ FORBIDDEN: adding the section's own title at the top of the content
-- ✅ Section titles are added automatically by the system; you only write body text.
-- ✅ Use **bold**, paragraph breaks, block quotes, and lists to organize content — no headings.
-
-[Correct example]
-```
-This section analyzes the public-opinion propagation dynamics of the event.
-Through deep analysis of the simulation data, we found...
-
-**Initial ignition phase**
-
-Weibo served as the first scene of public opinion, taking the core role in breaking the story:
-
-> "Weibo contributed 68% of the initial volume..."
-
-**Emotion amplification phase**
-
-The Douyin platform further amplified the event's impact:
-
-- Strong visual impact
-- High emotional resonance
-```
-
-[Incorrect example]
-```
-## Executive summary          ← Wrong! Do not add any headings
-### I. Initial phase          ← Wrong! Do not use ### for sub-sections
-#### 1.1 Detailed analysis    ← Wrong! Do not use #### for further breakdown
-
-This section analyzes...
-```
-
-═══════════════════════════════════════════════════════════════
-[Available retrieval tools] (call 3–5 times per section)
-═══════════════════════════════════════════════════════════════
-
-{tools_description}
-
-[Tool usage advice — mix different tools, don't rely on just one]
-- insight_forge: Deep-insight analysis; auto-decomposes questions and retrieves facts
-  and relationships from multiple dimensions.
-- panorama_search: Wide-angle panoramic search; understand the full picture, timeline,
-  and evolution of an event.
-- quick_search: Quickly verify a specific data point.
-- interview_agents: Interview simulation agents to get first-person perspectives and
-  authentic reactions from different roles.
-
-═══════════════════════════════════════════════════════════════
-[Workflow]
-═══════════════════════════════════════════════════════════════
-
-Each reply you can do EXACTLY ONE of the following (not both):
-
-Option A — Call a tool:
-Output your reasoning, then call one tool using this format:
-<tool_call>
-{{"name": "tool_name", "parameters": {{"param_name": "param_value"}}}}
-</tool_call>
-The system will execute the tool and return the result to you.
-You must NOT write your own tool results.
-
-Option B — Output final content:
-When you have gathered sufficient information via tools, output the section content
-starting with "Final Answer:".
-
-⚠️ Strictly forbidden:
-- A single reply MUST NOT contain both a tool call and a Final Answer.
-- You MUST NOT fabricate tool results (Observations); all tool results are injected by the system.
-- At most one tool call per reply.
-
-═══════════════════════════════════════════════════════════════
-[Section content requirements]
-═══════════════════════════════════════════════════════════════
-
-1. Content must be based on simulation data retrieved via tools.
-2. Liberally quote source text to showcase simulation results.
-3. Use Markdown formatting (but NO headings):
-   - Use **bold text** to highlight key points (instead of sub-headings).
-   - Use lists (- or 1.2.3.) to organize points.
-   - Use blank lines to separate paragraphs.
-   - ❌ FORBIDDEN: any heading syntax (#, ##, ###, ####, etc.)
-4. [Block-quote formatting — must stand alone as a paragraph]
-   Quotes must be independent paragraphs with one blank line before and after;
-   they must NOT be embedded inside another paragraph:
-
-   ✅ Correct format:
-   ```
-   The school's response was considered to lack substance.
-
-   > "The school's response mode appeared rigid and slow in the fast-moving social media environment."
-
-   This assessment reflects widespread public dissatisfaction.
-   ```
-
-   ❌ Incorrect format:
-   ```
-   The school's response was considered to lack substance. > "The school's response mode..." This reflects...
-   ```
-5. Maintain logical coherence with other sections.
-6. [Avoid repetition] Read the completed sections below carefully and do not re-describe
-   the same information.
-7. [Reminder] Do NOT add any headings! Use **bold** instead of sub-section headings."""
-
-SECTION_USER_PROMPT_TEMPLATE = """\
-Completed sections (read carefully to avoid repetition):
-{previous_content}
-
-═══════════════════════════════════════════════════════════════
-[Current task] Write section: {section_title}
-═══════════════════════════════════════════════════════════════
-
-[Important reminders]
-1. Read the completed sections above carefully to avoid repeating the same content!
-2. You MUST call tools to retrieve simulation data before writing.
-3. Mix different tools — do not use only one.
-4. Report content must come from retrieval results; do not use your own knowledge.
-
-[⚠️ Formatting warning — must be followed]
-- ❌ Do NOT write any headings (#, ##, ###, ####)
-- ❌ Do NOT write "{section_title}" as the opening line
-- ✅ Section titles are added automatically by the system
-- ✅ Start directly with body text; use **bold** instead of sub-section headings
-
-Begin:
-1. First think (Thought) about what information this section needs.
-2. Then call a tool (Action) to retrieve simulation data.
-3. Once you have gathered enough information, output Final Answer (pure body text, no headings)."""
-
-# ── ReACT loop message templates ──
-
-REACT_OBSERVATION_TEMPLATE = """\
-Observation (retrieval result):
-
-═══ Tool {tool_name} returned ═══
-{result}
-
-═══════════════════════════════════════════════════════════════
-Tools called so far: {tool_calls_count}/{max_tool_calls} (used: {used_tools_str}){unused_hint}
-- If you have sufficient information: output section content starting with "Final Answer:"
-  (must quote the source text above)
-- If you need more information: call one tool to continue retrieving
-═══════════════════════════════════════════════════════════════"""
-
-REACT_INSUFFICIENT_TOOLS_MSG = (
-    "[Note] You have only called {tool_calls_count} tool(s); at least {min_tool_calls} are required. "
-    "Please call more tools to retrieve simulation data before outputting Final Answer. {unused_hint}"
-)
-
-REACT_INSUFFICIENT_TOOLS_MSG_ALT = (
-    "You have only called {tool_calls_count} tool(s) so far; at least {min_tool_calls} are required. "
-    "Please call a tool to retrieve simulation data. {unused_hint}"
-)
-
-REACT_TOOL_LIMIT_MSG = (
-    "Tool call limit reached ({tool_calls_count}/{max_tool_calls}); no more tool calls allowed. "
-    'Please immediately output section content starting with "Final Answer:" based on the information already retrieved.'
-)
-
-REACT_UNUSED_TOOLS_HINT = "\n💡 You haven't used yet: {unused_list} — consider trying different tools for multi-angle information"
-
-REACT_FORCE_FINAL_MSG = "Tool call limit reached. Please output Final Answer: directly and generate the section content."
-
-# ── Chat prompt ──
-
-CHAT_SYSTEM_PROMPT_TEMPLATE = """\
-You are a concise and efficient simulation prediction assistant.
-
-[Background]
-Prediction conditions: {simulation_requirement}
-
-[Generated analysis report]
-{report_content}
-
-[Rules]
-1. Answer questions based on the report content above first.
-2. Answer directly — avoid lengthy reasoning monologues.
-3. Only call tools to retrieve more data when the report content is insufficient to answer.
-4. Keep answers concise, clear, and well-organized.
-
-[Available tools] (use only when needed; maximum 1–2 calls)
-{tools_description}
-
-[Tool call format]
-<tool_call>
-{{"name": "tool_name", "parameters": {{"param_name": "param_value"}}}}
-</tool_call>
-
-[Answer style]
-- Concise and direct — no lengthy essays.
-- Use > format to quote key content.
-- Lead with the conclusion, then explain the reasoning."""
-
-CHAT_OBSERVATION_SUFFIX = "\n\nPlease answer the question concisely."
-
 
 # ═══════════════════════════════════════════════════════════════
 # ReportAgent main class
@@ -895,7 +485,8 @@ class ReportAgent:
         simulation_id: str,
         simulation_requirement: str,
         llm_client: Optional[LLMClient] = None,
-        zep_tools: Optional[ZepToolsService] = None
+        zep_tools: Optional[ZepToolsService] = None,
+        locale: str = 'en'
     ):
         """Initialize the Report Agent.
 
@@ -905,13 +496,33 @@ class ReportAgent:
             simulation_requirement: Simulation requirement description.
             llm_client: LLM client (optional).
             zep_tools: Zep tools service (optional).
+            locale: Locale for prompt selection (default 'en').
         """
         self.graph_id = graph_id
         self.simulation_id = simulation_id
         self.simulation_requirement = simulation_requirement
-        
+        self.locale = locale
+
         self.llm = llm_client or LLMClient()
         self.zep_tools = zep_tools or ZepToolsService()
+
+        # Load all prompt templates at init time
+        self._tool_desc_insight = load_prompt('report_tool_desc_insight', locale)
+        self._tool_desc_panorama = load_prompt('report_tool_desc_panorama', locale)
+        self._tool_desc_quick = load_prompt('report_tool_desc_quick', locale)
+        self._tool_desc_interview = load_prompt('report_tool_desc_interview', locale)
+        self._plan_system = load_prompt('report_plan_system', locale)
+        self._plan_user_tpl = load_prompt('report_plan_user', locale)
+        self._section_system_tpl = load_prompt('report_section_system', locale)
+        self._section_user_tpl = load_prompt('report_section_user', locale)
+        self._react_observation_tpl = load_prompt('report_react_observation', locale)
+        self._react_insufficient_tpl = load_prompt('report_react_insufficient', locale)
+        self._react_insufficient_alt_tpl = load_prompt('report_react_insufficient_alt', locale)
+        self._react_tool_limit_tpl = load_prompt('report_react_tool_limit', locale)
+        self._react_unused_hint_tpl = load_prompt('report_react_unused_hint', locale)
+        self._react_force_final = load_prompt('report_react_force_final', locale)
+        self._chat_system_tpl = load_prompt('report_chat_system', locale)
+        self._chat_observation_suffix = load_prompt('report_chat_observation', locale)
 
         self.tools = self._define_tools()
 
@@ -926,7 +537,7 @@ class ReportAgent:
         return {
             "insight_forge": {
                 "name": "insight_forge",
-                "description": TOOL_DESC_INSIGHT_FORGE,
+                "description": self._tool_desc_insight,
                 "parameters": {
                     "query": "The question or topic you want to analyse in depth",
                     "report_context": "Context for the current report section (optional; helps generate more precise sub-questions)"
@@ -934,7 +545,7 @@ class ReportAgent:
             },
             "panorama_search": {
                 "name": "panorama_search",
-                "description": TOOL_DESC_PANORAMA_SEARCH,
+                "description": self._tool_desc_panorama,
                 "parameters": {
                     "query": "Search query used for relevance ranking",
                     "include_expired": "Whether to include expired/historical content (default True)"
@@ -942,7 +553,7 @@ class ReportAgent:
             },
             "quick_search": {
                 "name": "quick_search",
-                "description": TOOL_DESC_QUICK_SEARCH,
+                "description": self._tool_desc_quick,
                 "parameters": {
                     "query": "Search query string",
                     "limit": "Number of results to return (optional, default 10)"
@@ -950,7 +561,7 @@ class ReportAgent:
             },
             "interview_agents": {
                 "name": "interview_agents",
-                "description": TOOL_DESC_INTERVIEW_AGENTS,
+                "description": self._tool_desc_interview,
                 "parameters": {
                     "interview_topic": "Interview topic or requirement description",
                     "max_agents": "Maximum number of agents to interview (optional, default 5, max 10)"
@@ -1160,8 +771,8 @@ class ReportAgent:
         if progress_callback:
             progress_callback("planning", 30, "Generating report outline...")
         
-        system_prompt = PLAN_SYSTEM_PROMPT
-        user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
+        system_prompt = self._plan_system
+        user_prompt = self._plan_user_tpl.format(
             simulation_requirement=self.simulation_requirement,
             total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
             total_edges=context.get('graph_statistics', {}).get('total_edges', 0),
@@ -1245,7 +856,7 @@ class ReportAgent:
         if self.report_logger:
             self.report_logger.log_section_start(section.title, section_index)
         
-        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
+        system_prompt = self._section_system_tpl.format(
             report_title=outline.title,
             report_summary=outline.summary,
             simulation_requirement=self.simulation_requirement,
@@ -1263,7 +874,7 @@ class ReportAgent:
         else:
             previous_content = "(This is the first section)"
         
-        user_prompt = SECTION_USER_PROMPT_TEMPLATE.format(
+        user_prompt = self._section_user_tpl.format(
             previous_content=previous_content,
             section_title=section.title,
         )
@@ -1371,7 +982,7 @@ class ReportAgent:
                     )
                     messages.append({
                         "role": "user",
-                        "content": REACT_INSUFFICIENT_TOOLS_MSG.format(
+                        "content": self._react_insufficient_tpl.format(
                             tool_calls_count=tool_calls_count,
                             min_tool_calls=min_tool_calls,
                             unused_hint=unused_hint,
@@ -1397,7 +1008,7 @@ class ReportAgent:
                     messages.append({"role": "assistant", "content": response})
                     messages.append({
                         "role": "user",
-                        "content": REACT_TOOL_LIMIT_MSG.format(
+                        "content": self._react_tool_limit_tpl.format(
                             tool_calls_count=tool_calls_count,
                             max_tool_calls=self.MAX_TOOL_CALLS_PER_SECTION,
                         ),
@@ -1440,12 +1051,12 @@ class ReportAgent:
                 unused_tools = all_tools - used_tools
                 unused_hint = ""
                 if unused_tools and tool_calls_count < self.MAX_TOOL_CALLS_PER_SECTION:
-                    unused_hint = REACT_UNUSED_TOOLS_HINT.format(unused_list=", ".join(unused_tools))
+                    unused_hint = self._react_unused_hint_tpl.format(unused_list=", ".join(unused_tools))
 
                 messages.append({"role": "assistant", "content": response})
                 messages.append({
                     "role": "user",
-                    "content": REACT_OBSERVATION_TEMPLATE.format(
+                    "content": self._react_observation_tpl.format(
                         tool_name=call["name"],
                         result=result,
                         tool_calls_count=tool_calls_count,
@@ -1468,7 +1079,7 @@ class ReportAgent:
 
                 messages.append({
                     "role": "user",
-                    "content": REACT_INSUFFICIENT_TOOLS_MSG_ALT.format(
+                    "content": self._react_insufficient_alt_tpl.format(
                         tool_calls_count=tool_calls_count,
                         min_tool_calls=min_tool_calls,
                         unused_hint=unused_hint,
@@ -1494,7 +1105,7 @@ class ReportAgent:
             return final_answer
         
         logger.warning(f"Section {section.title} reached max iterations; forcing final output")
-        messages.append({"role": "user", "content": REACT_FORCE_FINAL_MSG})
+        messages.append({"role": "user", "content": self._react_force_final})
         
         response = self.llm.chat(
             messages=messages,
@@ -1766,7 +1377,7 @@ class ReportAgent:
         except Exception as e:
             logger.warning(f"Failed to retrieve report content: {e}")
         
-        system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(
+        system_prompt = self._chat_system_tpl.format(
             simulation_requirement=self.simulation_requirement,
             report_content=report_content if report_content else "(No report available)",
             tools_description=self._get_tools_description(),
@@ -1818,7 +1429,7 @@ class ReportAgent:
             observation = "\n".join([f"[{r['tool']} result]\n{r['result']}" for r in tool_results])
             messages.append({
                 "role": "user",
-                "content": observation + CHAT_OBSERVATION_SUFFIX
+                "content": observation + self._chat_observation_suffix
             })
         
         final_response = self.llm.chat(

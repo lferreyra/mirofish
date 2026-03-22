@@ -6,7 +6,7 @@ Uses a project context model with server-side persistent state.
 import os
 import traceback
 import threading
-from flask import request, jsonify
+from flask import request, jsonify, g
 
 from . import graph_bp
 from ..config import Config
@@ -197,11 +197,13 @@ def generate_ontology():
         logger.info(f"Text extraction complete: {len(all_text)} characters")
 
         logger.info("Calling LLM to generate ontology...")
+        locale = getattr(g, 'locale', 'en')
         generator = OntologyGenerator()
         ontology = generator.generate(
             document_texts=document_texts,
             simulation_requirement=simulation_requirement,
-            additional_context=additional_context if additional_context else None
+            additional_context=additional_context if additional_context else None,
+            locale=locale
         )
         
         entity_count = len(ontology.get("entity_types", []))

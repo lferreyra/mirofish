@@ -5,7 +5,7 @@ Step 2: Zep entity reading/filtering, OASIS simulation preparation and execution
 
 import os
 import traceback
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, g
 
 from . import simulation_bp
 from ..config import Config
@@ -494,7 +494,9 @@ def prepare_simulation():
                 "project_id": state.project_id
             }
         )
-        
+
+        locale = getattr(g, 'locale', 'en')
+
         state.status = SimulationStatus.PREPARING
         manager._save_simulation_state(state)
 
@@ -572,7 +574,8 @@ def prepare_simulation():
                     defined_entity_types=entity_types_list,
                     use_llm_for_profiles=use_llm_for_profiles,
                     progress_callback=progress_callback,
-                    parallel_profile_count=parallel_profile_count
+                    parallel_profile_count=parallel_profile_count,
+                    locale=locale
                 )
                 
                 task_manager.complete_task(

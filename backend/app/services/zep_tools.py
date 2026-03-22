@@ -20,6 +20,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
+from ..prompts import load_prompt
 
 logger = get_logger('mirofish.zep_tools')
 
@@ -401,13 +402,19 @@ class ZepToolsService:
     MAX_RETRIES = 3
     RETRY_DELAY = 2.0
 
-    def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        llm_client: Optional[LLMClient] = None,
+        locale: str = 'en'
+    ):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
             raise ValueError("ZEP_API_KEY is not configured")
 
         self.client = Zep(api_key=self.api_key)
         self._llm_client = llm_client
+        self.locale = locale
         logger.info("ZepToolsService initialized")
 
     @property
@@ -1053,23 +1060,14 @@ class ZepToolsService:
         """
         Use an LLM to decompose a complex query into independently searchable sub-questions.
         """
-        system_prompt = """You are a professional query analysis expert. Your task is to break a complex question into sub-questions that can each be independently observed in the simulation world.
-
-Requirements:
-1. Each sub-question should be specific enough to find relevant Agent behaviours or events in the simulation.
-2. Sub-questions should cover different dimensions of the original question (who, what, why, how, when, where).
-3. Sub-questions should be relevant to the simulation scenario.
-4. Return JSON format: {"sub_queries": ["sub-question 1", "sub-question 2", ...]}"""
-
-        user_prompt = f"""Simulation background:
-{simulation_requirement}
-
-{f"Report context: {report_context[:500]}" if report_context else ""}
-
-Break the following question into {max_queries} sub-questions:
-{query}
-
-Return a JSON list of sub-questions."""
+        system_prompt = load_prompt('zep_sub_queries_system', self.locale)
+        report_context_line = f"Report context: {report_context[:500]}" if report_context else ""
+        user_prompt = load_prompt('zep_sub_queries_user', self.locale).format(
+            simulation_requirement=simulation_requirement,
+            report_context_line=report_context_line,
+            max_queries=max_queries,
+            query=query,
+        )
 
         try:
             response = self.llm.chat_json(
@@ -1278,18 +1276,8 @@ Return a JSON list of sub-questions."""
 
         combined_prompt = "\n".join([f"{i+1}. {q}" for i, q in enumerate(result.interview_questions)])
 
-        INTERVIEW_PROMPT_PREFIX = (
-            "You are being interviewed. Drawing on your persona, all past memories, and actions, "
-            "answer the following questions in plain text.\n"
-            "Response requirements:\n"
-            "1. Answer directly in natural language — do not call any tools.\n"
-            "2. Do not return JSON or tool-call format.\n"
-            "3. Do not use Markdown headings (#, ##, ###).\n"
-            "4. Answer each question in order, prefixing each answer with 'Question X:' (where X is the number).\n"
-            "5. Separate answers with a blank line.\n"
-            "6. Give substantive answers — at least 2-3 sentences per question.\n\n"
-        )
-        optimized_prompt = f"{INTERVIEW_PROMPT_PREFIX}{combined_prompt}"
+        interview_prompt_prefix = load_prompt('zep_interview_prompt_prefix', self.locale)
+        optimized_prompt = f"{interview_prompt_prefix}{combined_prompt}"
 
         # Step 4: Call the real interview API (both platforms simultaneously)
         try:
@@ -1497,30 +1485,14 @@ Return a JSON list of sub-questions."""
             }
             agent_summaries.append(summary)
 
-        system_prompt = """You are a professional interview planning expert. Your task is to select the most suitable agents for interview from the simulation agent list based on the interview requirement.
-
-Selection criteria:
-1. The agent's identity / profession is relevant to the interview topic.
-2. The agent may hold unique or valuable perspectives.
-3. Ensure diverse viewpoints (e.g. supporters, opponents, neutral parties, domain experts).
-4. Prioritize agents directly involved in the event.
-
-Return JSON format:
-{
-    "selected_indices": [list of selected agent indices],
-    "reasoning": "explanation of the selection"
-}"""
-
-        user_prompt = f"""Interview requirement:
-{interview_requirement}
-
-Simulation background:
-{simulation_requirement if simulation_requirement else "Not provided"}
-
-Available agents ({len(agent_summaries)} total):
-{json.dumps(agent_summaries, ensure_ascii=False, indent=2)}
-
-Select up to {max_agents} agents most suitable for this interview and explain your reasoning."""
+        system_prompt = load_prompt('zep_select_agents_system', self.locale)
+        user_prompt = load_prompt('zep_select_agents_user', self.locale).format(
+            interview_requirement=interview_requirement,
+            simulation_requirement=simulation_requirement if simulation_requirement else "Not provided",
+            agent_count=len(agent_summaries),
+            agent_summaries_json=json.dumps(agent_summaries, ensure_ascii=False, indent=2),
+            max_agents=max_agents,
+        )
 
         try:
             response = self.llm.chat_json(
@@ -1558,25 +1530,12 @@ Select up to {max_agents} agents most suitable for this interview and explain yo
         """Use an LLM to generate interview questions."""
         agent_roles = [a.get("profession", "Unknown") for a in selected_agents]
 
-        system_prompt = """You are a professional journalist. Based on the interview requirement, generate 3-5 in-depth interview questions.
-
-Requirements:
-1. Open-ended questions that encourage detailed answers.
-2. Questions where different roles may give different answers.
-3. Cover facts, opinions, and feelings across multiple dimensions.
-4. Natural language, as in a real interview.
-5. Keep each question under 50 words — concise and focused.
-6. Ask directly without preamble or background context.
-
-Return JSON format: {"questions": ["question 1", "question 2", ...]}"""
-
-        user_prompt = f"""Interview requirement: {interview_requirement}
-
-Simulation background: {simulation_requirement if simulation_requirement else "Not provided"}
-
-Interviewee roles: {', '.join(agent_roles)}
-
-Generate 3-5 interview questions."""
+        system_prompt = load_prompt('zep_interview_questions_system', self.locale)
+        user_prompt = load_prompt('zep_interview_questions_user', self.locale).format(
+            interview_requirement=interview_requirement,
+            simulation_requirement=simulation_requirement if simulation_requirement else "Not provided",
+            agent_roles=', '.join(agent_roles),
+        )
 
         try:
             response = self.llm.chat_json(
@@ -1612,28 +1571,11 @@ Generate 3-5 interview questions."""
                 f"[{interview.agent_name} ({interview.agent_role})]\n{interview.response[:500]}"
             )
 
-        system_prompt = """You are a professional news editor. Based on responses from multiple interviewees, generate an interview summary.
-
-Requirements:
-1. Distil the main viewpoints from all parties.
-2. Identify points of consensus and disagreement.
-3. Highlight valuable quotes.
-4. Stay objective and neutral — do not favour any side.
-5. Keep it under 1000 words.
-
-Format constraints (mandatory):
-- Use plain text paragraphs separated by blank lines.
-- Do not use Markdown headings (#, ##, ###).
-- Do not use horizontal rules (---, ***).
-- Use quotation marks when citing interviewees verbatim.
-- You may use **bold** for key terms, but avoid all other Markdown syntax."""
-
-        user_prompt = f"""Interview topic: {interview_requirement}
-
-Interview content:
-{"".join(interview_texts)}
-
-Generate the interview summary."""
+        system_prompt = load_prompt('zep_interview_summary_system', self.locale)
+        user_prompt = load_prompt('zep_interview_summary_user', self.locale).format(
+            interview_requirement=interview_requirement,
+            interview_texts="".join(interview_texts),
+        )
 
         try:
             summary = self.llm.chat(

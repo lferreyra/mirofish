@@ -21,6 +21,7 @@ from zep_cloud.client import Zep
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..prompts import load_prompt
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.oasis_profile')
@@ -179,12 +180,13 @@ class OasisProfileGenerator:
     ]
     
     def __init__(
-        self, 
+        self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model_name: Optional[str] = None,
         zep_api_key: Optional[str] = None,
-        graph_id: Optional[str] = None
+        graph_id: Optional[str] = None,
+        locale: str = 'en'
     ):
         self.api_key = api_key or Config.LLM_API_KEY
         self.base_url = base_url or Config.LLM_BASE_URL
@@ -198,6 +200,7 @@ class OasisProfileGenerator:
             base_url=self.base_url
         )
 
+        self.locale = locale
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
         self.zep_client = None
         self.graph_id = graph_id
@@ -630,11 +633,7 @@ class OasisProfileGenerator:
     
     def _get_system_prompt(self, is_individual: bool) -> str:
         """Return the system prompt for persona generation."""
-        return (
-            "You are an expert in generating social media user personas. "
-            "Generate detailed, realistic personas for opinion simulation that faithfully reflect known real-world information. "
-            "You must return valid JSON. No unescaped newlines are allowed inside string values."
-        )
+        return load_prompt('profile_system', self.locale)
     
     def _build_individual_persona_prompt(
         self,
@@ -649,40 +648,13 @@ class OasisProfileGenerator:
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
         context_str = context[:3000] if context else "No additional context"
 
-        return f"""Generate a detailed social media user persona for the entity below, faithfully reflecting all known real-world information.
-
-Entity name: {entity_name}
-Entity type: {entity_type}
-Entity summary: {entity_summary}
-Entity attributes: {attrs_str}
-
-Context:
-{context_str}
-
-Generate JSON with the following fields:
-
-1. bio: Social media bio, ~200 characters
-2. persona: Detailed persona description (~2000 words, plain text), including:
-   - Basic info (age, occupation, educational background, location)
-   - Background (key experiences, connection to the event, social relationships)
-   - Personality (MBTI type, core traits, emotional expression style)
-   - Social media behavior (posting frequency, content preferences, interaction style, language characteristics)
-   - Stance (attitude toward the topic, what might provoke or move them)
-   - Distinctive traits (catchphrases, unique experiences, hobbies)
-   - Personal memory (key part of the persona — describe this individual's connection to the event and any actions or reactions they have already taken)
-3. age: Age as an integer
-4. gender: Gender in English: "male" or "female"
-5. mbti: MBTI type (e.g., INTJ, ENFP)
-6. country: Country name (e.g., "China")
-7. profession: Occupation
-8. interested_topics: Array of topics of interest
-
-Important:
-- All field values must be strings or numbers — no newline characters
-- persona must be a single continuous block of text
-- age must be a valid integer; gender must be "male" or "female"
-- Content must be consistent with the entity information above
-"""
+        return load_prompt('profile_individual', self.locale).format(
+            entity_name=entity_name,
+            entity_type=entity_type,
+            entity_summary=entity_summary,
+            attrs_str=attrs_str,
+            context_str=context_str,
+        )
 
     def _build_group_persona_prompt(
         self,
@@ -697,39 +669,13 @@ Important:
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
         context_str = context[:3000] if context else "No additional context"
 
-        return f"""Generate a detailed social media account profile for the institution/group entity below, faithfully reflecting all known real-world information.
-
-Entity name: {entity_name}
-Entity type: {entity_type}
-Entity summary: {entity_summary}
-Entity attributes: {attrs_str}
-
-Context:
-{context_str}
-
-Generate JSON with the following fields:
-
-1. bio: Official account bio, ~200 characters, professional in tone
-2. persona: Detailed account profile (~2000 words, plain text), including:
-   - Institution basics (official name, nature of the institution, founding background, main functions)
-   - Account positioning (account type, target audience, core purpose)
-   - Communication style (language characteristics, common expressions, topics to avoid)
-   - Content characteristics (content types, posting frequency, active time periods)
-   - Stance (official position on key topics, how the institution handles controversy)
-   - Special notes (audience profile it represents, operational habits)
-   - Institutional memory (key part of the persona — describe this institution's connection to the event and any actions or statements it has already made)
-3. age: Fixed value 30 (virtual age for institutional accounts)
-4. gender: Fixed value "other" (institutional accounts use "other" to indicate non-individual)
-5. mbti: MBTI type describing the account's style (e.g., ISTJ for formal and conservative)
-6. country: Country name (e.g., "China")
-7. profession: Description of the institution's function
-8. interested_topics: Array of areas of focus
-
-Important:
-- All field values must be strings or numbers — null values are not allowed
-- persona must be a single continuous block of text — no newline characters
-- age must be the integer 30; gender must be the string "other"
-- The account's voice must match its institutional identity"""
+        return load_prompt('profile_group', self.locale).format(
+            entity_name=entity_name,
+            entity_type=entity_type,
+            entity_summary=entity_summary,
+            attrs_str=attrs_str,
+            context_str=context_str,
+        )
     
     def _generate_profile_rule_based(
         self,

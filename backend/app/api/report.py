@@ -6,7 +6,7 @@ Provides endpoints for generating, retrieving, and chatting about simulation rep
 import os
 import traceback
 import threading
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, g
 
 from . import report_bp
 from ..config import Config
@@ -117,6 +117,8 @@ def generate_report():
             }
         )
         
+        locale = getattr(g, 'locale', 'en')
+
         def run_generate():
             try:
                 task_manager.update_task(
@@ -129,7 +131,8 @@ def generate_report():
                 agent = ReportAgent(
                     graph_id=graph_id,
                     simulation_id=simulation_id,
-                    simulation_requirement=simulation_requirement
+                    simulation_requirement=simulation_requirement,
+                    locale=locale
                 )
                 
                 def progress_callback(stage, progress, message):
