@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 # 安装 Node.js （满足 >=18）及必要工具
 RUN apt-get update \
