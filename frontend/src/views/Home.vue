@@ -2,10 +2,10 @@
   <div class="home-container">
     <!-- 顶部导航栏 -->
     <nav class="navbar">
-      <div class="nav-brand">MIROFISH</div>
+      <div class="nav-brand">{{ $t('nav.mirofish') }}</div>
       <div class="nav-links">
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          Visit our GitHub <span class="arrow">↗</span>
+          {{ $t('nav.github') }} <span class="arrow">↗</span>
         </a>
       </div>
     </nav>
@@ -15,21 +15,21 @@
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
-            <span class="orange-tag">Simple Universal Swarm Intelligence Engine</span>
-            <span class="version-text">/ v0.1-Preview</span>
+            <span class="orange-tag">{{ $t('home.tag') }}</span>
+            <span class="version-text">{{ $t('home.version') }}</span>
           </div>
-          
+
           <h1 class="main-title">
-            Upload Any Report<br>
-            <span class="gradient-text">Predict the Future</span>
+            {{ $t('home.title_line1') }}<br>
+            <span class="gradient-text">{{ $t('home.title_line2') }}</span>
           </h1>
           
-          <div class="hero-desc">
+          <div class=”hero-desc”>
             <p>
-              Even from a single paragraph, <span class=”highlight-bold”>MiroFish</span> can automatically generate a parallel world with up to <span class=”highlight-orange”>million-scale Agents</span> based on real-world seeds. Inject variables from a god's-eye view to find the <span class=”highlight-code”>”local optimum”</span> in complex group interactions.
+              {{ $t('home.desc1') }}
             </p>
-            <p class="slogan-text">
-              Let the future be rehearsed in Agent swarms, and decisions forged through simulation<span class="blinking-cursor">_</span>
+            <p class=”slogan-text”>
+              {{ $t('home.slogan') }}<span class=”blinking-cursor”>_</span>
             </p>
           </div>
            
@@ -53,65 +53,65 @@
         <!-- 左栏：状态与步骤 -->
         <div class="left-panel">
           <div class="panel-header">
-            <span class="status-dot">■</span> System Status
+            <span class="status-dot">■</span> {{ $t('home.status_label') }}
           </div>
 
-          <h2 class="section-title">Ready</h2>
+          <h2 class="section-title">{{ $t('home.status_ready') }}</h2>
           <p class="section-desc">
-            Prediction engine on standby. Upload unstructured data to initialize the simulation sequence.
+            {{ $t('home.status_desc') }}
           </p>
           
           <!-- 数据指标卡片 -->
           <div class="metrics-row">
             <div class="metric-card">
-              <div class="metric-value">Low Cost</div>
-              <div class="metric-label">~$5 per simulation</div>
+              <div class="metric-value">{{ $t('home.metric_cost_value') }}</div>
+              <div class="metric-label">{{ $t('home.metric_cost_label') }}</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value">Scalable</div>
-              <div class="metric-label">Up to million-scale Agents</div>
+              <div class="metric-value">{{ $t('home.metric_scale_value') }}</div>
+              <div class="metric-label">{{ $t('home.metric_scale_label') }}</div>
             </div>
           </div>
 
           <!-- 项目模拟步骤介绍 (新增区域) -->
           <div class="steps-container">
             <div class="steps-header">
-               <span class="diamond-icon">◇</span> Workflow Sequence
+               <span class="diamond-icon">◇</span> {{ $t('home.workflow_title') }}
             </div>
             <div class="workflow-list">
               <div class="workflow-item">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                  <div class="step-title">Graph Build</div>
-                  <div class="step-desc">Reality seed extraction & individual/group memory injection & GraphRAG build</div>
+                  <div class="step-title">{{ $t('home.step1_title') }}</div>
+                  <div class="step-desc">{{ $t('home.step1_desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                  <div class="step-title">Environment Setup</div>
-                  <div class="step-desc">Entity-relation extraction & persona generation & environment config Agent injection</div>
+                  <div class="step-title">{{ $t('home.step2_title') }}</div>
+                  <div class="step-desc">{{ $t('home.step2_desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">03</span>
                 <div class="step-info">
-                  <div class="step-title">Run Simulation</div>
-                  <div class="step-desc">Dual-platform parallel simulation & auto-parse prediction requirements & dynamic temporal memory updates</div>
+                  <div class="step-title">{{ $t('home.step3_title') }}</div>
+                  <div class="step-desc">{{ $t('home.step3_desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">04</span>
                 <div class="step-info">
-                  <div class="step-title">Report Generation</div>
-                  <div class="step-desc">ReportAgent uses a rich toolset for deep interaction with the post-simulation environment</div>
+                  <div class="step-title">{{ $t('home.step4_title') }}</div>
+                  <div class="step-desc">{{ $t('home.step4_desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
-                  <div class="step-title">Deep Interaction</div>
-                  <div class="step-desc">Chat with any agent in the simulated world & interact with ReportAgent</div>
+                  <div class="step-title">{{ $t('home.step5_title') }}</div>
+                  <div class="step-desc">{{ $t('home.step5_desc') }}</div>
                 </div>
               </div>
             </div>
@@ -124,8 +124,8 @@
             <!-- 上传区域 -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">01 / Reality Seed</span>
-                <span class="console-meta">Supported formats: PDF, MD, TXT</span>
+                <span class="console-label">{{ $t('home.seed_label') }}</span>
+                <span class="console-meta">{{ $t('home.seed_formats') }}</span>
               </div>
               
               <div 
@@ -148,8 +148,8 @@
                 
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
-                  <div class="upload-title">Drag & Drop Files</div>
-                  <div class="upload-hint">or click to browse</div>
+                  <div class="upload-title">{{ $t('home.upload_title') }}</div>
+                  <div class="upload-hint">{{ $t('home.upload_hint') }}</div>
                 </div>
                 
                 <div v-else class="file-list">
@@ -164,35 +164,35 @@
 
             <!-- 分割线 -->
             <div class="console-divider">
-              <span>Input Parameters</span>
+              <span>{{ $t('home.input_params') }}</span>
             </div>
 
             <!-- 输入区域 -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">>_ 02 / Simulation Prompt</span>
+                <span class="console-label">{{ $t('home.prompt_label') }}</span>
               </div>
               <div class="input-wrapper">
                 <textarea
                   v-model="formData.simulationRequirement"
                   class="code-input"
-                  placeholder="// Enter your simulation or prediction requirement in natural language (e.g. If a major company announces layoffs, what public sentiment trends would emerge?)"
+                  :placeholder="$t('home.prompt_placeholder')"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
-                <div class="model-badge">Engine: MiroFish-V1.0</div>
+                <div class="model-badge">{{ $t('home.engine_badge') }}</div>
               </div>
             </div>
 
             <!-- 启动按钮 -->
             <div class="console-section btn-section">
-              <button 
+              <button
                 class="start-engine-btn"
                 @click="startSimulation"
                 :disabled="!canSubmit || loading"
               >
-                <span v-if="!loading">Launch Engine</span>
-                <span v-else>Initializing...</span>
+                <span v-if="!loading">{{ $t('home.launch_btn') }}</span>
+                <span v-else>{{ $t('home.launching_btn') }}</span>
                 <span class="btn-arrow">→</span>
               </button>
             </div>
@@ -209,7 +209,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
+
+const { t } = useI18n()
 
 const router = useRouter()
 
