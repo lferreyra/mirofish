@@ -15,14 +15,14 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: t('nav.viewSwitcher.graph'), split: t('nav.viewSwitcher.split'), workbench: t('nav.viewSwitcher.workbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
         <div class="workflow-step">
-          <span class="step-num">Step {{ currentStep }}/5</span>
+          <span class="step-num">{{ $t('mainView.step', { current: currentStep }) }}</span>
           <span class="step-name">{{ stepNames[currentStep - 1] }}</span>
         </div>
         <div class="step-divider"></div>
@@ -103,7 +103,13 @@ const viewMode = ref('split') // graph | split | workbench
 
 // Step State
 const currentStep = ref(1) // 1: Graph Build, 2: Env Setup, 3: Run Simulation, 4: Report, 5: Interaction
-const stepNames = ['Graph Build', 'Env Setup', 'Run Simulation', 'Report', 'Interaction']
+const stepNames = computed(() => [
+  t('mainView.stepNames.graphBuild'),
+  t('mainView.stepNames.envSetup'),
+  t('mainView.stepNames.runSimulation'),
+  t('mainView.stepNames.report'),
+  t('mainView.stepNames.interaction')
+])
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -142,11 +148,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  if (error.value) return t('mainView.status.error')
+  if (currentPhase.value >= 2) return t('mainView.status.ready')
+  if (currentPhase.value === 1) return t('mainView.status.buildingGraph')
+  if (currentPhase.value === 0) return t('mainView.status.generatingOntology')
+  return t('mainView.status.initializing')
 })
 
 // --- Helpers ---
@@ -171,7 +177,7 @@ const toggleMaximize = (target) => {
 const handleNextStep = (params = {}) => {
   if (currentStep.value < 5) {
     currentStep.value++
-    addLog(`Entering Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(`Entering Step ${currentStep.value}: ${stepNames.value[currentStep.value - 1]}`)
 
     // Log custom round count when moving from Step 2 to Step 3
     if (currentStep.value === 3 && params.maxRounds) {
@@ -183,7 +189,7 @@ const handleNextStep = (params = {}) => {
 const handleGoBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--
-    addLog(`Back to Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(`Back to Step ${currentStep.value}: ${stepNames.value[currentStep.value - 1]}`)
   }
 }
 
