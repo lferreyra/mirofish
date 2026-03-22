@@ -66,13 +66,30 @@ Rules:
 - Preserve placeholders like {{variable_name}} unchanged
 - Keep technical terms like "MiroFish", "GraphRAG", "ReportAgent", "Agent" as-is
 - Return only valid JSON, no markdown, no explanation
+- CRITICAL: Never put unescaped double-quote characters (") inside a string value. If you need quotation marks in the translation, use single quotes (') instead
+- CRITICAL: If the source string contains \\\" (escaped double quote), replace it with a single quote (') in your translation
 
 English source:
 {json.dumps(base, ensure_ascii=False, indent=2)}"""
 
-    # Use chat_json() which handles JSON fence-stripping and parsing consistently
-    return client.chat_json(
+    # Use chat() directly (no response_format) because some free-tier models
+    # (e.g. gemini-2.0-flash-exp:free) don't support JSON mode and truncate output.
+    # Parse the response manually after stripping markdown fences.
+    # 8192 tokens needed for large locale files (Hungarian and similar languages
+    # produce longer strings than English).
+    raw = client.chat(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=4096
+        max_tokens=8192
     )
+
+    # Strip markdown code fences if present
+    cleaned = raw.strip()
+    cleaned = re.sub(r'^```(?:json)?\s*\n?', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\n?```\s*$', '', cleaned)
+    cleaned = cleaned.strip()
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"LLM返回的JSON格式无效: {cleaned[:200]}") from exc
