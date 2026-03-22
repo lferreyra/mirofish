@@ -46,12 +46,31 @@
     "status_running": "Running",
     "status_failed": "Failed",
     "view_btn": "View",
-    "delete_btn": "Delete"
+    "delete_btn": "Delete",
+    "simulation_history": "Simulation History",
+    "not_started": "Not started",
+    "unnamed": "Unnamed Simulation"
   },
   "graph": {
     "building": "Building knowledge graph...",
     "complete": "Graph build complete",
-    "error": "Graph build failed"
+    "error": "Graph build failed",
+    "ontology_generation": "Ontology Generation",
+    "graphrag_build": "GraphRAG Build",
+    "build_complete": "Build Complete",
+    "enter_env_setup": "Enter Environment Setup ➝",
+    "creating": "Creating...",
+    "analyzing": "Analyzing documents...",
+    "entity_nodes": "Entity Nodes",
+    "relation_edges": "Relation Edges",
+    "schema_types": "Schema Types",
+    "system_dashboard": "SYSTEM DASHBOARD",
+    "proceed_desc": "Graph build complete. Proceed to the next step to set up the simulation environment.",
+    "generated_entity_types": "GENERATED ENTITY TYPES",
+    "generated_relation_types": "GENERATED RELATION TYPES",
+    "attributes": "ATTRIBUTES",
+    "examples": "EXAMPLES",
+    "connections": "CONNECTIONS"
   },
   "simulation": {
     "preparing": "Preparing simulation...",
@@ -63,19 +82,46 @@
     "rounds": "Rounds",
     "agents": "Agents",
     "start_btn": "Start Simulation",
-    "stop_btn": "Stop"
+    "stop_btn": "Stop",
+    "elapsed_time": "Elapsed Time",
+    "waiting": "Waiting for agent actions...",
+    "generate_report": "Generate Report",
+    "starting": "Starting...",
+    "system_monitor": "SIMULATION MONITOR",
+    "total_events": "TOTAL EVENTS"
   },
   "report": {
     "generating": "Generating report...",
     "complete": "Report ready",
     "download_btn": "Download",
-    "interact_btn": "Interact with ReportAgent"
+    "interact_btn": "Interact with ReportAgent",
+    "waiting": "Waiting for Report Agent...",
+    "deep_interaction": "Deep Interaction",
+    "prediction_report": "Prediction Report",
+    "console_output": "CONSOLE OUTPUT",
+    "report_complete": "Report Generation Complete"
   },
   "interaction": {
     "placeholder": "Ask a question...",
     "send_btn": "Send",
     "select_agent": "Select an agent",
-    "report_agent": "ReportAgent"
+    "report_agent": "ReportAgent",
+    "chat_report_agent": "Chat with Report Agent",
+    "chat_any_agent": "Chat with any agent",
+    "send_survey": "Send Survey",
+    "interactive_tools": "Interactive Tools",
+    "select_agent_dropdown": "Select Agent",
+    "survey_select_targets": "Select Survey Targets",
+    "survey_selected": "Selected {count} / {total}",
+    "survey_question_label": "Survey Question",
+    "survey_submit_btn": "Send Survey",
+    "survey_results": "Survey Results",
+    "survey_replies": "{count} replies",
+    "select_all": "Select All",
+    "clear_selection": "Clear",
+    "report_agent_full_name": "Report Agent - Chat",
+    "unknown_profession": "Unknown Profession",
+    "bio_label": "Bio"
   },
   "common": {
     "loading": "Loading...",
@@ -112,5 +158,34 @@
     "initializing": "Initializing",
     "building_graph": "Building Graph",
     "generating_ontology": "Generating Ontology"
+  },
+  "env": {
+    "sim_instance_init": "Simulation Instance Init",
+    "gen_agent_personas": "Generate Agent Personas",
+    "gen_dual_platform_config": "Generate Dual-Platform Config",
+    "initial_activation": "Initial Activation Orchestration",
+    "setup_complete": "Setup Complete",
+    "back_to_graph": "Back to Graph Build",
+    "start_dual_world": "Start Dual-World Simulation ➝",
+    "narrative_direction": "Narrative Direction",
+    "initial_hot_topics": "Initial Hot Topics",
+    "current_agents": "Current Agents",
+    "expected_total": "Expected Total",
+    "current_topics": "Current Topics",
+    "system_dashboard": "SYSTEM DASHBOARD",
+    "orchestrating": "Orchestrating"
+  },
+  "graph_panel": {
+    "title": "Graph Relationship Visualization",
+    "refresh": "Refresh",
+    "loading": "Loading graph data...",
+    "waiting": "Waiting for ontology generation...",
+    "entity_types": "Entity Types",
+    "show_edge_labels": "Show Edge Labels",
+    "node_details": "Node Details",
+    "relationship": "Relationship",
+    "memory_updating": "GraphRAG memory updating in real-time",
+    "updating": "Updating in real-time...",
+    "processing_hint": "Some content still processing, consider refreshing manually"
   }
 }

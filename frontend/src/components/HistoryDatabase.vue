@@ -13,7 +13,7 @@
     <!-- 标题区域 -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">Simulation History</span>
+      <span class="section-title">{{ $t('history.simulation_history') }}</span>
       <div class="section-line"></div>
     </div>
 
@@ -193,10 +193,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getSimulationHistory } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // 状态
 const projects = ref([])
@@ -337,7 +339,7 @@ const truncateText = (text, maxLength) => {
 
 // 从模拟需求生成标题（取前20字）
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return 'Unnamed Simulation'
+  if (!requirement) return t('history.unnamed')
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
@@ -353,8 +355,8 @@ const formatSimulationId = (simulationId) => {
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  if (total === 0) return 'Not started'
-  return `${current}/${total} rounds`
+  if (total === 0) return t('history.not_started')
+  return `${current}/${total} ${t('simulation.rounds')}`
 }
 
 // 获取文件类型（用于样式）
