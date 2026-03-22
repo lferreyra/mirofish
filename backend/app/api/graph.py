@@ -6,7 +6,7 @@
 import os
 import traceback
 import threading
-from flask import request, jsonify
+from flask import request, jsonify, g
 
 from . import graph_bp
 from ..config import Config
@@ -370,6 +370,9 @@ def build_graph():
         project.graph_build_task_id = task_id
         ProjectManager.save_project(project)
         
+        # Capture locale before spawning thread — g is not accessible inside threads
+        locale = getattr(g, 'locale', 'en')
+
         # 启动后台任务
         def build_task():
             build_logger = get_logger('mirofish.build')
