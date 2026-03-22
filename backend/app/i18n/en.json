@@ -49,7 +49,12 @@
     "delete_btn": "Delete",
     "simulation_history": "Simulation History",
     "not_started": "Not started",
-    "unnamed": "Unnamed Simulation"
+    "unnamed": "Unnamed Simulation",
+    "files_empty": "No files",
+    "no_attached_files": "No attached files",
+    "simulation_requirement": "Simulation Requirement",
+    "attached_files": "Attached Files",
+    "playback_hint": "Step3 'Start Simulation' and Step5 'Deep Interaction' must be launched while running — history playback not supported"
   },
   "graph": {
     "building": "Building knowledge graph...",
@@ -121,7 +126,11 @@
     "clear_selection": "Clear",
     "report_agent_full_name": "Report Agent - Chat",
     "unknown_profession": "Unknown Profession",
-    "bio_label": "Bio"
+    "bio_label": "Bio",
+    "you": "You",
+    "select_individual": "Please select a simulated individual first",
+    "quick_chat_subtitle": "Quick chat with Report Agent — 4 specialized tools, full MiroFish memory",
+    "questioner": "Questioner"
   },
   "common": {
     "loading": "Loading...",
@@ -130,7 +139,8 @@
     "back": "Back",
     "next": "Next",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "agent": "Agent"
   },
   "view": {
     "graph": "Graph",

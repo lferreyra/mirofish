@@ -36,11 +36,11 @@
             <span 
               class="status-icon" 
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="Graph Build"
+              :title="$t('steps.graph_build')"
             >◇</span>
             <span
               class="status-icon available"
-              title="Env Setup"
+              :title="$t('steps.env_setup')"
             >◈</span>
             <span
               class="status-icon"
@@ -73,7 +73,7 @@
           <!-- 无文件时的占位 -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">No files</span>
+            <span class="empty-file-text">{{ $t('history.files_empty') }}</span>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">Loading...</span>
+      <span class="loading-text">{{ $t('common.loading') }}</span>
     </div>
 
     <!-- 历史回放详情弹窗 -->
@@ -126,20 +126,20 @@
             <div class="modal-body">
               <!-- 模拟需求 -->
               <div class="modal-section">
-                <div class="modal-label">Simulation Requirement</div>
+                <div class="modal-label">{{ $t('history.simulation_requirement') }}</div>
                 <div class="modal-requirement">{{ selectedProject.simulation_requirement || 'None' }}</div>
               </div>
 
               <!-- 文件列表 -->
               <div class="modal-section">
-                <div class="modal-label">Attached Files</div>
+                <div class="modal-label">{{ $t('history.attached_files') }}</div>
                 <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
                   <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
                     <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>No attached files</div>
+                <div class="modal-empty" v-else>{{ $t('history.no_attached_files') }}</div>
               </div>
             </div>
 
@@ -159,7 +159,7 @@
               >
                 <span class="btn-step">Step1</span>
                 <span class="btn-icon">◇</span>
-                <span class="btn-text">Graph Build</span>
+                <span class="btn-text">{{ $t('steps.graph_build') }}</span>
               </button>
               <button 
                 class="modal-btn btn-simulation" 
@@ -167,7 +167,7 @@
               >
                 <span class="btn-step">Step2</span>
                 <span class="btn-icon">◈</span>
-                <span class="btn-text">Env Setup</span>
+                <span class="btn-text">{{ $t('steps.env_setup') }}</span>
               </button>
               <button 
                 class="modal-btn btn-report" 
@@ -176,12 +176,12 @@
               >
                 <span class="btn-step">Step4</span>
                 <span class="btn-icon">◆</span>
-                <span class="btn-text">Report</span>
+                <span class="btn-text">{{ $t('steps.report_generation') }}</span>
               </button>
             </div>
             <!-- 不可回放提示 -->
             <div class="modal-playback-hint">
-              <span class="hint-text">Step3 "Start Simulation" and Step5 "Deep Interaction" must be launched while running — history playback not supported</span>
+              <span class="hint-text">{{ $t('history.playback_hint') }}</span>
             </div>
           </div>
         </div>

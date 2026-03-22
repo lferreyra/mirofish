@@ -155,7 +155,7 @@
               <div class="tools-card-avatar">R</div>
               <div class="tools-card-info">
                 <div class="tools-card-name">{{ $t('interaction.report_agent_full_name') }}</div>
-                <div class="tools-card-subtitle">Quick chat with Report Agent — 4 specialized tools, full MiroFish memory</div>
+                <div class="tools-card-subtitle">{{ $t('interaction.quick_chat_subtitle') }}</div>
               </div>
               <button class="tools-card-toggle" @click="showToolsDetail = !showToolsDetail">
                 <svg :class="{ 'is-expanded': showToolsDetail }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -266,7 +266,7 @@
               <div class="message-content">
                 <div class="message-header">
                   <span class="sender-name">
-                    {{ msg.role === 'user' ? 'You' : (chatTarget === 'report_agent' ? 'Report Agent' : (selectedAgent?.username || 'Agent')) }}
+                    {{ msg.role === 'user' ? $t('interaction.you') : (chatTarget === 'report_agent' ? $t('interaction.report_agent') : (selectedAgent?.username || $t('common.agent'))) }}
                   </span>
                   <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
                 </div>
@@ -377,7 +377,7 @@
           <div v-if="surveyResults.length > 0" class="survey-results">
             <div class="results-header">
               <span class="results-title">{{ $t('interaction.survey_results') }}</span>
-              <span class="results-count">{{ surveyResults.length }} replies</span>
+              <span class="results-count">{{ $t('interaction.survey_replies', { count: surveyResults.length }) }}</span>
             </div>
             <div class="results-list">
               <div 
@@ -665,7 +665,7 @@ const sendMessage = async () => {
       await sendToAgent(message)
     }
   } catch (err) {
-    addLog(`发送失败: ${err.message}`)
+    addLog(`Send failed: ${err.message}`)
     chatHistory.value.push({
       role: 'assistant',
       content: `Error: ${err.message}`,
@@ -680,7 +680,7 @@ const sendMessage = async () => {
 }
 
 const sendToReportAgent = async (message) => {
-  addLog(`向 Report Agent 发送: ${message.substring(0, 50)}...`)
+  addLog(`Sending to Report Agent: ${message.substring(0, 50)}...`)
   
   // Build chat history for API
   const historyForApi = chatHistory.value
@@ -711,7 +711,7 @@ const sendToReportAgent = async (message) => {
 
 const sendToAgent = async (message) => {
   if (!selectedAgent.value || selectedAgentIndex.value === null) {
-    throw new Error('Please select a simulated individual first')
+    throw new Error(t('interaction.select_individual'))
   }
 
   addLog(`Sending to ${selectedAgent.value.username}: ${message.substring(0, 50)}...`)
@@ -763,7 +763,7 @@ const sendToAgent = async (message) => {
         content: responseContent,
         timestamp: new Date().toISOString()
       })
-      addLog(`${selectedAgent.value.username} 已回复`)
+      addLog(`${selectedAgent.value.username} replied`)
     } else {
       throw new Error('No response data')
     }
