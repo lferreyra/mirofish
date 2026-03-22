@@ -9,6 +9,7 @@ from flask import request, jsonify, send_file
 
 from . import simulation_bp
 from ..config import Config
+from ..i18n import msg
 from ..services.zep_entity_reader import ZepEntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
@@ -19,11 +20,9 @@ from ..models.project import ProjectManager
 logger = get_logger('mirofish.api.simulation')
 
 
-# Prefix injected into interview prompts to prevent the agent from calling tools.
-INTERVIEW_PROMPT_PREFIX = (
-    "Based on your persona, all past memories and actions, "
-    "reply directly in text without calling any tools: "
-)
+def _interview_prompt_prefix() -> str:
+    """Return the locale-aware interview prompt prefix."""
+    return msg('interview_prompt_prefix')
 
 
 def optimize_interview_prompt(prompt: str) -> str:
@@ -38,9 +37,10 @@ def optimize_interview_prompt(prompt: str) -> str:
     """
     if not prompt:
         return prompt
-    if prompt.startswith(INTERVIEW_PROMPT_PREFIX):
+    prefix = _interview_prompt_prefix()
+    if prompt.startswith(prefix):
         return prompt
-    return f"{INTERVIEW_PROMPT_PREFIX}{prompt}"
+    return f"{prefix}{prompt}"
 
 
 # ============== Entity read endpoints ==============
@@ -60,7 +60,7 @@ def get_graph_entities(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": msg('zep_api_key_not_configured')
             }), 500
 
         entity_types_str = request.args.get('entity_types', '')
@@ -97,7 +97,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": msg('zep_api_key_not_configured')
             }), 500
 
         reader = ZepEntityReader()
@@ -106,7 +106,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not entity:
             return jsonify({
                 "success": False,
-                "error": f"Entity not found: {entity_uuid}"
+                "error": msg('entity_not_found', entity_uuid=entity_uuid)
             }), 404
         
         return jsonify({
@@ -130,9 +130,9 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": msg('zep_api_key_not_configured')
             }), 500
-        
+
         enrich = request.args.get('enrich', 'true').lower() == 'true'
         
         reader = ZepEntityReader()
@@ -198,21 +198,21 @@ def create_simulation():
         if not project_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide project_id"
+                "error": msg('missing_project_id')
             }), 400
 
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {project_id}"
+                "error": msg('project_not_found', project_id=project_id)
             }), 404
 
         graph_id = data.get('graph_id') or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "No graph built for this project. Call /api/graph/build first."
+                "error": msg('no_graph_built')
             }), 400
         
         manager = SimulationManager()
@@ -410,7 +410,7 @@ def prepare_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         manager = SimulationManager()
@@ -419,7 +419,7 @@ def prepare_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_not_found', simulation_id=simulation_id)
             }), 404
 
         force_regenerate = data.get('force_regenerate', False)
@@ -439,7 +439,7 @@ def prepare_simulation():
                     "data": {
                         "simulation_id": simulation_id,
                         "status": "ready",
-                        "message": "Preparation already complete — nothing to do",
+                        "message": msg('simulation_prepare_already_complete'),
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
@@ -451,14 +451,14 @@ def prepare_simulation():
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {state.project_id}"
+                "error": msg('project_not_found', project_id=state.project_id)
             }), 404
 
         simulation_requirement = project.simulation_requirement or ""
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "Project is missing simulation_requirement"
+                "error": msg('missing_simulation_requirement_for_project')
             }), 400
 
         document_text = ProjectManager.get_extracted_text(state.project_id) or ""
@@ -504,7 +504,7 @@ def prepare_simulation():
                     task_id,
                     status=TaskStatus.PROCESSING,
                     progress=0,
-                    message="Starting simulation preparation..."
+                    message=msg('simulation_prepare_starting')
                 )
 
                 stage_details = {}
@@ -521,10 +521,10 @@ def prepare_simulation():
                     current_progress = int(start + (end - start) * progress / 100)
 
                     stage_names = {
-                        "reading": "Reading graph entities",
-                        "generating_profiles": "Generating agent profiles",
-                        "generating_config": "Generating simulation config",
-                        "copying_scripts": "Preparing simulation scripts"
+                        "reading": msg('simulation_stage_reading'),
+                        "generating_profiles": msg('simulation_stage_generating_profiles'),
+                        "generating_config": msg('simulation_stage_generating_config'),
+                        "copying_scripts": msg('simulation_stage_copying_scripts')
                     }
                     
                     stage_index = list(stage_weights.keys()).index(stage) + 1 if stage in stage_weights else 1
@@ -598,7 +598,7 @@ def prepare_simulation():
                 "simulation_id": simulation_id,
                 "task_id": task_id,
                 "status": "preparing",
-                "message": "Preparation task started. Poll /api/simulation/prepare/status for progress.",
+                "message": msg('simulation_prepare_task_started'),
                 "already_prepared": False,
                 "expected_entities_count": state.entities_count,
                 "entity_types": state.entity_types
@@ -665,7 +665,7 @@ def get_prepare_status():
                         "simulation_id": simulation_id,
                         "status": "ready",
                         "progress": 100,
-                        "message": "Preparation already complete",
+                        "message": msg('simulation_prepare_already_complete_status'),
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
@@ -679,13 +679,13 @@ def get_prepare_status():
                         "simulation_id": simulation_id,
                         "status": "not_started",
                         "progress": 0,
-                        "message": "Preparation not started. Call /api/simulation/prepare to begin.",
+                        "message": msg('simulation_prepare_status_not_started'),
                         "already_prepared": False
                     }
                 })
             return jsonify({
                 "success": False,
-                "error": "Please provide task_id or simulation_id"
+                "error": msg('missing_task_id_or_simulation_id')
             }), 400
 
         task_manager = TaskManager()
@@ -702,7 +702,7 @@ def get_prepare_status():
                             "task_id": task_id,
                             "status": "ready",
                             "progress": 100,
-                            "message": "Task complete (preparation already exists)",
+                            "message": msg('simulation_prepare_task_complete'),
                             "already_prepared": True,
                             "prepare_info": prepare_info
                         }
@@ -710,9 +710,9 @@ def get_prepare_status():
 
             return jsonify({
                 "success": False,
-                "error": f"Task not found: {task_id}"
+                "error": msg('task_not_found', task_id=task_id)
             }), 404
-        
+
         task_dict = task.to_dict()
         task_dict["already_prepared"] = False
         
@@ -739,7 +739,7 @@ def get_simulation(simulation_id: str):
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_not_found', simulation_id=simulation_id)
             }), 404
 
         result = state.to_dict()
@@ -1026,7 +1026,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_dir_not_found', simulation_id=simulation_id)
             }), 404
 
         if platform == "reddit":
@@ -1121,7 +1121,7 @@ def get_simulation_config_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_dir_not_found', simulation_id=simulation_id)
             }), 404
 
         config_file = os.path.join(sim_dir, "simulation_config.json")
@@ -1218,7 +1218,7 @@ def get_simulation_config(simulation_id: str):
         if not config:
             return jsonify({
                 "success": False,
-                "error": "Simulation config not found. Call /prepare first."
+                "error": msg('simulation_config_not_found')
             }), 404
         
         return jsonify({
@@ -1246,7 +1246,7 @@ def download_simulation_config(simulation_id: str):
         if not os.path.exists(config_path):
             return jsonify({
                 "success": False,
-                "error": "Config file not found. Call /prepare first."
+                "error": msg('simulation_config_file_not_found')
             }), 404
         
         return send_file(
@@ -1288,7 +1288,7 @@ def download_simulation_script(script_name: str):
         if script_name not in allowed_scripts:
             return jsonify({
                 "success": False,
-                "error": f"Unknown script: {script_name}. Allowed: {allowed_scripts}"
+                "error": msg('simulation_script_unknown', script_name=script_name, allowed_scripts=allowed_scripts)
             }), 400
 
         script_path = os.path.join(scripts_dir, script_name)
@@ -1296,7 +1296,7 @@ def download_simulation_script(script_name: str):
         if not os.path.exists(script_path):
             return jsonify({
                 "success": False,
-                "error": f"Script file not found: {script_name}"
+                "error": msg('simulation_script_not_found', script_name=script_name)
             }), 404
         
         return send_file(
@@ -1336,7 +1336,7 @@ def generate_profiles():
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide graph_id"
+                "error": msg('missing_graph_id')
             }), 400
         
         entity_types = data.get('entity_types')
@@ -1353,7 +1353,7 @@ def generate_profiles():
         if filtered.filtered_count == 0:
             return jsonify({
                 "success": False,
-                "error": "No entities matched the given criteria"
+                "error": msg('no_entities_matched')
             }), 400
         
         generator = OasisProfileGenerator()
@@ -1435,7 +1435,7 @@ def start_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         platform = data.get('platform', 'parallel')
@@ -1449,18 +1449,18 @@ def start_simulation():
                 if max_rounds <= 0:
                     return jsonify({
                         "success": False,
-                        "error": "max_rounds must be a positive integer"
+                        "error": msg('max_rounds_must_be_positive')
                     }), 400
             except (ValueError, TypeError):
                 return jsonify({
                     "success": False,
-                    "error": "max_rounds must be a valid integer"
+                    "error": msg('max_rounds_must_be_integer')
                 }), 400
 
         if platform not in ['twitter', 'reddit', 'parallel']:
             return jsonify({
                 "success": False,
-                "error": f"Invalid platform: {platform}. Allowed: twitter/reddit/parallel"
+                "error": msg('platform_invalid', platform=platform)
             }), 400
 
         manager = SimulationManager()
@@ -1469,7 +1469,7 @@ def start_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_not_found', simulation_id=simulation_id)
             }), 404
 
         force_restarted = False
@@ -1490,10 +1490,7 @@ def start_simulation():
                         else:
                             return jsonify({
                                 "success": False,
-                                "error": (
-                                    "Simulation is already running. "
-                                    "Call /stop first, or use force=true to restart."
-                                )
+                                "error": msg('simulation_already_running')
                             }), 400
 
                 if force:
@@ -1512,10 +1509,7 @@ def start_simulation():
             else:
                 return jsonify({
                     "success": False,
-                    "error": (
-                        f"Simulation not ready (status: {state.status.value}). "
-                        "Call /prepare first."
-                    )
+                    "error": msg('simulation_not_ready', status=state.status.value)
                 }), 400
 
         graph_id = None
@@ -1529,10 +1523,7 @@ def start_simulation():
             if not graph_id:
                 return jsonify({
                     "success": False,
-                    "error": (
-                        "Graph memory update requires a valid graph_id. "
-                        "Ensure the project has a built graph."
-                    )
+                    "error": msg('graph_memory_requires_graph_id')
                 }), 400
 
             logger.info(f"Graph memory update enabled: simulation_id={simulation_id}, graph_id={graph_id}")
@@ -1603,9 +1594,9 @@ def stop_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
-        
+
         run_state = SimulationRunner.stop_simulation(simulation_id)
 
         manager = SimulationManager()
@@ -1934,7 +1925,7 @@ def get_simulation_posts(simulation_id: str):
                     "platform": platform,
                     "count": 0,
                     "posts": [],
-                    "message": "Database does not exist; simulation may not have run yet"
+                    "message": msg('simulation_db_not_exist')
                 }
             })
         
@@ -2120,34 +2111,31 @@ def interview_agent():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if agent_id is None:
             return jsonify({
                 "success": False,
-                "error": "Please provide agent_id"
+                "error": msg('missing_agent_id')
             }), 400
 
         if not prompt:
             return jsonify({
                 "success": False,
-                "error": "Please provide prompt (interview question)"
+                "error": msg('missing_prompt')
             }), 400
 
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be 'twitter' or 'reddit'"
+                "error": msg('platform_must_be_twitter_or_reddit')
             }), 400
 
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": (
-                    "Simulation environment is not running or has been closed. "
-                    "Ensure the simulation has completed and is waiting for commands."
-                )
+                "error": msg('simulation_env_not_running')
             }), 400
 
         optimized_prompt = optimize_interview_prompt(prompt)
@@ -2174,7 +2162,7 @@ def interview_agent():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Timed out waiting for interview response: {str(e)}"
+            "error": msg('interview_timeout', error=str(e))
         }), 504
 
     except Exception as e:
@@ -2241,46 +2229,43 @@ def interview_agents_batch():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if not interviews or not isinstance(interviews, list):
             return jsonify({
                 "success": False,
-                "error": "Please provide interviews (list of interview items)"
+                "error": msg('missing_interviews_list')
             }), 400
 
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be 'twitter' or 'reddit'"
+                "error": msg('platform_must_be_twitter_or_reddit')
             }), 400
 
         for i, interview in enumerate(interviews):
             if 'agent_id' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"Interview item {i+1} is missing agent_id"
+                    "error": msg('interview_item_missing_agent_id', index=i + 1)
                 }), 400
             if 'prompt' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"Interview item {i+1} is missing prompt"
+                    "error": msg('interview_item_missing_prompt', index=i + 1)
                 }), 400
             item_platform = interview.get('platform')
             if item_platform and item_platform not in ("twitter", "reddit"):
                 return jsonify({
                     "success": False,
-                    "error": f"Interview item {i+1}: platform must be 'twitter' or 'reddit'"
+                    "error": msg('interview_item_invalid_platform', index=i + 1)
                 }), 400
 
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": (
-                    "Simulation environment is not running or has been closed. "
-                    "Ensure the simulation has completed and is waiting for commands."
-                )
+                "error": msg('simulation_env_not_running')
             }), 400
 
         optimized_interviews = []
@@ -2310,7 +2295,7 @@ def interview_agents_batch():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Timed out waiting for batch interview response: {str(e)}"
+            "error": msg('interview_batch_timeout', error=str(e))
         }), 504
 
     except Exception as e:
@@ -2366,28 +2351,25 @@ def interview_all_agents():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if not prompt:
             return jsonify({
                 "success": False,
-                "error": "Please provide prompt (interview question)"
+                "error": msg('missing_prompt')
             }), 400
 
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be 'twitter' or 'reddit'"
+                "error": msg('platform_must_be_twitter_or_reddit')
             }), 400
 
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": (
-                    "Simulation environment is not running or has been closed. "
-                    "Ensure the simulation has completed and is waiting for commands."
-                )
+                "error": msg('simulation_env_not_running')
             }), 400
 
         optimized_prompt = optimize_interview_prompt(prompt)
@@ -2413,7 +2395,7 @@ def interview_all_agents():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Timed out waiting for global interview response: {str(e)}"
+            "error": msg('interview_all_timeout', error=str(e))
         }), 504
 
     except Exception as e:
@@ -2468,7 +2450,7 @@ def get_interview_history():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         history = SimulationRunner.get_interview_history(
@@ -2527,16 +2509,16 @@ def get_env_status():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         env_alive = SimulationRunner.check_env_alive(simulation_id)
         env_status = SimulationRunner.get_env_status_detail(simulation_id)
 
         if env_alive:
-            message = "Environment is running and ready for interview commands"
+            message = msg('simulation_env_alive')
         else:
-            message = "Environment is not running or has been closed"
+            message = msg('simulation_env_not_alive')
 
         return jsonify({
             "success": True,
@@ -2591,7 +2573,7 @@ def close_simulation_env():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         result = SimulationRunner.close_simulation_env(

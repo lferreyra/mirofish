@@ -10,6 +10,7 @@ from flask import request, jsonify
 
 from . import graph_bp
 from ..config import Config
+from ..i18n import msg
 from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
@@ -39,9 +40,9 @@ def get_project(project_id: str):
     if not project:
         return jsonify({
             "success": False,
-            "error": f"Project not found: {project_id}"
+            "error": msg('project_not_found', project_id=project_id)
         }), 404
-    
+
     return jsonify({
         "success": True,
         "data": project.to_dict()
@@ -69,12 +70,12 @@ def delete_project(project_id: str):
     if not success:
         return jsonify({
             "success": False,
-            "error": f"Project not found or deletion failed: {project_id}"
+            "error": msg('project_not_found_deletion', project_id=project_id)
         }), 404
 
     return jsonify({
         "success": True,
-        "message": f"Project deleted: {project_id}"
+        "message": msg('project_deleted', project_id=project_id)
     })
 
 
@@ -86,7 +87,7 @@ def reset_project(project_id: str):
     if not project:
         return jsonify({
             "success": False,
-            "error": f"Project not found: {project_id}"
+            "error": msg('project_not_found', project_id=project_id)
         }), 404
 
     # Reset to ontology-generated state if ontology exists
@@ -102,7 +103,7 @@ def reset_project(project_id: str):
     
     return jsonify({
         "success": True,
-        "message": f"Project reset: {project_id}",
+        "message": msg('project_reset', project_id=project_id),
         "data": project.to_dict()
     })
 
@@ -150,14 +151,14 @@ def generate_ontology():
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_requirement"
+                "error": msg('missing_simulation_requirement')
             }), 400
 
         uploaded_files = request.files.getlist('files')
         if not uploaded_files or all(not f.filename for f in uploaded_files):
             return jsonify({
                 "success": False,
-                "error": "Please upload at least one document file"
+                "error": msg('no_files_uploaded')
             }), 400
 
         project = ProjectManager.create_project(name=project_name)
@@ -188,7 +189,7 @@ def generate_ontology():
             ProjectManager.delete_project(project.project_id)
             return jsonify({
                 "success": False,
-                "error": "No documents were processed successfully. Check file formats."
+                "error": msg('no_documents_processed')
             }), 400
 
         project.total_text_length = len(all_text)
@@ -266,7 +267,7 @@ def build_graph():
 
         errors = []
         if not Config.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY is not configured")
+            errors.append(msg('zep_api_key_not_configured'))
         if errors:
             logger.error(f"Configuration errors: {errors}")
             return jsonify({
@@ -281,14 +282,14 @@ def build_graph():
         if not project_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide project_id"
+                "error": msg('missing_project_id')
             }), 400
 
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {project_id}"
+                "error": msg('project_not_found', project_id=project_id)
             }), 404
 
         force = data.get('force', False)
@@ -296,13 +297,13 @@ def build_graph():
         if project.status == ProjectStatus.CREATED:
             return jsonify({
                 "success": False,
-                "error": "Ontology has not been generated yet. Call /ontology/generate first."
+                "error": msg('ontology_not_generated_yet')
             }), 400
 
         if project.status == ProjectStatus.GRAPH_BUILDING and not force:
             return jsonify({
                 "success": False,
-                "error": "Graph build is already in progress. Add force: true to restart.",
+                "error": msg('graph_build_already_in_progress'),
                 "task_id": project.graph_build_task_id
             }), 400
 
@@ -323,14 +324,14 @@ def build_graph():
         if not text:
             return jsonify({
                 "success": False,
-                "error": "No extracted text found for this project"
+                "error": msg('no_extracted_text')
             }), 400
 
         ontology = project.ontology
         if not ontology:
             return jsonify({
                 "success": False,
-                "error": "No ontology definition found for this project"
+                "error": msg('no_ontology_definition')
             }), 400
 
         task_manager = TaskManager()
@@ -348,14 +349,14 @@ def build_graph():
                 task_manager.update_task(
                     task_id,
                     status=TaskStatus.PROCESSING,
-                    message="Initializing graph build service..."
+                    message=msg('graph_build_initializing')
                 )
 
                 builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
 
                 task_manager.update_task(
                     task_id,
-                    message="Splitting text into chunks...",
+                    message=msg('graph_build_splitting_text'),
                     progress=5
                 )
                 chunks = TextProcessor.split_text(
@@ -367,7 +368,7 @@ def build_graph():
 
                 task_manager.update_task(
                     task_id,
-                    message="Creating Zep graph...",
+                    message=msg('graph_build_creating_graph'),
                     progress=10
                 )
                 graph_id = builder.create_graph(name=graph_name)
@@ -377,7 +378,7 @@ def build_graph():
 
                 task_manager.update_task(
                     task_id,
-                    message="Applying ontology definition...",
+                    message=msg('graph_build_applying_ontology'),
                     progress=15
                 )
                 builder.set_ontology(graph_id, ontology)
@@ -393,7 +394,7 @@ def build_graph():
 
                 task_manager.update_task(
                     task_id,
-                    message=f"Adding {total_chunks} text chunks...",
+                    message=msg('graph_build_adding_chunks', total_chunks=total_chunks),
                     progress=15
                 )
                 
@@ -407,7 +408,7 @@ def build_graph():
                 # Wait for Zep to process all episodes
                 task_manager.update_task(
                     task_id,
-                    message="Waiting for Zep to process data...",
+                    message=msg('graph_build_waiting_zep'),
                     progress=55
                 )
 
@@ -423,7 +424,7 @@ def build_graph():
 
                 task_manager.update_task(
                     task_id,
-                    message="Retrieving graph data...",
+                    message=msg('graph_build_retrieving_data'),
                     progress=95
                 )
                 graph_data = builder.get_graph_data(graph_id)
@@ -441,7 +442,7 @@ def build_graph():
                 task_manager.update_task(
                     task_id,
                     status=TaskStatus.COMPLETED,
-                    message="Graph build complete",
+                    message=msg('graph_build_complete'),
                     progress=100,
                     result={
                         "project_id": project_id,
@@ -463,7 +464,7 @@ def build_graph():
                 task_manager.update_task(
                     task_id,
                     status=TaskStatus.FAILED,
-                    message=f"Build failed: {str(e)}",
+                    message=msg('graph_build_failed', error=str(e)),
                     error=traceback.format_exc()
                 )
 
@@ -475,7 +476,7 @@ def build_graph():
             "data": {
                 "project_id": project_id,
                 "task_id": task_id,
-                "message": "Graph build task started. Poll /task/{task_id} for progress."
+                "message": msg('graph_build_task_started', task_id=task_id)
             }
         })
         
@@ -497,7 +498,7 @@ def get_task(task_id: str):
     if not task:
         return jsonify({
             "success": False,
-            "error": f"Task not found: {task_id}"
+            "error": msg('task_not_found', task_id=task_id)
         }), 404
     
     return jsonify({
@@ -527,9 +528,9 @@ def get_graph_data(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": msg('zep_api_key_not_configured')
             }), 500
-        
+
         builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
         graph_data = builder.get_graph_data(graph_id)
         
@@ -553,7 +554,7 @@ def delete_graph(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": msg('zep_api_key_not_configured')
             }), 500
 
         builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
@@ -561,7 +562,7 @@ def delete_graph(graph_id: str):
 
         return jsonify({
             "success": True,
-            "message": f"Graph deleted: {graph_id}"
+            "message": msg('graph_deleted', graph_id=graph_id)
         })
         
     except Exception as e:

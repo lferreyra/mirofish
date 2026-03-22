@@ -10,6 +10,7 @@ from flask import request, jsonify, send_file
 
 from . import report_bp
 from ..config import Config
+from ..i18n import msg
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
 from ..services.simulation_manager import SimulationManager
 from ..models.project import ProjectManager
@@ -53,18 +54,18 @@ def generate_report():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
-        
+
         force_regenerate = data.get('force_regenerate', False)
-        
+
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
 
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_not_found', simulation_id=simulation_id)
             }), 404
 
         if not force_regenerate:
@@ -76,7 +77,7 @@ def generate_report():
                         "simulation_id": simulation_id,
                         "report_id": existing_report.report_id,
                         "status": "completed",
-                        "message": "Report already exists",
+                        "message": msg('report_already_exists'),
                         "already_generated": True
                     }
                 })
@@ -85,21 +86,21 @@ def generate_report():
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {state.project_id}"
+                "error": msg('project_not_found', project_id=state.project_id)
             }), 404
 
         graph_id = state.graph_id or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "Missing graph ID. Ensure the graph has been built."
+                "error": msg('missing_graph_id_for_report')
             }), 400
 
         simulation_requirement = project.simulation_requirement
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "Missing simulation requirement description"
+                "error": msg('missing_simulation_requirement_for_report')
             }), 400
 
         # Generate report_id upfront so the frontend can reference it immediately
@@ -122,7 +123,7 @@ def generate_report():
                     task_id,
                     status=TaskStatus.PROCESSING,
                     progress=0,
-                    message="Initializing Report Agent..."
+                    message=msg('report_generate_initializing')
                 )
 
                 agent = ReportAgent(
@@ -171,7 +172,7 @@ def generate_report():
                 "report_id": report_id,
                 "task_id": task_id,
                 "status": "generating",
-                "message": "Report generation task started. Poll /api/report/generate/status for progress.",
+                "message": msg('report_generate_task_started'),
                 "already_generated": False
             }
         })
@@ -223,7 +224,7 @@ def get_generate_status():
                         "report_id": existing_report.report_id,
                         "status": "completed",
                         "progress": 100,
-                        "message": "Report already generated",
+                        "message": msg('report_already_generated'),
                         "already_completed": True
                     }
                 })
@@ -231,7 +232,7 @@ def get_generate_status():
         if not task_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide task_id or simulation_id"
+                "error": msg('missing_task_id_or_simulation_id')
             }), 400
 
         task_manager = TaskManager()
@@ -240,7 +241,7 @@ def get_generate_status():
         if not task:
             return jsonify({
                 "success": False,
-                "error": f"Task not found: {task_id}"
+                "error": msg('task_not_found', task_id=task_id)
             }), 404
         
         return jsonify({
@@ -283,14 +284,14 @@ def get_report(report_id: str):
         if not report:
             return jsonify({
                 "success": False,
-                "error": f"Report not found: {report_id}"
+                "error": msg('report_not_found', report_id=report_id)
             }), 404
-        
+
         return jsonify({
             "success": True,
             "data": report.to_dict()
         })
-        
+
     except Exception as e:
         logger.error(f"Failed to fetch report: {str(e)}")
         return jsonify({
@@ -320,7 +321,7 @@ def get_report_by_simulation(simulation_id: str):
         if not report:
             return jsonify({
                 "success": False,
-                "error": f"No report found for simulation: {simulation_id}",
+                "error": msg('report_no_simulation_for_report', simulation_id=simulation_id),
                 "has_report": False
             }), 404
         
@@ -390,7 +391,7 @@ def download_report(report_id: str):
         if not report:
             return jsonify({
                 "success": False,
-                "error": f"Report not found: {report_id}"
+                "error": msg('report_not_found', report_id=report_id)
             }), 404
 
         md_path = ReportManager._get_report_markdown_path(report_id)
@@ -431,12 +432,12 @@ def delete_report(report_id: str):
         if not success:
             return jsonify({
                 "success": False,
-                "error": f"Report not found: {report_id}"
+                "error": msg('report_not_found', report_id=report_id)
             }), 404
 
         return jsonify({
             "success": True,
-            "message": f"Report deleted: {report_id}"
+            "message": msg('report_deleted', report_id=report_id)
         })
 
     except Exception as e:
@@ -487,13 +488,13 @@ def chat_with_report_agent():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if not message:
             return jsonify({
                 "success": False,
-                "error": "Please provide message"
+                "error": msg('missing_message')
             }), 400
 
         manager = SimulationManager()
@@ -502,21 +503,21 @@ def chat_with_report_agent():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": msg('simulation_not_found', simulation_id=simulation_id)
             }), 404
 
         project = ProjectManager.get_project(state.project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {state.project_id}"
+                "error": msg('project_not_found', project_id=state.project_id)
             }), 404
 
         graph_id = state.graph_id or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "Missing graph ID"
+                "error": msg('missing_graph_id_for_chat')
             }), 400
         
         simulation_requirement = project.simulation_requirement or ""
@@ -569,7 +570,7 @@ def get_report_progress(report_id: str):
         if not progress:
             return jsonify({
                 "success": False,
-                "error": f"Report not found or progress unavailable: {report_id}"
+                "error": msg('report_progress_unavailable', report_id=report_id)
             }), 404
         
         return jsonify({
@@ -657,7 +658,7 @@ def get_single_section(report_id: str, section_index: int):
         if not os.path.exists(section_path):
             return jsonify({
                 "success": False,
-                "error": f"Section not found: section_{section_index:02d}.md"
+                "error": msg('report_section_not_found', section_index=f"{section_index:02d}")
             }), 404
         
         with open(section_path, 'r', encoding='utf-8') as f:
@@ -931,7 +932,7 @@ def search_graph_tool():
         if not graph_id or not query:
             return jsonify({
                 "success": False,
-                "error": "Please provide graph_id and query"
+                "error": msg('missing_graph_id_and_query')
             }), 400
         
         from ..services.zep_tools import ZepToolsService
@@ -975,7 +976,7 @@ def get_graph_statistics_tool():
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "Please provide graph_id"
+                "error": msg('missing_graph_id')
             }), 400
         
         from ..services.zep_tools import ZepToolsService
