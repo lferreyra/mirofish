@@ -98,6 +98,9 @@
     "report_generation": "Report Generation",
     "deep_interaction": "Deep Interaction"
   },
+  "workflow": {
+    "step_counter": "Step {current}/{total}"
+  },
   "status": {
     "error": "Error",
     "ready": "Ready",

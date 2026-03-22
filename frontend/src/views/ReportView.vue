@@ -22,7 +22,7 @@
 
       <div class="header-right">
         <div class="workflow-step">
-          <span class="step-num">Step 4/5</span>
+          <span class="step-num">{{ $t('workflow.step_counter', { current: 4, total: 5 }) }}</span>
           <span class="step-name">{{ $t('steps.report_generation') }}</span>
         </div>
         <div class="step-divider"></div>
