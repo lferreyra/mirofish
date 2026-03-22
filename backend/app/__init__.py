@@ -9,7 +9,7 @@ import warnings
 # Must be set before all other imports.
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
+from flask import Flask, g, request
 from flask_cors import CORS
 
 from .config import Config
@@ -47,6 +47,14 @@ def create_app(config_class=Config):
     SimulationRunner.register_cleanup()
     if should_log_startup:
         logger.info("Simulation process cleanup handler registered")
+
+    # Locale middleware — must run before blueprints consume g.locale
+    @app.before_request
+    def set_locale():
+        import os as _os
+        default = _os.environ.get('APP_LANGUAGE', 'en')
+        accept = request.headers.get('Accept-Language', default)
+        g.locale = 'zh-CN' if accept.startswith('zh') else 'en'
 
     # Request logging middleware
     @app.before_request
