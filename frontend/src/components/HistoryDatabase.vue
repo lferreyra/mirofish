@@ -11,7 +11,7 @@
 
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">Simulation Records</span>
+      <span class="section-title">{{ $t('historyDatabase.sectionTitle') }}</span>
       <div class="section-line"></div>
     </div>
 
@@ -33,16 +33,16 @@
             <span
               class="status-icon"
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="Graph Build"
+              :title="$t('historyDatabase.card.titles.graphBuild')"
             >◇</span>
             <span
               class="status-icon available"
-              title="Environment Setup"
+              :title="$t('historyDatabase.card.titles.envSetup')"
             >◈</span>
             <span
               class="status-icon"
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="Analysis Report"
+              :title="$t('historyDatabase.card.titles.analysisReport')"
             >◆</span>
           </div>
         </div>
@@ -60,12 +60,12 @@
               <span class="file-name">{{ truncateFilename(file.filename, 20) }}</span>
             </div>
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} files
+              {{ $t('historyDatabase.card.filesMore', { n: project.files.length - 3 }) }}
             </div>
           </div>
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">No files</span>
+            <span class="empty-file-text">{{ $t('historyDatabase.card.noFiles') }}</span>
           </div>
         </div>
 
@@ -91,7 +91,7 @@
 
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">Loading...</span>
+      <span class="loading-text">{{ $t('historyDatabase.loading') }}</span>
     </div>
 
     <!-- History playback modal -->
@@ -112,25 +112,25 @@
 
             <div class="modal-body">
               <div class="modal-section">
-                <div class="modal-label">Simulation Requirement</div>
-                <div class="modal-requirement">{{ selectedProject.simulation_requirement || 'None' }}</div>
+                <div class="modal-label">{{ $t('historyDatabase.modal.simulationRequirement') }}</div>
+                <div class="modal-requirement">{{ selectedProject.simulation_requirement || $t('historyDatabase.modal.none') }}</div>
               </div>
 
               <div class="modal-section">
-                <div class="modal-label">Associated Files</div>
+                <div class="modal-label">{{ $t('historyDatabase.modal.associatedFiles') }}</div>
                 <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
                   <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
                     <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>No associated files</div>
+                <div class="modal-empty" v-else>{{ $t('historyDatabase.modal.noFiles') }}</div>
               </div>
             </div>
 
             <div class="modal-divider">
               <span class="divider-line"></span>
-              <span class="divider-text">Playback</span>
+              <span class="divider-text">{{ $t('historyDatabase.modal.playbackDivider') }}</span>
               <span class="divider-line"></span>
             </div>
 
@@ -141,30 +141,30 @@
                 @click="goToProject"
                 :disabled="!selectedProject.project_id"
               >
-                <span class="btn-step">Step1</span>
+                <span class="btn-step">{{ $t('historyDatabase.modal.actions.step1') }}</span>
                 <span class="btn-icon">◇</span>
-                <span class="btn-text">Graph Build</span>
+                <span class="btn-text">{{ $t('historyDatabase.modal.actions.graphBuild') }}</span>
               </button>
               <button
                 class="modal-btn btn-simulation"
                 @click="goToSimulation"
               >
-                <span class="btn-step">Step2</span>
+                <span class="btn-step">{{ $t('historyDatabase.modal.actions.step2') }}</span>
                 <span class="btn-icon">◈</span>
-                <span class="btn-text">Environment Setup</span>
+                <span class="btn-text">{{ $t('historyDatabase.modal.actions.envSetup') }}</span>
               </button>
               <button
                 class="modal-btn btn-report"
                 @click="goToReport"
                 :disabled="!selectedProject.report_id"
               >
-                <span class="btn-step">Step4</span>
+                <span class="btn-step">{{ $t('historyDatabase.modal.actions.step4') }}</span>
                 <span class="btn-icon">◆</span>
-                <span class="btn-text">Analysis Report</span>
+                <span class="btn-text">{{ $t('historyDatabase.modal.actions.analysisReport') }}</span>
               </button>
             </div>
             <div class="modal-playback-hint">
-              <span class="hint-text">Step3 "Start Simulation" and Step5 "Deep Interaction" must be started while running — historical playback is not supported</span>
+              <span class="hint-text">{{ $t('historyDatabase.modal.playbackHint') }}</span>
             </div>
           </div>
         </div>
@@ -175,8 +175,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { getSimulationHistory } from '../api/simulation'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
@@ -290,7 +293,7 @@ const truncateText = (text, maxLength) => {
 }
 
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return 'Untitled Simulation'
+  if (!requirement) return t('historyDatabase.card.untitled')
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
@@ -304,8 +307,8 @@ const formatSimulationId = (simulationId) => {
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  if (total === 0) return 'Not started'
-  return `${current}/${total} rounds`
+  if (total === 0) return t('historyDatabase.progress.notStarted')
+  return t('historyDatabase.progress.rounds', { current, total })
 }
 
 const getFileType = (filename) => {
