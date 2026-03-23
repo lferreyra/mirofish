@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mirofish-middleware
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+app:
+  proxy:
+    # 兼容迁移方案：前端调用 Java，中间层透传到现有 Python Backend
+    graph-base-url: ${APP_PROXY_GRAPH_BASE_URL:http://localhost:5001}
+    simulation-base-url: ${APP_PROXY_SIMULATION_BASE_URL:http://localhost:5001}
+    report-base-url: ${APP_PROXY_REPORT_BASE_URL:http://localhost:5001}
+    timeout-seconds: ${APP_PROXY_TIMEOUT_SECONDS:300}
+  graphiti:
+    # Graphiti 保留为独立服务
+    base-url: ${GRAPHITI_BASE_URL:http://localhost:8000}
+    api-key: ${GRAPHITI_API_KEY:}
+    timeout-seconds: ${GRAPHITI_TIMEOUT_SECONDS:30}
+  oasis:
+    # legacy-proxy: 由 Python 后端继续驱动 OASIS，Java 仅做中间层
+    mode: ${OASIS_MODE:legacy-proxy}
+
+springdoc:
+  api-docs:
+    path: /api/graphiti/openapi.json
+  swagger-ui:
+    path: /api/graphiti/docs
+    display-request-duration: true
