@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use MiroFish in academic work, please cite the repository and, when relevant, the specific release you used."
+title: "MiroFish"
+type: software
+authors:
+  - family-names: "BaiFu"
+abstract: "A simple and universal swarm intelligence engine for simulation, prediction, and multi-agent interaction."
+repository-code: "https://github.com/666ghj/MiroFish"
+url: "https://github.com/666ghj/MiroFish"
+license: "AGPL-3.0-only"
+version: "v0.1.2"
+date-released: "2026-03-07"
+keywords:
+  - MiroFish
+  - swarm intelligence
+  - multi-agent systems
+  - simulation
+  - prediction
+  - LLM
