@@ -1,6 +1,8 @@
 package com.mirofish.middleware.proxy;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import java.util.Set;
 
 @Service
 public class BackendProxyService {
+    private static final Logger log = LoggerFactory.getLogger(BackendProxyService.class);
 
     private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
             "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
@@ -39,13 +42,22 @@ public class BackendProxyService {
 
     private final Duration timeout;
 
-    public ResponseEntity<byte[]> forward(HttpServletRequest incoming, byte[] body, String upstreamBaseUrl)
+    public ResponseEntity<byte[]> forward(HttpServletRequest incoming, byte[] body, String upstreamBaseUrl, String requestId)
             throws IOException, InterruptedException {
+        long startNanos = System.nanoTime();
         String targetUrl = buildTargetUrl(incoming, upstreamBaseUrl);
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(targetUrl)).timeout(timeout);
+        String method = incoming.getMethod().toUpperCase(Locale.ROOT);
+
+        log.info(
+                "[proxy:{}] upstream request method={} targetUrl={} bodyBytes={}",
+                requestId,
+                method,
+                targetUrl,
+                body == null ? 0 : body.length
+        );
 
         copyRequestHeaders(incoming, builder);
-        String method = incoming.getMethod().toUpperCase(Locale.ROOT);
 
         boolean hasBody = switch (method) {
             case "POST", "PUT", "PATCH", "DELETE" -> true;
@@ -57,8 +69,29 @@ public class BackendProxyService {
                         : HttpRequest.BodyPublishers.noBody();
         builder.method(method, publisher);
 
-        HttpResponse<byte[]> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
-        return toSpringResponse(response);
+        try {
+            HttpResponse<byte[]> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+            log.info(
+                    "[proxy:{}] upstream response status={} elapsedMs={} responseBytes={}",
+                    requestId,
+                    response.statusCode(),
+                    elapsedMs,
+                    response.body() == null ? 0 : response.body().length
+            );
+            return toSpringResponse(response);
+        } catch (IOException | InterruptedException e) {
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+            log.error(
+                    "[proxy:{}] upstream error elapsedMs={} targetUrl={} message={}",
+                    requestId,
+                    elapsedMs,
+                    targetUrl,
+                    e.getMessage(),
+                    e
+            );
+            throw e;
+        }
     }
 
     private String buildTargetUrl(HttpServletRequest incoming, String upstreamBaseUrl) {

@@ -6,6 +6,7 @@ spring:
     name: mirofish-middleware
   servlet:
     multipart:
+      enabled: false
       max-file-size: 50MB
       max-request-size: 100MB
 
@@ -31,3 +32,7 @@ springdoc:
   swagger-ui:
     path: /api/graphiti/docs
     display-request-duration: true
+
+logging:
+  level:
+    com.mirofish.middleware.proxy: INFO
