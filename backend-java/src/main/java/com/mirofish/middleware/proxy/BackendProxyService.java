@@ -29,6 +29,14 @@ public class BackendProxyService {
             "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
             "te", "trailers", "transfer-encoding", "upgrade", "host", "content-length"
     );
+    private static final Set<String> CORS_RESPONSE_HEADERS = Set.of(
+            "access-control-allow-origin",
+            "access-control-allow-credentials",
+            "access-control-allow-methods",
+            "access-control-allow-headers",
+            "access-control-expose-headers",
+            "access-control-max-age"
+    );
 
     private final HttpClient httpClient;
 
@@ -120,6 +128,10 @@ public class BackendProxyService {
         for (Map.Entry<String, java.util.List<String>> entry : response.headers().map().entrySet()) {
             String headerName = entry.getKey();
             if (HOP_BY_HOP_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            // Let Spring CORS filter generate a single authoritative CORS header set.
+            if (CORS_RESPONSE_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
                 continue;
             }
             headers.put(headerName, new ArrayList<>(entry.getValue()));
