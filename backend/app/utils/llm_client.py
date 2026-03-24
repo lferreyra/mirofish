@@ -1,20 +1,42 @@
 """
 LLM客户端封装
 统一使用OpenAI格式调用
-支持多Key自动轮换 - Groq 3 keys + Gemini 3 keys
-当一个Key达到限制时自动切换到下一个Key
+支持多Key智能轮换 - Groq 4 keys + Gemini 3 keys
+
+Key rotation strategy:
+- TPD (tokens per day) error  → mark key exhausted 24h, rotate to next
+- TPM (tokens per minute) error → wait 61s, retry SAME key (don't waste other keys)
+- 413 / too large              → truncate messages, retry same key
+- Unknown error                → raise immediately
 """
 
 import json
 import re
+import time
+import logging
 from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
 from openai import OpenAI
 
 from ..config import Config
 
+logger = logging.getLogger(__name__)
+
 
 class LLMClient:
-    """LLM客户端 - 支持多Key自动轮换"""
+    """
+    LLM客户端 - 支持多Key智能轮换
+
+    Rotation logic:
+        - TPD exhausted  → skip key for 24 h, move to next available
+        - TPM exceeded   → sleep 61 s, retry same key
+        - Request too large → truncate, retry same key
+        - Other errors   → re-raise immediately
+    """
+
+    # ------------------------------------------------------------------ #
+    #  Construction                                                        #
+    # ------------------------------------------------------------------ #
 
     def __init__(
         self,
@@ -23,173 +45,303 @@ class LLMClient:
         model: Optional[str] = None,
     ):
         self.base_url = base_url or Config.LLM_BASE_URL
-        self.model = model or Config.LLM_MODEL_NAME
+        self.model    = model    or Config.LLM_MODEL_NAME
 
-        # Build key pool: if specific key provided use it, else load all from config
-        if api_key:
-            self.key_pool = [api_key]
-        else:
-            self.key_pool = Config.get_primary_keys()
-
+        self.key_pool: List[str] = [api_key] if api_key else Config.get_primary_keys()
         if not self.key_pool:
-            raise ValueError("LLM_API_KEY_1 未配置")
+            raise ValueError("No primary LLM API key configured (LLM_API_KEY_1 missing).")
 
-        self.current_key_index = 0
+        self.current_key_index: int = 0
+        # Maps key index → datetime when the TPD ban expires
+        self.exhausted_until: Dict[int, datetime] = {}
+
         self.client = self._make_client(self.key_pool[0])
+        logger.info("LLMClient initialised with %d key(s), model=%s", len(self.key_pool), self.model)
+
+    # ------------------------------------------------------------------ #
+    #  Internal helpers                                                    #
+    # ------------------------------------------------------------------ #
 
     def _make_client(self, api_key: str) -> OpenAI:
         return OpenAI(api_key=api_key, base_url=self.base_url)
 
-    def _rotate_key(self) -> bool:
-        """Rotate to next available key. Returns False if all exhausted."""
-        next_index = self.current_key_index + 1
-        if next_index < len(self.key_pool):
-            self.current_key_index = next_index
-            self.client = self._make_client(self.key_pool[next_index])
-            print(f"🔄 [LLMClient] Rotated to primary key {next_index + 1}/{len(self.key_pool)}")
-            return True
-        print("❌ [LLMClient] All primary keys exhausted")
-        return False
+    # ---------- error classification ----------
 
-    def _is_rate_limit_error(self, error: Exception) -> bool:
-        err = str(error)
-        return any(x in err for x in ["429", "rate_limit", "rate limit", "quota", "tokens per day", "TPD"])
-    
-    def _is_too_large_error(self, error: Exception) -> bool:
-        err = str(error)
-        return "413" in err or "Request too large" in err or "reduce your message size" in err
+    @staticmethod
+    def _is_tpd_error(error: Exception) -> bool:
+        """Tokens-per-DAY limit → key is done for 24 h."""
+        msg = str(error).lower()
+        return "tokens per day" in msg or "tpd" in msg
+
+    @staticmethod
+    def _is_tpm_error(error: Exception) -> bool:
+        """Tokens-per-MINUTE limit → wait ~60 s on the SAME key."""
+        msg = str(error).lower()
+        return (
+            "tokens per minute" in msg
+            or "tpm" in msg
+            or (("429" in msg or "rate_limit" in msg or "rate limit" in msg)
+                and "tokens per day" not in msg)
+        )
+
+    @staticmethod
+    def _is_too_large_error(error: Exception) -> bool:
+        msg = str(error)
+        return (
+            "413" in msg
+            or "Request too large" in msg
+            or "reduce your message size" in msg
+            or "context_length_exceeded" in msg
+        )
+
+    # ---------- key rotation ----------
+
+    def _available_key_index(self) -> Optional[int]:
+        """
+        Return the index of the next key that is NOT TPD-exhausted,
+        cycling through the whole pool starting after current_key_index.
+        Cleans up expired bans along the way.
+        Returns None if every key is still banned.
+        """
+        now = datetime.now()
+        # Expire old bans
+        self.exhausted_until = {k: v for k, v in self.exhausted_until.items() if now < v}
+
+        total = len(self.key_pool)
+        for offset in range(1, total + 1):
+            idx = (self.current_key_index + offset) % total
+            if idx not in self.exhausted_until:
+                return idx
+        return None
+
+    def _rotate_key(self, *, tpd_exhausted: bool = False) -> bool:
+        """
+        Switch to the next usable key.
+        If tpd_exhausted=True, marks the current key for 24 h first.
+        Returns True if a new key is available, False if all are exhausted.
+        """
+        if tpd_exhausted:
+            self.exhausted_until[self.current_key_index] = datetime.now() + timedelta(hours=24)
+            logger.warning(
+                "🚫 Primary key %d/%d marked TPD-exhausted for 24 h",
+                self.current_key_index + 1, len(self.key_pool),
+            )
+
+        next_idx = self._available_key_index()
+        if next_idx is None:
+            logger.error("❌ All primary LLM keys are exhausted.")
+            return False
+
+        self.current_key_index = next_idx
+        self.client = self._make_client(self.key_pool[next_idx])
+        logger.info(
+            "🔄 Rotated to primary key %d/%d",
+            next_idx + 1, len(self.key_pool),
+        )
+        return True
+
+    # ---------- message truncation ----------
+
+    @staticmethod
+    def _truncate_messages(
+        messages: List[Dict[str, str]],
+        target_tokens: int = 8_000,
+    ) -> List[Dict[str, str]]:
+        """
+        Naively truncate user-role message content so the request fits.
+        System messages are always kept intact.
+        Rough heuristic: 1 token ≈ 4 chars.
+        """
+        char_limit = target_tokens * 4
+        truncated = []
+        for msg in messages:
+            role    = msg.get("role", "")
+            content = msg.get("content", "")
+            if role == "system":
+                truncated.append(msg)
+            elif role == "user" and len(content) > char_limit:
+                new_content = content[:char_limit] + "\n\n[Content truncated to fit token limit]"
+                logger.warning(
+                    "✂️  Truncated user message %d → %d chars", len(content), len(new_content)
+                )
+                truncated.append({"role": role, "content": new_content})
+            else:
+                truncated.append(msg)
+        return truncated
+
+    # ------------------------------------------------------------------ #
+    #  Public API                                                          #
+    # ------------------------------------------------------------------ #
 
     def chat(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 8096,
-        response_format: Optional[Dict] = None
+        max_tokens: int = 8_096,
+        response_format: Optional[Dict] = None,
     ) -> str:
-        kwargs = {
-            "model": self.model,
-            "messages": messages,
+        """
+        Send a chat completion request.
+        Automatically handles key rotation on rate-limit errors.
+        Returns the assistant message as a plain string.
+        """
+        kwargs: Dict[str, Any] = {
+            "model":       self.model,
+            "messages":    messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_tokens":  max_tokens,
         }
         if response_format:
             kwargs["response_format"] = response_format
 
-        last_error = None
+        last_error: Optional[Exception] = None
+        # Upper bound: try each key at most once for TPD; TPM retries don't
+        # consume a "slot" because we wait on the same key.
+        max_key_switches = len(self.key_pool)
+        key_switches = 0
 
-        for attempt in range(len(self.key_pool)):
+        while key_switches <= max_key_switches:
             try:
                 response = self.client.chat.completions.create(**kwargs)
-                content = response.choices[0].message.content
-                # Remove <think> blocks (some models include reasoning)
-                content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
+                content  = response.choices[0].message.content or ""
+                # Strip chain-of-thought blocks some models return
+                content  = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
+                # Log which key succeeded
+                logger.debug("✅ Request succeeded on key %d", self.current_key_index + 1)
                 return content
 
             except Exception as e:
                 last_error = e
-                if self._is_rate_limit_error(e):
-                    print(f"⚠️ Key {self.current_key_index + 1} rate limited, rotating...")
-                    if not self._rotate_key():
-                        break
+                err_str    = str(e)
+
+                if self._is_tpd_error(e):
+                    logger.warning(
+                        "⚠️  Key %d/%d hit TPD limit. Rotating… (%s)",
+                        self.current_key_index + 1, len(self.key_pool), err_str[:120],
+                    )
+                    if not self._rotate_key(tpd_exhausted=True):
+                        break          # all keys dead → exit loop
+                    key_switches += 1
+
                 elif self._is_too_large_error(e):
-                    # No point rotating keys — request itself is too big
-                    # Truncate and retry on same key
-                    print(f"⚠️ Request too large ({str(e)[:80]}), truncating messages...")
-                    messages = self._truncate_messages(messages, target_tokens=8000)
+                    logger.warning(
+                        "📦 Request too large (%s). Truncating messages…", err_str[:80]
+                    )
+                    messages          = self._truncate_messages(messages, target_tokens=8_000)
                     kwargs["messages"] = messages
-                    continue
+                    # Do NOT rotate or increment counter
+
+                elif self._is_tpm_error(e):
+                    logger.warning(
+                        "⏳ Key %d/%d hit TPM limit. Sleeping 61 s then retrying same key… (%s)",
+                        self.current_key_index + 1, len(self.key_pool), err_str[:120],
+                    )
+                    time.sleep(61)
+                    # Do NOT increment key_switches — we're retrying the same key
+
                 else:
+                    # Unexpected error — surface it immediately
                     raise
 
-        raise Exception(f"❌ All primary LLM keys exhausted. Last error: {last_error}")
+        raise RuntimeError(
+            f"❌ All primary LLM keys exhausted. Last error: {last_error}"
+        )
 
     def chat_json(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 8096
+        max_tokens: int = 8_096,
     ) -> Dict[str, Any]:
-        """Send chat request and return parsed JSON"""
+        """
+        Like chat(), but parses the response as JSON.
+        Falls back to plain chat if the model doesn't support response_format.
+        """
         try:
-            response = self.chat(
+            raw = self.chat(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
         except Exception:
-            # Model doesn't support response_format, call without it
-            response = self.chat(
+            # Model may not support response_format → retry without it
+            raw = self.chat(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
 
-        # Clean markdown fences
-        cleaned_response = response.strip()
-        cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
-        cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
-        cleaned_response = cleaned_response.strip()
+        # Strip markdown fences if present
+        cleaned = raw.strip()
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\n?```\s*$",          "", cleaned)
+        cleaned = cleaned.strip()
 
         try:
-            return json.loads(cleaned_response)
+            return json.loads(cleaned)
         except json.JSONDecodeError:
-            repaired = self._repair_truncated_json(cleaned_response)
-            if repaired:
+            repaired = self._repair_truncated_json(cleaned)
+            if repaired is not None:
                 return repaired
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response[:500]}")
-        
-    def _truncate_messages(
-    self, 
-    messages: List[Dict[str, str]], 
-    target_tokens: int = 8000
-) -> List[Dict[str, str]]:
-        """
-        Truncate message content to fit within token limit.
-        Keeps system message intact, truncates user message content.
-        Rough estimate: 1 token ≈ 4 characters
-        """
-        char_limit = target_tokens * 4  # rough chars-to-tokens ratio
-        
-        truncated = []
-        for msg in messages:
-            role = msg.get("role", "")
-            content = msg.get("content", "")
-            
-            if role == "system":
-                # Always keep system message as-is
-                truncated.append(msg)
-            elif role == "user":
-                if len(content) > char_limit:
-                    # Truncate content and add notice
-                    content = content[:char_limit] + "\n\n[Content truncated to fit token limit]"
-                    print(f"✂️ Truncated user message from {len(msg['content'])} to {len(content)} chars")
-                truncated.append({"role": role, "content": content})
+            raise ValueError(f"LLM returned invalid JSON: {cleaned[:500]}")
+
+    # ------------------------------------------------------------------ #
+    #  Status / diagnostics                                                #
+    # ------------------------------------------------------------------ #
+
+    def status(self) -> Dict[str, Any]:
+        """Return a human-readable snapshot of the key pool state."""
+        now = datetime.now()
+        keys_info = []
+        for i, key in enumerate(self.key_pool):
+            ban_until = self.exhausted_until.get(i)
+            if ban_until and now < ban_until:
+                remaining = int((ban_until - now).total_seconds() / 60)
+                state = f"TPD-exhausted (~{remaining} min remaining)"
             else:
-                truncated.append(msg)
-        
-        return truncated
+                state = "available"
+            keys_info.append({
+                "index":    i + 1,
+                "key_tail": f"…{key[-6:]}",
+                "state":    state,
+                "active":   i == self.current_key_index,
+            })
+        return {
+            "model":         self.model,
+            "total_keys":    len(self.key_pool),
+            "current_index": self.current_key_index + 1,
+            "keys":          keys_info,
+        }
+
+    # ------------------------------------------------------------------ #
+    #  JSON repair                                                         #
+    # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _repair_truncated_json(text: str) -> dict | None:
-        """Try to fix truncated JSON by closing open brackets"""
+    def _repair_truncated_json(text: str) -> Optional[dict]:
+        """Best-effort repair of truncated JSON by closing open brackets."""
         try:
-            open_braces = text.count('{') - text.count('}')
-            open_brackets = text.count('[') - text.count(']')
+            open_braces   = text.count("{") - text.count("}")
+            open_brackets = text.count("[") - text.count("]")
             repaired = text
             if repaired.count('"') % 2 != 0:
                 repaired += '"'
-            repaired += ']' * open_brackets
-            repaired += '}' * open_braces
+            repaired += "]" * open_brackets
+            repaired += "}" * open_braces
             return json.loads(repaired)
         except Exception:
             return None
 
 
+# ======================================================================= #
+#  Boost (Gemini) client                                                   #
+# ======================================================================= #
+
 class BoostLLMClient(LLMClient):
     """
-    Gemini LLM客户端 - 使用Boost key pool自动轮换
-    当一个Gemini Key达到限制时自动切换到下一个
+    Gemini LLM client with identical rotation logic.
+    Uses the boost key pool from Config.
     """
 
     def __init__(
@@ -198,26 +350,40 @@ class BoostLLMClient(LLMClient):
         base_url: Optional[str] = None,
         model: Optional[str] = None,
     ):
+        # Bypass parent __init__ entirely and set attributes directly
         self.base_url = base_url or Config.LLM_BOOST_BASE_URL
-        self.model = model or Config.LLM_BOOST_MODEL_NAME
+        self.model    = model    or Config.LLM_BOOST_MODEL_NAME
 
-        if api_key:
-            self.key_pool = [api_key]
-        else:
-            self.key_pool = Config.get_boost_keys()
-
+        self.key_pool: List[str] = [api_key] if api_key else Config.get_boost_keys()
         if not self.key_pool:
-            raise ValueError("LLM_BOOST_API_KEY_1 未配置")
+            raise ValueError("No boost LLM API key configured (LLM_BOOST_API_KEY_1 missing).")
 
-        self.current_key_index = 0
+        self.current_key_index: int = 0
+        self.exhausted_until:   Dict[int, datetime] = {}
+
         self.client = self._make_client(self.key_pool[0])
+        logger.info(
+            "BoostLLMClient initialised with %d key(s), model=%s",
+            len(self.key_pool), self.model,
+        )
 
-    def _rotate_key(self) -> bool:
-        next_index = self.current_key_index + 1
-        if next_index < len(self.key_pool):
-            self.current_key_index = next_index
-            self.client = self._make_client(self.key_pool[next_index])
-            print(f"🔄 [BoostLLMClient] Rotated to Gemini key {next_index + 1}/{len(self.key_pool)}")
-            return True
-        print("❌ [BoostLLMClient] All Gemini keys exhausted")
-        return False
+    def _rotate_key(self, *, tpd_exhausted: bool = False) -> bool:
+        if tpd_exhausted:
+            self.exhausted_until[self.current_key_index] = datetime.now() + timedelta(hours=24)
+            logger.warning(
+                "🚫 Boost key %d/%d marked TPD-exhausted for 24 h",
+                self.current_key_index + 1, len(self.key_pool),
+            )
+
+        next_idx = self._available_key_index()
+        if next_idx is None:
+            logger.error("❌ All boost (Gemini) LLM keys are exhausted.")
+            return False
+
+        self.current_key_index = next_idx
+        self.client = self._make_client(self.key_pool[next_idx])
+        logger.info(
+            "🔄 Rotated to boost key %d/%d",
+            next_idx + 1, len(self.key_pool),
+        )
+        return True

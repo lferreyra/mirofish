@@ -30,8 +30,9 @@ class Config:
     LLM_API_KEY_1 = os.environ.get('LLM_API_KEY_1')
     LLM_API_KEY_2 = os.environ.get('LLM_API_KEY_2')
     LLM_API_KEY_3 = os.environ.get('LLM_API_KEY_3')
+    LLM_API_KEY_4 = os.environ.get('LLM_API_KEY_4')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.groq.com/openai/v1')
-    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'llama-3.3-70b-versatile')
+    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'meta-llama/llama-4-scout-17b-16e-instruct')
 
     # Backward compatibility alias
     LLM_API_KEY = os.environ.get('LLM_API_KEY_1') or os.environ.get('LLM_API_KEY')
@@ -77,7 +78,7 @@ class Config:
     @classmethod
     def get_primary_keys(cls) -> list:
         """Return all configured primary (Groq) API keys"""
-        return [k for k in [cls.LLM_API_KEY_1, cls.LLM_API_KEY_2, cls.LLM_API_KEY_3] if k]
+        return [k for k in [cls.LLM_API_KEY_1, cls.LLM_API_KEY_2, cls.LLM_API_KEY_3, cls.LLM_API_KEY_4] if k]
 
     @classmethod
     def get_boost_keys(cls) -> list:
