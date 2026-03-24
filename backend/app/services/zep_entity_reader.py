@@ -211,6 +211,35 @@ class ZepEntityReader:
         except Exception as e:
             logger.warning(f"获取节点 {node_uuid} 的边失败: {str(e)}")
             return []
+
+    def _infer_entity_type(self, node: Dict[str, Any]) -> Optional[str]:
+        """
+        为缺少 labels 的节点推断一个可用于模拟的粗粒度实体类型。
+
+        仅在图谱完全没有业务标签时兜底使用，避免把纯概念节点全部纳入模拟。
+        """
+        name_text = (node.get("name", "") or "").lower()
+        summary_text = (node.get("summary", "") or "").lower()
+
+        keyword_groups = [
+            ("GovernmentAgency", ["监管", "政府", "政务", "公共服务", "部门", "官方", "监管机构"]),
+            ("Consumer", ["公众", "消费者", "用户", "居民", "市民", "网民", "家长", "患者"]),
+            ("MedicalInstitution", ["医疗", "医院", "卫健", "诊所", "医药"]),
+            ("EducationalInstitution", ["教育", "学校", "大学", "高校", "学院", "科研"]),
+            ("MediaOutlet", ["媒体", "新闻", "内容产业", "记者", "传媒"]),
+            ("LegalInstitution", ["法律", "法院", "律所", "司法"]),
+            ("Organization", ["企业", "公司", "制造业", "金融", "零售", "电商", "物流", "交通", "平台", "行业"]),
+        ]
+
+        for entity_type, keywords in keyword_groups:
+            if any(keyword in name_text for keyword in keywords):
+                return entity_type
+
+        for entity_type, keywords in keyword_groups:
+            if any(keyword in summary_text for keyword in keywords):
+                return entity_type
+
+        return None
     
     def filter_defined_entities(
         self, 
@@ -251,30 +280,39 @@ class ZepEntityReader:
         
         for node in all_nodes:
             labels = node.get("labels", [])
-            
-            # 筛选逻辑：Labels必须包含除"Entity"和"Node"之外的标签
             custom_labels = [l for l in labels if l not in ["Entity", "Node"]]
-            
-            if not custom_labels:
-                # 只有默认标签，跳过
-                continue
-            
-            # 如果指定了预定义类型，检查是否匹配
+            inferred_entity_type = None
+
+            if custom_labels:
+                candidate_labels = custom_labels
+            else:
+                inferred_entity_type = self._infer_entity_type(node)
+                if not inferred_entity_type:
+                    continue
+                candidate_labels = [inferred_entity_type]
+
             if defined_entity_types:
-                matching_labels = [l for l in custom_labels if l in defined_entity_types]
+                matching_labels = [l for l in candidate_labels if l in defined_entity_types]
                 if not matching_labels:
                     continue
                 entity_type = matching_labels[0]
             else:
-                entity_type = custom_labels[0]
-            
+                entity_type = candidate_labels[0]
+
             entity_types_found.add(entity_type)
+
+            effective_labels = list(labels)
+            if inferred_entity_type and inferred_entity_type not in effective_labels:
+                effective_labels.append(inferred_entity_type)
+                logger.info(
+                    f"节点 {node['name']} 缺少业务标签，推断实体类型为 {inferred_entity_type}"
+                )
             
             # 创建实体节点对象
             entity = EntityNode(
                 uuid=node["uuid"],
                 name=node["name"],
-                labels=labels,
+                labels=effective_labels,
                 summary=node["summary"],
                 attributes=node["attributes"],
             )
