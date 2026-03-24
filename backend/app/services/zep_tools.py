@@ -980,9 +980,9 @@ class ZepToolsService:
         
         # Step 1: 使用LLM生成子问题
         sub_queries = self._generate_sub_queries(
-            query=query,
-            simulation_requirement=simulation_requirement,
-            report_context=report_context,
+            query=query[:300],
+            simulation_requirement=simulation_requirement[:500],
+            report_context=report_context[:300],
             max_queries=max_sub_queries
         )
         result.sub_queries = sub_queries
@@ -1110,12 +1110,12 @@ class ZepToolsService:
 4. 返回JSON格式：{"sub_queries": ["子问题1", "子问题2", ...]}"""
 
         user_prompt = f"""模拟需求背景：
-{simulation_requirement}
+{simulation_requirement[:500]}
 
-{f"报告上下文：{report_context[:500]}" if report_context else ""}
+{f"报告上下文：{report_context[:300]}" if report_context else ""}
 
 请将以下问题分解为{max_queries}个子问题：
-{query}
+{query[:300]}
 
 返回JSON格式的子问题列表。"""
 
@@ -1572,7 +1572,7 @@ class ZepToolsService:
                 "index": i,
                 "name": profile.get("realname", profile.get("username", f"Agent_{i}")),
                 "profession": profile.get("profession", "未知"),
-                "bio": profile.get("bio", "")[:200],
+                "bio": profile.get("bio", "")[:100],
                 "interested_topics": profile.get("interested_topics", [])
             }
             agent_summaries.append(summary)
@@ -1591,16 +1591,17 @@ class ZepToolsService:
     "reasoning": "选择理由说明"
 }"""
 
+        display_agents = agent_summaries[:30]  # max 30 agents in prompt
         user_prompt = f"""采访需求：
-{interview_requirement}
+        {interview_requirement[:300]}
 
-模拟背景：
-{simulation_requirement if simulation_requirement else "未提供"}
+        模拟背景：
+        {simulation_requirement[:300] if simulation_requirement else "未提供"}
 
-可选择的Agent列表（共{len(agent_summaries)}个）：
-{json.dumps(agent_summaries, ensure_ascii=False, indent=2)}
+        可选择的Agent列表（共{len(agent_summaries)}个，显示前{len(display_agents)}个）：
+        {json.dumps(display_agents, ensure_ascii=False)}
 
-请选择最多{max_agents}个最适合采访的Agent，并说明选择理由。"""
+        请选择最多{max_agents}个最适合采访的Agent，并说明选择理由。"""
 
         try:
             response = self.llm.chat_json(
@@ -1693,7 +1694,7 @@ class ZepToolsService:
         # 收集所有采访内容
         interview_texts = []
         for interview in interviews:
-            interview_texts.append(f"【{interview.agent_name}（{interview.agent_role}）】\n{interview.response[:500]}")
+            interview_texts.append(f"【{interview.agent_name}（{interview.agent_role}）】\n{interview.response[:200]}")
         
         system_prompt = """你是一个专业的新闻编辑。请根据多位受访者的回答，生成一份采访摘要。
 
