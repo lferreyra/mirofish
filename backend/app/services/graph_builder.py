@@ -7,6 +7,7 @@ import os
 import uuid
 import time
 import threading
+import logging
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass
 
@@ -16,7 +17,11 @@ from zep_cloud import EpisodeData, EntityEdgeSourceTarget
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
+from ..utils.ontology_normalizer import normalize_ontology_for_zep
 from .text_processor import TextProcessor
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -206,6 +211,15 @@ class GraphBuilderService:
         # 抑制 Pydantic v2 关于 Field(default=None) 的警告
         # 这是 Zep SDK 要求的用法，警告来自动态类创建，可以安全忽略
         warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
+
+        ontology, entity_name_mapping = normalize_ontology_for_zep(ontology)
+        renamed_entities = {
+            original: normalized
+            for original, normalized in entity_name_mapping.items()
+            if original != normalized
+        }
+        if renamed_entities:
+            logger.info("Normalized ontology entity names for Zep compatibility: %s", renamed_entities)
         
         # Zep 保留名称，不能作为属性名
         RESERVED_NAMES = {'uuid', 'name', 'group_id', 'name_embedding', 'summary', 'created_at'}
@@ -497,4 +511,3 @@ class GraphBuilderService:
     def delete_graph(self, graph_id: str):
         """删除图谱"""
         self.client.graph.delete(graph_id=graph_id)
-
