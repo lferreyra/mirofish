@@ -154,6 +154,151 @@ B. **具体类型（8个，根据文本内容设计）**：
 - COMPETES_WITH: 竞争
 """
 
+ONTOLOGY_SYSTEM_PROMPT_EN = """You are a professional knowledge graph ontology design expert. Your task is to analyze the given text content and simulation requirements, and design entity types and relationship types suitable for **social media public opinion simulation**.
+
+**Important: You must output valid JSON format data. Do not output anything else.**
+
+## Core Task Background
+
+We are building a **social media public opinion simulation system**. In this system:
+- Each entity is an "account" or "agent" that can speak, interact, and spread information on social media
+- Entities influence each other through forwarding, commenting, and responding
+- We need to simulate the reactions of various parties and the information propagation paths during public opinion events
+
+Therefore, **entities must be real-world agents that can speak and interact on social media**:
+
+**Acceptable**:
+- Specific individuals (public figures, parties involved, opinion leaders, scholars, ordinary people)
+- Companies and enterprises (including their official accounts)
+- Organizations and institutions (universities, associations, NGOs, unions, etc.)
+- Government departments and regulatory agencies
+- Media organizations (newspapers, TV stations, self-media, websites)
+- Social media platforms themselves
+- Representatives of specific groups (e.g., alumni associations, fan groups, advocacy groups, etc.)
+
+**Not acceptable**:
+- Abstract concepts (e.g., "public opinion", "sentiment", "trend")
+- Topics/themes (e.g., "academic integrity", "education reform")
+- Viewpoints/attitudes (e.g., "supporters", "opponents")
+
+## Output Format
+
+Please output in JSON format with the following structure:
+
+```json
+{
+    "entity_types": [
+        {
+            "name": "Entity type name (English, PascalCase)",
+            "description": "Brief description (English, no more than 100 characters)",
+            "attributes": [
+                {
+                    "name": "attribute_name (English, snake_case)",
+                    "type": "text",
+                    "description": "Attribute description"
+                }
+            ],
+            "examples": ["Example entity 1", "Example entity 2"]
+        }
+    ],
+    "edge_types": [
+        {
+            "name": "Relationship type name (English, UPPER_SNAKE_CASE)",
+            "description": "Brief description (English, no more than 100 characters)",
+            "source_targets": [
+                {"source": "Source entity type", "target": "Target entity type"}
+            ],
+            "attributes": []
+        }
+    ],
+    "analysis_summary": "Brief analysis summary of the text content (in English)"
+}
+```
+
+## Design Guidelines (Extremely Important!)
+
+### 1. Entity Type Design - Must Be Strictly Followed
+
+**Quantity requirement: Exactly 10 entity types**
+
+**Hierarchy requirements (must include both specific types and fallback types)**:
+
+Your 10 entity types must include the following layers:
+
+A. **Fallback types (must include, placed at the end of the list)**:
+   - `Person`: Fallback type for any natural person. When a person does not belong to other more specific person types, classify them here.
+   - `Organization`: Fallback type for any organization. When an organization does not belong to other more specific organization types, classify it here.
+
+B. **Specific types (8, designed based on text content)**:
+   - Design more specific types for the main roles appearing in the text
+   - Example: If the text involves academic events, you can have `Student`, `Professor`, `University`
+   - Example: If the text involves business events, you can have `Company`, `CEO`, `Employee`
+
+**Why fallback types are needed**:
+- Various people appear in the text, such as "elementary school teachers", "bystanders", "some netizen"
+- If there is no specific type match, they should be classified as `Person`
+- Similarly, small organizations, temporary groups, etc. should be classified as `Organization`
+
+**Design principles for specific types**:
+- Identify high-frequency or key role types from the text
+- Each specific type should have clear boundaries to avoid overlap
+- The description must clearly explain the difference between this type and the fallback type
+
+### 2. Relationship Type Design
+
+- Quantity: 6-10
+- Relationships should reflect real connections in social media interactions
+- Ensure that the source_targets of relationships cover your defined entity types
+
+### 3. Attribute Design
+
+- 1-3 key attributes per entity type
+- **Note**: Attribute names cannot use `name`, `uuid`, `group_id`, `created_at`, `summary` (these are system reserved words)
+- Recommended: `full_name`, `title`, `role`, `position`, `location`, `description`, etc.
+
+## Entity Type Reference
+
+**Individual (specific)**:
+- Student: Student
+- Professor: Professor/Scholar
+- Journalist: Journalist
+- Celebrity: Celebrity/Influencer
+- Executive: Executive
+- Official: Government official
+- Lawyer: Lawyer
+- Doctor: Doctor
+
+**Individual (fallback)**:
+- Person: Any natural person (used when not belonging to the above specific types)
+
+**Organization (specific)**:
+- University: University/College
+- Company: Company/Enterprise
+- GovernmentAgency: Government agency
+- MediaOutlet: Media organization
+- Hospital: Hospital
+- School: Elementary/Secondary school
+- NGO: Non-governmental organization
+
+**Organization (fallback)**:
+- Organization: Any organization (used when not belonging to the above specific types)
+
+## Relationship Type Reference
+
+- WORKS_FOR: Works for
+- STUDIES_AT: Studies at
+- AFFILIATED_WITH: Affiliated with
+- REPRESENTS: Represents
+- REGULATES: Regulates
+- REPORTS_ON: Reports on
+- COMMENTS_ON: Comments on
+- RESPONDS_TO: Responds to
+- SUPPORTS: Supports
+- OPPOSES: Opposes
+- COLLABORATES_WITH: Collaborates with
+- COMPETES_WITH: Competes with
+"""
+
 
 class OntologyGenerator:
     """
@@ -168,28 +313,33 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
+        language: str = 'en'
     ) -> Dict[str, Any]:
         """
         生成本体定义
-        
+
         Args:
             document_texts: 文档文本列表
             simulation_requirement: 模拟需求描述
             additional_context: 额外上下文
-            
+            language: 语言选择，'en' 为英文，'zh' 为中文
+
         Returns:
             本体定义（entity_types, edge_types等）
         """
         # 构建用户消息
         user_message = self._build_user_message(
-            document_texts, 
+            document_texts,
             simulation_requirement,
-            additional_context
+            additional_context,
+            language=language
         )
-        
+
+        system_prompt = ONTOLOGY_SYSTEM_PROMPT_EN if language == 'en' else ONTOLOGY_SYSTEM_PROMPT
+
         messages = [
-            {"role": "system", "content": ONTOLOGY_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
         
@@ -212,20 +362,52 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str]
+        additional_context: Optional[str],
+        language: str = 'en'
     ) -> str:
         """构建用户消息"""
-        
+
         # 合并文本
         combined_text = "\n\n---\n\n".join(document_texts)
         original_length = len(combined_text)
-        
+
         # 如果文本超过5万字，截断（仅影响传给LLM的内容，不影响图谱构建）
         if len(combined_text) > self.MAX_TEXT_LENGTH_FOR_LLM:
             combined_text = combined_text[:self.MAX_TEXT_LENGTH_FOR_LLM]
-            combined_text += f"\n\n...(原文共{original_length}字，已截取前{self.MAX_TEXT_LENGTH_FOR_LLM}字用于本体分析)..."
-        
-        message = f"""## 模拟需求
+            if language == 'en':
+                combined_text += f"\n\n...(Original text has {original_length} characters, truncated to first {self.MAX_TEXT_LENGTH_FOR_LLM} characters for ontology analysis)..."
+            else:
+                combined_text += f"\n\n...(原文共{original_length}字，已截取前{self.MAX_TEXT_LENGTH_FOR_LLM}字用于本体分析)..."
+
+        if language == 'en':
+            message = f"""## Simulation Requirement
+
+{simulation_requirement}
+
+## Document Content
+
+{combined_text}
+"""
+
+            if additional_context:
+                message += f"""
+## Additional Notes
+
+{additional_context}
+"""
+
+            message += """
+Based on the above content, design entity types and relationship types suitable for social media public opinion simulation.
+
+**Rules that must be followed**:
+1. You must output exactly 10 entity types
+2. The last 2 must be fallback types: Person (individual fallback) and Organization (organization fallback)
+3. The first 8 are specific types designed based on the text content
+4. All entity types must be real-world agents that can speak on social media, not abstract concepts
+5. Attribute names cannot use reserved words like name, uuid, group_id; use full_name, org_name, etc. instead
+"""
+        else:
+            message = f"""## 模拟需求
 
 {simulation_requirement}
 
@@ -233,15 +415,15 @@ class OntologyGenerator:
 
 {combined_text}
 """
-        
-        if additional_context:
-            message += f"""
+
+            if additional_context:
+                message += f"""
 ## 额外说明
 
 {additional_context}
 """
-        
-        message += """
+
+            message += """
 请根据以上内容，设计适合社会舆论模拟的实体类型和关系类型。
 
 **必须遵守的规则**：
@@ -251,7 +433,7 @@ class OntologyGenerator:
 4. 所有实体类型必须是现实中可以发声的主体，不能是抽象概念
 5. 属性名不能使用 name、uuid、group_id 等保留字，用 full_name、org_name 等替代
 """
-        
+
         return message
     
     def _validate_and_process(self, result: Dict[str, Any]) -> Dict[str, Any]:

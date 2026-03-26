@@ -15,31 +15,36 @@ from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
 from ..utils.logger import get_logger
 from ..models.project import ProjectManager
+from ..utils.messages import msg, get_request_language
 
 logger = get_logger('mirofish.api.simulation')
 
 
 # Interview prompt 优化前缀
-# 添加此前缀可以避免Agent调用工具，直接用文本回复
-INTERVIEW_PROMPT_PREFIX = "结合你的人设、所有的过往记忆与行动，不调用任何工具直接用文本回复我："
+def get_interview_prefix(lang=None):
+    return msg('interview_prefix', lang=lang)
 
 
-def optimize_interview_prompt(prompt: str) -> str:
+def optimize_interview_prompt(prompt: str, lang=None) -> str:
     """
     优化Interview提问，添加前缀避免Agent调用工具
-    
+
     Args:
         prompt: 原始提问
-        
+        lang: Language code ('en' or 'zh'). If None, reads from request header.
+
     Returns:
         优化后的提问
     """
     if not prompt:
         return prompt
-    # 避免重复添加前缀
-    if prompt.startswith(INTERVIEW_PROMPT_PREFIX):
+    prefix = get_interview_prefix(lang=lang)
+    # 避免重复添加前缀（check both languages）
+    en_prefix = msg('interview_prefix', lang='en')
+    zh_prefix = msg('interview_prefix', lang='zh')
+    if prompt.startswith(en_prefix) or prompt.startswith(zh_prefix):
         return prompt
-    return f"{INTERVIEW_PROMPT_PREFIX}{prompt}"
+    return f"{prefix}{prompt}"
 
 
 # ============== 实体读取接口 ==============
@@ -59,7 +64,7 @@ def get_graph_entities(graph_id: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": msg('zep_not_configured')
             }), 500
         
         entity_types_str = request.args.get('entity_types', '')
@@ -96,7 +101,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": msg('zep_not_configured')
             }), 500
         
         reader = ZepEntityReader()
@@ -105,7 +110,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not entity:
             return jsonify({
                 "success": False,
-                "error": f"实体不存在: {entity_uuid}"
+                "error": msg('entity_not_found', id=entity_uuid)
             }), 404
         
         return jsonify({
@@ -129,7 +134,7 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY未配置"
+                "error": msg('zep_not_configured')
             }), 500
         
         enrich = request.args.get('enrich', 'true').lower() == 'true'
@@ -197,21 +202,21 @@ def create_simulation():
         if not project_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 project_id"
+                "error": msg('missing_project_id')
             }), 400
         
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"项目不存在: {project_id}"
+                "error": msg('project_not_found', id=project_id)
             }), 404
         
         graph_id = data.get('graph_id') or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "项目尚未构建图谱，请先调用 /api/graph/build"
+                "error": msg('graph_not_built')
             }), 400
         
         manager = SimulationManager()
@@ -408,7 +413,7 @@ def prepare_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
         
         manager = SimulationManager()
@@ -417,7 +422,7 @@ def prepare_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": msg('simulation_not_found', id=simulation_id)
             }), 404
         
         # 检查是否强制重新生成
@@ -449,7 +454,7 @@ def prepare_simulation():
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"项目不存在: {state.project_id}"
+                "error": msg('project_not_found', id=state.project_id)
             }), 404
         
         # 获取模拟需求
@@ -457,7 +462,7 @@ def prepare_simulation():
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "项目缺少模拟需求描述 (simulation_requirement)"
+                "error": msg('missing_simulation_requirement')
             }), 400
         
         # 获取文档文本
@@ -702,7 +707,7 @@ def get_prepare_status():
                 })
             return jsonify({
                 "success": False,
-                "error": "请提供 task_id 或 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
         
         task_manager = TaskManager()
@@ -728,7 +733,7 @@ def get_prepare_status():
             
             return jsonify({
                 "success": False,
-                "error": f"任务不存在: {task_id}"
+                "error": msg('task_not_found', id=task_id)
             }), 404
         
         task_dict = task.to_dict()
@@ -757,7 +762,7 @@ def get_simulation(simulation_id: str):
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": msg('simulation_not_found', id=simulation_id)
             }), 404
         
         result = state.to_dict()
@@ -1061,7 +1066,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": msg('simulation_not_found', id=simulation_id)
             }), 404
         
         # 确定文件路径
@@ -1164,7 +1169,7 @@ def get_simulation_config_realtime(simulation_id: str):
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": msg('simulation_not_found', id=simulation_id)
             }), 404
         
         # 配置文件路径
@@ -1389,7 +1394,7 @@ def generate_profiles():
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 graph_id"
+                "error": msg('missing_graph_id')
             }), 400
         
         entity_types = data.get('entity_types')
@@ -1491,7 +1496,7 @@ def start_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         platform = data.get('platform', 'parallel')
@@ -1527,7 +1532,7 @@ def start_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"模拟不存在: {simulation_id}"
+                "error": msg('simulation_not_found', id=simulation_id)
             }), 404
 
         force_restarted = False
@@ -1663,7 +1668,7 @@ def stop_simulation():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
         
         run_state = SimulationRunner.stop_simulation(simulation_id)
@@ -2197,7 +2202,7 @@ def interview_agent():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
         
         if agent_id is None:
@@ -2318,7 +2323,7 @@ def interview_agents_batch():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if not interviews or not isinstance(interviews, list):
@@ -2445,7 +2450,7 @@ def interview_all_agents():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         if not prompt:
@@ -2549,7 +2554,7 @@ def get_interview_history():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         history = SimulationRunner.get_interview_history(
@@ -2608,7 +2613,7 @@ def get_env_status():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
 
         env_alive = SimulationRunner.check_env_alive(simulation_id)
@@ -2676,7 +2681,7 @@ def close_simulation_env():
         if not simulation_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 simulation_id"
+                "error": msg('missing_simulation_id')
             }), 400
         
         result = SimulationRunner.close_simulation_env(

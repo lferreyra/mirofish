@@ -12,6 +12,8 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
+    const locale = localStorage.getItem('mirofish-locale') || 'en'
+    config.headers['Accept-Language'] = locale
     return config
   },
   error => {

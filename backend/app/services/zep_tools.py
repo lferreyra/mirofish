@@ -41,15 +41,22 @@ class SearchResult:
             "total_count": self.total_count
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
         """转换为文本格式，供LLM理解"""
-        text_parts = [f"搜索查询: {self.query}", f"找到 {self.total_count} 条相关信息"]
-        
-        if self.facts:
-            text_parts.append("\n### 相关事实:")
-            for i, fact in enumerate(self.facts, 1):
-                text_parts.append(f"{i}. {fact}")
-        
+        lang = language or 'zh'
+        if lang == 'en':
+            text_parts = [f"Search query: {self.query}", f"Found {self.total_count} relevant items"]
+            if self.facts:
+                text_parts.append("\n### Relevant Facts:")
+                for i, fact in enumerate(self.facts, 1):
+                    text_parts.append(f"{i}. {fact}")
+        else:
+            text_parts = [f"搜索查询: {self.query}", f"找到 {self.total_count} 条相关信息"]
+            if self.facts:
+                text_parts.append("\n### 相关事实:")
+                for i, fact in enumerate(self.facts, 1):
+                    text_parts.append(f"{i}. {fact}")
+
         return "\n".join(text_parts)
 
 
@@ -71,10 +78,15 @@ class NodeInfo:
             "attributes": self.attributes
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
         """转换为文本格式"""
-        entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "未知类型")
-        return f"实体: {self.name} (类型: {entity_type})\n摘要: {self.summary}"
+        lang = language or 'zh'
+        if lang == 'en':
+            entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "Unknown type")
+            return f"Entity: {self.name} (Type: {entity_type})\nSummary: {self.summary}"
+        else:
+            entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "未知类型")
+            return f"实体: {self.name} (类型: {entity_type})\n摘要: {self.summary}"
 
 
 @dataclass
@@ -108,19 +120,29 @@ class EdgeInfo:
             "expired_at": self.expired_at
         }
     
-    def to_text(self, include_temporal: bool = False) -> str:
+    def to_text(self, include_temporal: bool = False, language: str = None) -> str:
         """转换为文本格式"""
+        lang = language or 'zh'
         source = self.source_node_name or self.source_node_uuid[:8]
         target = self.target_node_name or self.target_node_uuid[:8]
-        base_text = f"关系: {source} --[{self.name}]--> {target}\n事实: {self.fact}"
-        
-        if include_temporal:
-            valid_at = self.valid_at or "未知"
-            invalid_at = self.invalid_at or "至今"
-            base_text += f"\n时效: {valid_at} - {invalid_at}"
-            if self.expired_at:
-                base_text += f" (已过期: {self.expired_at})"
-        
+
+        if lang == 'en':
+            base_text = f"Relationship: {source} --[{self.name}]--> {target}\nFact: {self.fact}"
+            if include_temporal:
+                valid_at = self.valid_at or "Unknown"
+                invalid_at = self.invalid_at or "Present"
+                base_text += f"\nValidity: {valid_at} - {invalid_at}"
+                if self.expired_at:
+                    base_text += f" (Expired: {self.expired_at})"
+        else:
+            base_text = f"关系: {source} --[{self.name}]--> {target}\n事实: {self.fact}"
+            if include_temporal:
+                valid_at = self.valid_at or "未知"
+                invalid_at = self.invalid_at or "至今"
+                base_text += f"\n时效: {valid_at} - {invalid_at}"
+                if self.expired_at:
+                    base_text += f" (已过期: {self.expired_at})"
+
         return base_text
     
     @property
@@ -167,46 +189,79 @@ class InsightForgeResult:
             "total_relationships": self.total_relationships
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
         """转换为详细的文本格式，供LLM理解"""
-        text_parts = [
-            f"## 未来预测深度分析",
-            f"分析问题: {self.query}",
-            f"预测场景: {self.simulation_requirement}",
-            f"\n### 预测数据统计",
-            f"- 相关预测事实: {self.total_facts}条",
-            f"- 涉及实体: {self.total_entities}个",
-            f"- 关系链: {self.total_relationships}条"
-        ]
-        
-        # 子问题
-        if self.sub_queries:
-            text_parts.append(f"\n### 分析的子问题")
-            for i, sq in enumerate(self.sub_queries, 1):
-                text_parts.append(f"{i}. {sq}")
-        
-        # 语义搜索结果
-        if self.semantic_facts:
-            text_parts.append(f"\n### 【关键事实】(请在报告中引用这些原文)")
-            for i, fact in enumerate(self.semantic_facts, 1):
-                text_parts.append(f"{i}. \"{fact}\"")
-        
-        # 实体洞察
-        if self.entity_insights:
-            text_parts.append(f"\n### 【核心实体】")
-            for entity in self.entity_insights:
-                text_parts.append(f"- **{entity.get('name', '未知')}** ({entity.get('type', '实体')})")
-                if entity.get('summary'):
-                    text_parts.append(f"  摘要: \"{entity.get('summary')}\"")
-                if entity.get('related_facts'):
-                    text_parts.append(f"  相关事实: {len(entity.get('related_facts', []))}条")
-        
-        # 关系链
-        if self.relationship_chains:
-            text_parts.append(f"\n### 【关系链】")
-            for chain in self.relationship_chains:
-                text_parts.append(f"- {chain}")
-        
+        lang = language or 'zh'
+
+        if lang == 'en':
+            text_parts = [
+                f"## Future Prediction Deep Analysis",
+                f"Analysis question: {self.query}",
+                f"Prediction scenario: {self.simulation_requirement}",
+                f"\n### Prediction Data Statistics",
+                f"- Relevant prediction facts: {self.total_facts}",
+                f"- Entities involved: {self.total_entities}",
+                f"- Relationship chains: {self.total_relationships}"
+            ]
+
+            if self.sub_queries:
+                text_parts.append(f"\n### Analyzed Sub-questions")
+                for i, sq in enumerate(self.sub_queries, 1):
+                    text_parts.append(f"{i}. {sq}")
+
+            if self.semantic_facts:
+                text_parts.append(f"\n### [Key Facts] (Please cite these original texts in the report)")
+                for i, fact in enumerate(self.semantic_facts, 1):
+                    text_parts.append(f'{i}. "{fact}"')
+
+            if self.entity_insights:
+                text_parts.append(f"\n### [Core Entities]")
+                for entity in self.entity_insights:
+                    text_parts.append(f"- **{entity.get('name', 'Unknown')}** ({entity.get('type', 'Entity')})")
+                    if entity.get('summary'):
+                        text_parts.append(f'  Summary: "{entity.get("summary")}"')
+                    if entity.get('related_facts'):
+                        text_parts.append(f"  Related facts: {len(entity.get('related_facts', []))}")
+
+            if self.relationship_chains:
+                text_parts.append(f"\n### [Relationship Chains]")
+                for chain in self.relationship_chains:
+                    text_parts.append(f"- {chain}")
+        else:
+            text_parts = [
+                f"## 未来预测深度分析",
+                f"分析问题: {self.query}",
+                f"预测场景: {self.simulation_requirement}",
+                f"\n### 预测数据统计",
+                f"- 相关预测事实: {self.total_facts}条",
+                f"- 涉及实体: {self.total_entities}个",
+                f"- 关系链: {self.total_relationships}条"
+            ]
+
+            if self.sub_queries:
+                text_parts.append(f"\n### 分析的子问题")
+                for i, sq in enumerate(self.sub_queries, 1):
+                    text_parts.append(f"{i}. {sq}")
+
+            if self.semantic_facts:
+                text_parts.append(f"\n### 【关键事实】(请在报告中引用这些原文)")
+                for i, fact in enumerate(self.semantic_facts, 1):
+                    text_parts.append(f"{i}. \"{fact}\"")
+
+            if self.entity_insights:
+                text_parts.append(f"\n### 【核心实体】")
+                for entity in self.entity_insights:
+                    text_parts.append(f"- **{entity.get('name', '未知')}** ({entity.get('type', '实体')})")
+                    if entity.get('summary'):
+                        text_parts.append(f"  摘要: \"{entity.get('summary')}\"")
+                    if entity.get('related_facts'):
+                        text_parts.append(f"  相关事实: {len(entity.get('related_facts', []))}条")
+
+            if self.relationship_chains:
+                text_parts.append(f"\n### 【关系链】")
+                for chain in self.relationship_chains:
+                    text_parts.append(f"- {chain}")
+
         return "\n".join(text_parts)
 
 
@@ -246,37 +301,63 @@ class PanoramaResult:
             "historical_count": self.historical_count
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
         """转换为文本格式（完整版本，不截断）"""
-        text_parts = [
-            f"## 广度搜索结果（未来全景视图）",
-            f"查询: {self.query}",
-            f"\n### 统计信息",
-            f"- 总节点数: {self.total_nodes}",
-            f"- 总边数: {self.total_edges}",
-            f"- 当前有效事实: {self.active_count}条",
-            f"- 历史/过期事实: {self.historical_count}条"
-        ]
-        
-        # 当前有效的事实（完整输出，不截断）
-        if self.active_facts:
-            text_parts.append(f"\n### 【当前有效事实】(模拟结果原文)")
-            for i, fact in enumerate(self.active_facts, 1):
-                text_parts.append(f"{i}. \"{fact}\"")
-        
-        # 历史/过期事实（完整输出，不截断）
-        if self.historical_facts:
-            text_parts.append(f"\n### 【历史/过期事实】(演变过程记录)")
-            for i, fact in enumerate(self.historical_facts, 1):
-                text_parts.append(f"{i}. \"{fact}\"")
-        
-        # 关键实体（完整输出，不截断）
-        if self.all_nodes:
-            text_parts.append(f"\n### 【涉及实体】")
-            for node in self.all_nodes:
-                entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "实体")
-                text_parts.append(f"- **{node.name}** ({entity_type})")
-        
+        lang = language or 'zh'
+
+        if lang == 'en':
+            text_parts = [
+                f"## Panorama Search Results (Future Full View)",
+                f"Query: {self.query}",
+                f"\n### Statistics",
+                f"- Total nodes: {self.total_nodes}",
+                f"- Total edges: {self.total_edges}",
+                f"- Currently valid facts: {self.active_count}",
+                f"- Historical/expired facts: {self.historical_count}"
+            ]
+
+            if self.active_facts:
+                text_parts.append(f"\n### [Currently Valid Facts] (Simulation result originals)")
+                for i, fact in enumerate(self.active_facts, 1):
+                    text_parts.append(f'{i}. "{fact}"')
+
+            if self.historical_facts:
+                text_parts.append(f"\n### [Historical/Expired Facts] (Evolution process records)")
+                for i, fact in enumerate(self.historical_facts, 1):
+                    text_parts.append(f'{i}. "{fact}"')
+
+            if self.all_nodes:
+                text_parts.append(f"\n### [Involved Entities]")
+                for node in self.all_nodes:
+                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "Entity")
+                    text_parts.append(f"- **{node.name}** ({entity_type})")
+        else:
+            text_parts = [
+                f"## 广度搜索结果（未来全景视图）",
+                f"查询: {self.query}",
+                f"\n### 统计信息",
+                f"- 总节点数: {self.total_nodes}",
+                f"- 总边数: {self.total_edges}",
+                f"- 当前有效事实: {self.active_count}条",
+                f"- 历史/过期事实: {self.historical_count}条"
+            ]
+
+            if self.active_facts:
+                text_parts.append(f"\n### 【当前有效事实】(模拟结果原文)")
+                for i, fact in enumerate(self.active_facts, 1):
+                    text_parts.append(f"{i}. \"{fact}\"")
+
+            if self.historical_facts:
+                text_parts.append(f"\n### 【历史/过期事实】(演变过程记录)")
+                for i, fact in enumerate(self.historical_facts, 1):
+                    text_parts.append(f"{i}. \"{fact}\"")
+
+            if self.all_nodes:
+                text_parts.append(f"\n### 【涉及实体】")
+                for node in self.all_nodes:
+                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "实体")
+                    text_parts.append(f"- **{node.name}** ({entity_type})")
+
         return "\n".join(text_parts)
 
 
@@ -300,14 +381,20 @@ class AgentInterview:
             "key_quotes": self.key_quotes
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
+        lang = language or 'zh'
         text = f"**{self.agent_name}** ({self.agent_role})\n"
-        # 显示完整的agent_bio，不截断
-        text += f"_简介: {self.agent_bio}_\n\n"
+        if lang == 'en':
+            text += f"_Bio: {self.agent_bio}_\n\n"
+        else:
+            text += f"_简介: {self.agent_bio}_\n\n"
         text += f"**Q:** {self.question}\n\n"
         text += f"**A:** {self.response}\n"
         if self.key_quotes:
-            text += "\n**关键引言:**\n"
+            if lang == 'en':
+                text += "\n**Key Quotes:**\n"
+            else:
+                text += "\n**关键引言:**\n"
             for quote in self.key_quotes:
                 # 清理各种引号
                 clean_quote = quote.replace('\u201c', '').replace('\u201d', '').replace('"', '')
@@ -371,28 +458,52 @@ class InterviewResult:
             "interviewed_count": self.interviewed_count
         }
     
-    def to_text(self) -> str:
+    def to_text(self, language: str = None) -> str:
         """转换为详细的文本格式，供LLM理解和报告引用"""
-        text_parts = [
-            "## 深度采访报告",
-            f"**采访主题:** {self.interview_topic}",
-            f"**采访人数:** {self.interviewed_count} / {self.total_agents} 位模拟Agent",
-            "\n### 采访对象选择理由",
-            self.selection_reasoning or "（自动选择）",
-            "\n---",
-            "\n### 采访实录",
-        ]
+        lang = language or 'zh'
 
-        if self.interviews:
-            for i, interview in enumerate(self.interviews, 1):
-                text_parts.append(f"\n#### 采访 #{i}: {interview.agent_name}")
-                text_parts.append(interview.to_text())
-                text_parts.append("\n---")
+        if lang == 'en':
+            text_parts = [
+                "## Deep Interview Report",
+                f"**Interview Topic:** {self.interview_topic}",
+                f"**Interviewees:** {self.interviewed_count} / {self.total_agents} simulation Agents",
+                "\n### Interviewee Selection Reasoning",
+                self.selection_reasoning or "(Auto-selected)",
+                "\n---",
+                "\n### Interview Transcripts",
+            ]
+
+            if self.interviews:
+                for i, interview in enumerate(self.interviews, 1):
+                    text_parts.append(f"\n#### Interview #{i}: {interview.agent_name}")
+                    text_parts.append(interview.to_text(language=lang))
+                    text_parts.append("\n---")
+            else:
+                text_parts.append("(No interview records)\n\n---")
+
+            text_parts.append("\n### Interview Summary and Core Viewpoints")
+            text_parts.append(self.summary or "(No summary)")
         else:
-            text_parts.append("（无采访记录）\n\n---")
+            text_parts = [
+                "## 深度采访报告",
+                f"**采访主题:** {self.interview_topic}",
+                f"**采访人数:** {self.interviewed_count} / {self.total_agents} 位模拟Agent",
+                "\n### 采访对象选择理由",
+                self.selection_reasoning or "（自动选择）",
+                "\n---",
+                "\n### 采访实录",
+            ]
 
-        text_parts.append("\n### 采访摘要与核心观点")
-        text_parts.append(self.summary or "（无摘要）")
+            if self.interviews:
+                for i, interview in enumerate(self.interviews, 1):
+                    text_parts.append(f"\n#### 采访 #{i}: {interview.agent_name}")
+                    text_parts.append(interview.to_text(language=lang))
+                    text_parts.append("\n---")
+            else:
+                text_parts.append("（无采访记录）\n\n---")
+
+            text_parts.append("\n### 采访摘要与核心观点")
+            text_parts.append(self.summary or "（无摘要）")
 
         return "\n".join(text_parts)
 
@@ -421,11 +532,12 @@ class ZepToolsService:
     MAX_RETRIES = 3
     RETRY_DELAY = 2.0
     
-    def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
+    def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None, language: str = 'en'):
         self.api_key = api_key or Config.ZEP_API_KEY
+        self.language = language
         if not self.api_key:
             raise ValueError("ZEP_API_KEY 未配置")
-        
+
         self.client = Zep(api_key=self.api_key)
         # LLM客户端用于InsightForge生成子问题
         self._llm_client = llm_client

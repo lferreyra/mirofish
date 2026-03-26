@@ -1,0 +1,323 @@
+{
+  "common": {
+    "viewModes": {
+      "graph": "Graph",
+      "split": "Split",
+      "workbench": "Workbench"
+    },
+    "status": {
+      "completed": "Completed",
+      "processing": "Processing",
+      "pending": "Pending",
+      "initializing": "Initializing"
+    },
+    "stepNames": {
+      "graphBuild": "Graph Build",
+      "envSetup": "Env Setup",
+      "simulation": "Simulation",
+      "report": "Report",
+      "interaction": "Interaction"
+    }
+  },
+  "home": {
+    "nav": {
+      "github": "Visit our GitHub"
+    },
+    "hero": {
+      "tagline": "A Versatile Collective Intelligence Engine",
+      "version": "/ v0.1-preview",
+      "title1": "Upload Any Report",
+      "title2": "Simulate the Future",
+      "desc": "Even with just a paragraph, {brand} can automatically generate a parallel world of up to {agents} agents based on real-world seeds. Inject variables from a god's-eye view to find the {optimal} in complex group interactions.",
+      "descHtml": "Even with just a paragraph, <span class=\"highlight-bold\">MiroFish</span> can automatically generate a parallel world of up to <span class=\"highlight-orange\">millions of agents</span> based on real-world seeds. Inject variables from a god's-eye view to find the dynamic <span class=\"highlight-code\">\"local optimum\"</span> in complex group interactions.",
+      "slogan": "Let the future rehearse among agents, let decisions prevail after a hundred battles"
+    },
+    "dashboard": {
+      "systemStatus": "System Status",
+      "ready": "Ready",
+      "statusDesc": "Prediction engine standing by. Upload unstructured data to initialize the simulation sequence.",
+      "lowCost": "Low Cost",
+      "costLabel": "Avg. $5 per simulation",
+      "highAvail": "Scalable",
+      "availLabel": "Up to millions of agents",
+      "workflow": "Workflow Sequence"
+    },
+    "steps": {
+      "step1": {
+        "title": "Graph Build",
+        "desc": "Real-world seed extraction & individual/group memory injection & GraphRAG construction"
+      },
+      "step2": {
+        "title": "Env Setup",
+        "desc": "Entity-relation extraction & persona generation & environment config agent parameter injection"
+      },
+      "step3": {
+        "title": "Simulation",
+        "desc": "Dual-platform parallel simulation & auto-parse prediction needs & dynamic temporal memory updates"
+      },
+      "step4": {
+        "title": "Report",
+        "desc": "ReportAgent has a rich toolset for deep interaction with the post-simulation environment"
+      },
+      "step5": {
+        "title": "Interaction",
+        "desc": "Chat with any individual in the simulated world & chat with ReportAgent"
+      }
+    },
+    "console": {
+      "seedLabel": "01 / Real-World Seeds",
+      "seedFormat": "Supported formats: PDF, MD, TXT",
+      "uploadTitle": "Drag and drop files here",
+      "uploadHint": "or click to browse",
+      "inputParams": "Input Parameters",
+      "promptLabel": ">_ 02 / Simulation Prompt",
+      "promptPlaceholder": "// Describe your simulation or prediction needs in natural language (e.g., What public opinion trends would emerge if University X reverses a student's disciplinary action?)",
+      "engineBadge": "Engine: MiroFish-V1.0",
+      "startEngine": "Launch Engine",
+      "starting": "Initializing..."
+    }
+  },
+  "main": {
+    "log": {
+      "enterStep": "Entering Step {step}: {name}",
+      "backStep": "Back to Step {step}: {name}",
+      "customRounds": "Custom simulation rounds: {rounds}"
+    }
+  },
+  "simView": {
+    "stepName": "Env Setup",
+    "log": {
+      "init": "SimulationView initialized",
+      "envRunning": "Detected running simulation environment, shutting down...",
+      "envClosed": "Simulation environment closed",
+      "envCloseFail": "Failed to close simulation environment: {error}",
+      "envCloseError": "Error closing simulation environment: {error}",
+      "simRunning": "Detected simulation is running, stopping...",
+      "simStopped": "Simulation force stopped",
+      "simStopFail": "Failed to force stop simulation: {error}",
+      "simStopError": "Error force stopping simulation: {error}",
+      "loadData": "Loading simulation data: {id}",
+      "projectLoaded": "Project loaded: {id}",
+      "loadFail": "Failed to load simulation data: {error}",
+      "loadError": "Load error: {error}",
+      "graphLoaded": "Graph data loaded",
+      "graphFail": "Graph load failed: {error}",
+      "enterStep3": "Entering Step 3: Simulation",
+      "customRounds": "Custom simulation rounds: {rounds} rounds",
+      "autoRounds": "Using auto-configured simulation rounds"
+    }
+  },
+  "simRun": {
+    "stepName": "Simulation",
+    "log": {
+      "init": "SimulationRunView initialized",
+      "customRounds": "Custom simulation rounds: {rounds}",
+      "goBack": "Preparing to return to Step 2, shutting down simulation...",
+      "closingEnv": "Closing simulation environment...",
+      "envClosed": "Simulation environment closed",
+      "envCloseFail": "Failed to close environment, trying force stop...",
+      "simStopped": "Simulation force stopped",
+      "stopFail": "Force stop failed: {error}",
+      "stoppingProcess": "Stopping simulation process...",
+      "processStopped": "Simulation stopped",
+      "stopError": "Failed to stop simulation: {error}",
+      "statusCheckFail": "Failed to check simulation status: {error}",
+      "enterStep4": "Entering Step 4: Report Generation",
+      "loadData": "Loading simulation data: {id}",
+      "timeConfig": "Time config: {minutes} minutes per round",
+      "timeConfigFail": "Failed to get time config, using default: {minutes}min/round",
+      "projectLoaded": "Project loaded: {id}",
+      "loadFail": "Failed to load simulation data: {error}",
+      "loadError": "Load error: {error}",
+      "graphLoaded": "Graph data loaded",
+      "graphFail": "Graph load failed: {error}",
+      "startRefresh": "Started graph real-time refresh (30s)",
+      "stopRefresh": "Stopped graph real-time refresh"
+    }
+  },
+  "reportView": {
+    "stepName": "Report",
+    "log": {
+      "init": "ReportView initialized",
+      "loadData": "Loading report data: {id}",
+      "projectLoaded": "Project loaded: {id}",
+      "loadFail": "Failed to get report info: {error}",
+      "loadError": "Load error: {error}",
+      "graphLoaded": "Graph data loaded",
+      "graphFail": "Graph load failed: {error}"
+    }
+  },
+  "interactionView": {
+    "stepName": "Interaction",
+    "log": {
+      "init": "InteractionView initialized",
+      "loadData": "Loading report data: {id}",
+      "projectLoaded": "Project loaded: {id}",
+      "loadFail": "Failed to get report info: {error}",
+      "loadError": "Load error: {error}",
+      "graphLoaded": "Graph data loaded",
+      "graphFail": "Graph load failed: {error}"
+    }
+  },
+  "step1": {
+    "ontology": {
+      "title": "Ontology Generation",
+      "desc": "LLM analyzes document content and simulation requirements, extracts real-world seeds, and automatically generates appropriate ontology structure",
+      "progress": "Analyzing documents..."
+    },
+    "graphBuild": {
+      "title": "GraphRAG Build",
+      "desc": "Based on the generated ontology, documents are auto-chunked and Zep is called to build a knowledge graph, extracting entities and relations to form temporal memory and community summaries",
+      "entityNodes": "Entity Nodes",
+      "relationEdges": "Relation Edges",
+      "schemaTypes": "Schema Types"
+    },
+    "complete": {
+      "title": "Build Complete",
+      "desc": "Graph construction is complete. Proceed to the next step for simulation environment setup.",
+      "creating": "Creating...",
+      "enterEnvSetup": "Enter Env Setup"
+    }
+  },
+  "step2": {
+    "init": {
+      "title": "Simulation Instance Init",
+      "desc": "Create a new simulation instance and fetch simulation world parameter templates",
+      "taskDone": "Async task completed"
+    },
+    "profiles": {
+      "title": "Generate Agent Personas",
+      "desc": "Using context, automatically extract entities and relations from the knowledge graph, initialize simulation individuals, and assign unique behaviors and memories based on real-world seeds",
+      "currentAgents": "Current Agents",
+      "expectedTotal": "Expected Total",
+      "relatedTopics": "Related Topics",
+      "generatedProfiles": "Generated Agent Personas",
+      "unknownJob": "Unknown profession",
+      "noBio": "No bio available"
+    },
+    "config": {
+      "title": "Generate Dual-Platform Simulation Config",
+      "desc": "LLM intelligently sets world time flow, recommendation algorithms, individual activity periods, posting frequency, event triggers, and other parameters based on simulation requirements and real-world seeds",
+      "simDuration": "Duration",
+      "hours": "hours",
+      "roundDuration": "Round Duration",
+      "minutes": "minutes",
+      "totalRounds": "Total Rounds",
+      "rounds": "rounds",
+      "activePerHour": "Active/Hour",
+      "peakHours": "Peak Hours",
+      "workHours": "Work Hours",
+      "morningHours": "Morning Hours",
+      "offPeakHours": "Off-Peak Hours",
+      "agentConfig": "Agent Config",
+      "count": "",
+      "postsPerHour": "Posts/hr",
+      "commentsPerHour": "Comments/hr",
+      "responseDelay": "Response Delay",
+      "activityLevel": "Activity",
+      "sentimentBias": "Sentiment",
+      "influence": "Influence",
+      "activeHours": "Active Hours",
+      "recommendAlgo": "Recommendation Algorithm Config",
+      "platform1": "Platform 1: Plaza / Feed",
+      "recencyWeight": "Recency Weight",
+      "popularityWeight": "Popularity Weight",
+      "relevanceWeight": "Relevance Weight",
+      "viralThreshold": "Viral Threshold",
+      "echoChamber": "Echo Chamber",
+      "orchestrating": "Orchestrating"
+    },
+    "orchestration": {
+      "title": "Initial Activation Orchestration",
+      "desc": "Automatically generate initial activation events and trending topics based on narrative direction to bootstrap the simulation world",
+      "narrative": "Narrative Direction",
+      "hotTopics": "Initial Trending Topics",
+      "activationSeq": "Activation Sequence"
+    },
+    "ready": {
+      "title": "Ready",
+      "desc": "Simulation environment is ready. You can now start the simulation.",
+      "roundsTitle": "Simulation Rounds",
+      "roundsDesc": "MiroFish auto-plans <span class=\"desc-highlight\">{hours}</span> hours of simulation, each round represents <span class=\"desc-highlight\">{minutes}</span> minutes of real time",
+      "custom": "Custom",
+      "estimatedTime": "For 100 agents: estimated ~{time} minutes",
+      "recommended": "Recommended",
+      "firstRunTip": "For first-time runs, we strongly recommend switching to 'Custom' mode to reduce rounds for a quick preview and lower error risk →",
+      "backToGraph": "Back to Graph Build",
+      "startSimulation": "Start Dual-World Parallel Simulation"
+    }
+  },
+  "step3": {
+    "generateReport": "Generate Report",
+    "starting": "Starting...",
+    "log": {
+      "missingId": "Error: missing simulationId",
+      "starting": "Starting dual-platform parallel simulation...",
+      "maxRounds": "Max simulation rounds: {rounds}",
+      "graphUpdate": "Dynamic graph update mode enabled",
+      "logsCleaned": "Old simulation logs cleared, restarting simulation",
+      "engineStarted": "Simulation engine started successfully",
+      "startFail": "Start failed: ",
+      "unknownError": "Unknown error",
+      "startError": "Start error: ",
+      "stopping": "Stopping simulation...",
+      "stopped": "Simulation stopped",
+      "stopFail": "Stop failed: ",
+      "stopError": "Stop error: ",
+      "allPlatformsDone": "All platform simulations have ended",
+      "simComplete": "Simulation completed",
+      "reportSent": "Report generation request sent, please wait...",
+      "reportStarting": "Starting report generation...",
+      "reportStarted": "Report generation task started: {id}",
+      "reportFail": "Failed to start report generation: "
+    }
+  },
+  "step4": {
+    "generating": "Generating {title}...",
+    "enterInteraction": "Enter Deep Interaction"
+  },
+  "step5": {
+    "chatWithReport": "Chat with Report Agent",
+    "chatWithAgent": "Chat with any individual",
+    "selectAgent": "Select conversation partner",
+    "unknownJob": "Unknown profession",
+    "sendSurvey": "Send survey to the world",
+    "reportAgentChat": "Report Agent - Chat",
+    "reportAgentDesc": "Quick chat version of the report generation agent, with 4 professional tools and full MiroFish memory",
+    "tools": {
+      "insightForge": "InsightForge Deep Attribution",
+      "insightForgeDesc": "Aligns real-world seed data with simulation environment state, combining Global/Local Memory mechanisms for cross-temporal deep attribution analysis",
+      "panoramaSearch": "PanoramaSearch Full Tracking",
+      "panoramaSearchDesc": "Graph-based breadth-first traversal algorithm that reconstructs event propagation paths and captures the complete topology of information flow",
+      "quickSearch": "QuickSearch Fast Retrieval",
+      "quickSearchDesc": "GraphRAG-based instant query interface with optimized indexing for fast extraction of specific node attributes and discrete facts"
+    },
+    "generating": "Generating {title}..."
+  },
+  "graph": {
+    "refreshBtn": "Refresh Graph",
+    "maximizeBtn": "Maximize/Restore",
+    "memoryUpdating": "GraphRAG long/short-term memory updating in real-time",
+    "updating": "Updating in real-time...",
+    "finishedHint": "Some content is still being processed. Consider refreshing the graph manually later.",
+    "closeHint": "Close hint"
+  },
+  "history": {
+    "title": "Simulation History",
+    "graphBuild": "Graph Build",
+    "envSetup": "Env Setup",
+    "report": "Analysis Report",
+    "noFiles": "No files",
+    "moreFiles": "+{count} more files",
+    "simRequirement": "Simulation Requirement",
+    "none": "None",
+    "relatedFiles": "Related Files",
+    "noRelatedFiles": "No related files",
+    "replayTitle": "Simulation Replay",
+    "step1Btn": "Graph Build",
+    "step2Btn": "Env Setup",
+    "step4Btn": "Analysis Report",
+    "replayHint": "Step 3 \"Simulation\" and Step 5 \"Interaction\" must be started during runtime and do not support history replay",
+    "loading": "Loading..."
+  }
+}
