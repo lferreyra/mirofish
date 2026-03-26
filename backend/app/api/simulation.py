@@ -1,7 +1,6 @@
 """
-API routes liên quan đến simulation
-
-Step2: Đọc và lọc Zep entities, chuẩn bị và chạy OASIS simulation (tự động toàn bộ)
+API route liên quan đến mô phỏng.
+Step2: Đọc và lọc thực thể Zep, chuẩn bị và chạy mô phỏng OASIS (tự động hoàn toàn).
 """
 
 import os
@@ -20,44 +19,42 @@ from ..models.project import ProjectManager
 logger = get_logger('mirofish.api.simulation')
 
 
-# Prefix tối ưu Interview prompt
-# Thêm prefix này để tránh Agent gọi tool, chỉ trả lời bằng text
-INTERVIEW_PROMPT_PREFIX = "Based on your persona, all past memories, and actions, reply directly in plain text without calling any tools:"
+# Tiền tố tối ưu cho Interview prompt
+# Thêm tiền tố này để tránh Agent gọi công cụ, trả lời trực tiếp bằng văn bản
+INTERVIEW_PROMPT_PREFIX = "Based on your persona, all past memories and actions, reply directly in plain text without calling any tools:"
 
 
 def optimize_interview_prompt(prompt: str) -> str:
     """
-    Tối ưu câu hỏi Interview, thêm prefix để tránh Agent gọi tool
+    Tối ưu câu hỏi Interview, thêm tiền tố để tránh Agent gọi công cụ.
     
     Args:
-        prompt: câu hỏi gốc
+        prompt: Câu hỏi gốc
         
     Returns:
-        câu hỏi sau khi tối ưu
+        Câu hỏi đã tối ưu
     """
     if not prompt:
         return prompt
-
-    # Tránh thêm prefix trùng lặp
+    # Tránh thêm tiền tố lặp lại
     if prompt.startswith(INTERVIEW_PROMPT_PREFIX):
         return prompt
-
     return f"{INTERVIEW_PROMPT_PREFIX}{prompt}"
 
 
-# ============== API đọc entity ==============
+# ============== API đọc thực thể ==============
 
 @simulation_bp.route('/entities/<graph_id>', methods=['GET'])
 def get_graph_entities(graph_id: str):
     """
-    Lấy toàn bộ entity trong graph (đã lọc)
+    Lấy toàn bộ thực thể trong đồ thị (đã lọc).
     
-    Chỉ trả về node thuộc entity types đã định nghĩa
-    (labels không chỉ giới hạn ở Entity)
+    Chỉ trả về các node phù hợp với loại thực thể đã định nghĩa trước.
+    (Label không chỉ là node Entity)
     
-    Query parameters:
-        entity_types: danh sách entity types phân tách bằng dấu phẩy (optional)
-        enrich: có lấy edge information hay không (default true)
+    Tham số query:
+        entity_types: Danh sách loại thực thể phân tách bằng dấu phẩy (tùy chọn, dùng để lọc thêm)
+        enrich: Có lấy thông tin cạnh liên quan hay không (mặc định true)
     """
     try:
         if not Config.ZEP_API_KEY:
@@ -95,7 +92,7 @@ def get_graph_entities(graph_id: str):
 
 @simulation_bp.route('/entities/<graph_id>/<entity_uuid>', methods=['GET'])
 def get_entity_detail(graph_id: str, entity_uuid: str):
-    """Lấy thông tin chi tiết của một entity"""
+    """Lấy thông tin chi tiết của một thực thể."""
     try:
         if not Config.ZEP_API_KEY:
             return jsonify({
@@ -109,7 +106,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         if not entity:
             return jsonify({
                 "success": False,
-                "error": f"Entity not found: {entity_uuid}"
+                "error": f"Entity does not exist: {entity_uuid}"
             }), 404
         
         return jsonify({
@@ -128,7 +125,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
 
 @simulation_bp.route('/entities/<graph_id>/by-type/<entity_type>', methods=['GET'])
 def get_entities_by_type(graph_id: str, entity_type: str):
-    """Lấy tất cả entity theo loại chỉ định"""
+    """Lấy toàn bộ thực thể theo loại chỉ định."""
     try:
         if not Config.ZEP_API_KEY:
             return jsonify({
@@ -163,20 +160,95 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         }), 500
 
 
+# ============== API quản lý mô phỏng ==============
+
+@simulation_bp.route('/create', methods=['POST'])
+def create_simulation():
+    """
+    Tạo mô phỏng mới.
+    
+    Lưu ý: Các tham số như max_rounds được LLM tạo thông minh, không cần đặt thủ công.
+    
+    Yêu cầu (JSON):
+        {
+            "project_id": "proj_xxxx",      // bắt buộc
+            "graph_id": "mirofish_xxxx",    // tùy chọn, nếu không cung cấp sẽ lấy từ project
+            "enable_twitter": true,          // tùy chọn, mặc định true
+            "enable_reddit": true            // tùy chọn, mặc định true
+        }
+    
+    Trả về:
+        {
+            "success": true,
+            "data": {
+                "simulation_id": "sim_xxxx",
+                "project_id": "proj_xxxx",
+                "graph_id": "mirofish_xxxx",
+                "status": "created",
+                "enable_twitter": true,
+                "enable_reddit": true,
+                "created_at": "2025-12-01T10:00:00"
+            }
+        }
+    """
+    try:
+        data = request.get_json() or {}
+        
+        project_id = data.get('project_id')
+        if not project_id:
+            return jsonify({
+                "success": False,
+                "error": "Please provide project_id"
+            }), 400
+        
+        project = ProjectManager.get_project(project_id)
+        if not project:
+            return jsonify({
+                "success": False,
+                "error": f"Project does not exist: {project_id}"
+            }), 404
+        
+        graph_id = data.get('graph_id') or project.graph_id
+        if not graph_id:
+            return jsonify({
+                "success": False,
+                "error": "Project graph has not been built yet. Please call /api/graph/build first"
+            }), 400
+        
+        manager = SimulationManager()
+        state = manager.create_simulation(
+            project_id=project_id,
+            graph_id=graph_id,
+            enable_twitter=data.get('enable_twitter', True),
+            enable_reddit=data.get('enable_reddit', True),
+        )
+        
+        return jsonify({
+            "success": True,
+            "data": state.to_dict()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to create simulation: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 def _check_simulation_prepared(simulation_id: str) -> tuple:
     """
-    Kiểm tra simulation đã được chuẩn bị xong hay chưa
+    Kiểm tra mô phỏng đã được chuẩn bị xong chưa.
     
     Điều kiện kiểm tra:
-    1. state.json tồn tại và status = "ready"
-    2. Các file bắt buộc tồn tại: reddit_profiles.json, twitter_profiles.csv, simulation_config.json
+    1. `state.json` tồn tại và `status` là "ready"
+    2. Các file cần thiết tồn tại: reddit_profiles.json, twitter_profiles.csv, simulation_config.json
     
-    Lưu ý:
-    Script chạy (run_*.py) được giữ trong thư mục backend/scripts/,
-    không còn copy vào thư mục simulation nữa
+    Lưu ý: Script chạy (run_*.py) được giữ ở thư mục backend/scripts/ và không còn sao chép vào thư mục mô phỏng.
     
     Args:
-        simulation_id: Simulation ID
+        simulation_id: simulation ID
         
     Returns:
         (is_prepared: bool, info: dict)
@@ -186,11 +258,11 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
     
     simulation_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
     
-    # Kiểm tra thư mục simulation có tồn tại không
+    # Kiểm tra thư mục có tồn tại hay không
     if not os.path.exists(simulation_dir):
         return False, {"reason": "Simulation directory does not exist"}
     
-    # Danh sách file bắt buộc (không bao gồm script, script nằm ở backend/scripts/)
+    # Danh sách file cần thiết (không bao gồm script, script nằm ở backend/scripts/)
     required_files = [
         "state.json",
         "simulation_config.json",
@@ -198,7 +270,7 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
         "twitter_profiles.csv"
     ]
     
-    # Kiểm tra các file có tồn tại hay không
+    # Kiểm tra file có tồn tại hay không
     existing_files = []
     missing_files = []
     for f in required_files:
@@ -225,16 +297,17 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
         status = state_data.get("status", "")
         config_generated = state_data.get("config_generated", False)
         
-        # Debug log chi tiết
-        logger.debug(f"Checking simulation preparation status: {simulation_id}, status={status}, config_generated={config_generated}")
+        # Log chi tiết
+        logger.debug(f"Checking simulation readiness: {simulation_id}, status={status}, config_generated={config_generated}")
+        
         # Nếu config_generated=True và file tồn tại thì xem như đã chuẩn bị xong
-        # Các trạng thái sau đều có nghĩa là preparation đã hoàn thành:
+        # Các trạng thái dưới đây đều cho thấy quá trình chuẩn bị đã hoàn tất:
         # - ready: chuẩn bị xong, có thể chạy
-        # - preparing: nếu config_generated=True thì coi như đã hoàn thành
-        # - running: đang chạy, nghĩa là preparation đã xong
-        # - completed: đã chạy xong
-        # - stopped: đã dừng
-        # - failed: chạy thất bại (nhưng preparation vẫn đã hoàn thành)
+        # - preparing: nếu config_generated=True thì xem như đã hoàn tất
+        # - running: đang chạy, nghĩa là đã chuẩn bị xong từ trước
+        # - completed: đã chạy xong, nghĩa là đã chuẩn bị xong từ trước
+        # - stopped: đã dừng, nghĩa là đã chuẩn bị xong từ trước
+        # - failed: chạy thất bại (nhưng phần chuẩn bị đã hoàn tất)
         prepared_statuses = ["ready", "preparing", "running", "completed", "stopped", "failed"]
         
         if status in prepared_statuses and config_generated:
@@ -248,18 +321,16 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
                     profiles_data = json.load(f)
                     profiles_count = len(profiles_data) if isinstance(profiles_data, list) else 0
             
-            # Nếu trạng thái là preparing nhưng file đã sẵn sàng thì tự động update sang ready
+            # Nếu trạng thái là preparing nhưng file đã hoàn tất, tự động cập nhật thành ready
             if status == "preparing":
                 try:
                     state_data["status"] = "ready"
                     from datetime import datetime
                     state_data["updated_at"] = datetime.now().isoformat()
-                    
                     with open(state_file, 'w', encoding='utf-8') as f:
                         json.dump(state_data, f, ensure_ascii=False, indent=2)
-                    logger.info(f"Auto-updated simulation status: {simulation_id} preparing -> ready")
+                        logger.info(f"Auto-updated simulation status: {simulation_id} preparing -> ready")
                     status = "ready"
-                    
                 except Exception as e:
                     logger.warning(f"Failed to auto-update status: {e}")
             
@@ -274,11 +345,10 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
                 "updated_at": state_data.get("updated_at"),
                 "existing_files": existing_files
             }
-        
         else:
             logger.warning(f"Simulation {simulation_id} check result: not prepared (status={status}, config_generated={config_generated})")
             return False, {
-                "reason": f"Status not in prepared list or config_generated=false: status={status}, config_generated={config_generated}",
+                "reason": f"Status is not in prepared list or config_generated is false: status={status}, config_generated={config_generated}",
                 "status": status,
                 "config_generated": config_generated
             }
@@ -290,41 +360,41 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
 @simulation_bp.route('/prepare', methods=['POST'])
 def prepare_simulation():
     """
-    Chuẩn bị môi trường simulation (async task, tất cả tham số được LLM sinh tự động)
-
-    Đây là một thao tác tốn thời gian. API sẽ trả về ngay task_id,
-    dùng GET /api/simulation/prepare/status để kiểm tra tiến độ.
-
-    Tính năng:
-    - Tự động phát hiện preparation đã hoàn thành để tránh generate lại
-    - Nếu đã chuẩn bị xong thì trả về kết quả hiện có
-    - Hỗ trợ force regenerate (force_regenerate=true)
-
+    Chuẩn bị môi trường mô phỏng (tác vụ bất đồng bộ, LLM tạo toàn bộ tham số).
+    
+    Đây là thao tác tốn thời gian, API sẽ trả về task_id ngay lập tức.
+    Dùng GET /api/simulation/prepare/status để kiểm tra tiến độ.
+    
+    Đặc điểm:
+    - Tự động phát hiện phần chuẩn bị đã hoàn tất để tránh sinh lại.
+    - Nếu đã chuẩn bị xong thì trả về kết quả sẵn có.
+    - Hỗ trợ buộc sinh lại (force_regenerate=true).
+    
     Các bước:
-    1. Kiểm tra xem preparation đã hoàn thành chưa
-    2. Đọc và lọc entities từ Zep graph
-    3. Generate OASIS Agent Profile cho từng entity (có retry)
-    4. LLM generate simulation config (có retry)
-    5. Lưu config file và preset scripts
-
-    Request (JSON):
+    1. Kiểm tra xem đã có phần chuẩn bị hoàn tất hay chưa.
+    2. Đọc và lọc thực thể từ đồ thị Zep.
+    3. Sinh OASIS Agent Profile cho từng thực thể (có cơ chế retry).
+    4. LLM sinh cấu hình mô phỏng một cách thông minh (có cơ chế retry).
+    5. Lưu file cấu hình và script thiết lập sẵn.
+    
+    Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",                   // bắt buộc
-            "entity_types": ["Student", "PublicFigure"],  // optional
-            "use_llm_for_profiles": true,                 // optional
-            "parallel_profile_count": 5,                  // optional (default 5)
-            "force_regenerate": false                     // optional (default false)
+            "simulation_id": "sim_xxxx",                   // bắt buộc, simulation ID
+            "entity_types": ["Student", "PublicFigure"],  // tùy chọn, chỉ định loại thực thể
+            "use_llm_for_profiles": true,                 // tùy chọn, có dùng LLM để sinh persona hay không
+            "parallel_profile_count": 5,                  // tùy chọn, số lượng sinh persona song song, mặc định 5
+            "force_regenerate": false                     // tùy chọn, buộc sinh lại, mặc định false
         }
-
-    Response:
+    
+    Trả về:
         {
             "success": true,
             "data": {
                 "simulation_id": "sim_xxxx",
-                "task_id": "task_xxxx",
+                "task_id": "task_xxxx",           // trả về khi là tác vụ mới
                 "status": "preparing|ready",
-                "message": "Preparation task started | Already prepared",
-                "already_prepared": true|false
+                "message": "Preparation task has started|Preparation already exists",
+                "already_prepared": true|false    // đã chuẩn bị xong hay chưa
             }
         }
     """
@@ -349,69 +419,76 @@ def prepare_simulation():
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
-            }), 404  
-        # Kiểm tra có bắt buộc regenerate hay không
+                "error": f"Simulation does not exist: {simulation_id}"
+            }), 404
+        
+        # Kiểm tra có buộc sinh lại hay không
         force_regenerate = data.get('force_regenerate', False)
-        logger.info(f"Start processing /prepare request: simulation_id={simulation_id}, force_regenerate={force_regenerate}")
-        # Kiểm tra simulation đã prepare xong chưa (tránh generate lặp lại)
+        logger.info(f"Start handling /prepare request: simulation_id={simulation_id}, force_regenerate={force_regenerate}")
+        
+        # Kiểm tra đã chuẩn bị xong hay chưa (tránh sinh lại)
         if not force_regenerate:
             logger.debug(f"Checking whether simulation {simulation_id} is already prepared...")
             is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
             logger.debug(f"Check result: is_prepared={is_prepared}, prepare_info={prepare_info}")
             if is_prepared:
-                logger.info(f"Simulation {simulation_id} already prepared, skipping regeneration")
+                logger.info(f"Simulation {simulation_id} is already prepared, skipping regeneration")
                 return jsonify({
                     "success": True,
                     "data": {
                         "simulation_id": simulation_id,
                         "status": "ready",
-                        "message": "Preparation already completed, no regeneration required",
+                        "message": "Preparation already exists, no regeneration needed",
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
                 })
             else:
-                logger.info(f"Simulation {simulation_id} not prepared, starting preparation task")
-        # Lấy thông tin cần thiết từ project
+                logger.info(f"Simulation {simulation_id} is not prepared, will start preparation task")
+        
+        # Lấy thông tin cần thiết từ dự án
         project = ProjectManager.get_project(state.project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"Project not found: {state.project_id}"
+                "error": f"Project does not exist: {state.project_id}"
             }), 404
-        # Lấy simulation requirement
+        
+        # Lấy yêu cầu mô phỏng
         simulation_requirement = project.simulation_requirement or ""
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "Project missing simulation requirement description (simulation_requirement)"
+                "error": "Project is missing simulation requirement description (simulation_requirement)"
             }), 400
-        # Lấy text đã extract từ document
+        
+        # Lấy văn bản tài liệu
         document_text = ProjectManager.get_extracted_text(state.project_id) or ""
-
+        
         entity_types_list = data.get('entity_types')
         use_llm_for_profiles = data.get('use_llm_for_profiles', True)
         parallel_profile_count = data.get('parallel_profile_count', 5)
-        # ========== Đồng bộ lấy số lượng entity (trước khi background task chạy) ==========
-        # Như vậy sau khi gọi prepare, frontend có thể lấy ngay tổng số Agent dự kiến
+        
+        # ========== Đồng bộ lấy số lượng thực thể (trước khi chạy tác vụ nền) ==========
+        # Nhờ đó frontend có thể lấy ngay tổng số Agent dự kiến sau khi gọi prepare
         try:
             logger.info(f"Synchronously fetching entity count: graph_id={state.graph_id}")
             reader = ZepEntityReader()
-            # Đọc entity nhanh (không cần edge info, chỉ đếm số lượng)
+            # Đọc nhanh thực thể (không cần thông tin cạnh, chỉ đếm số lượng)
             filtered_preview = reader.filter_defined_entities(
                 graph_id=state.graph_id,
                 defined_entity_types=entity_types_list,
-                enrich_with_edges=False  # Không lấy edge info để tăng tốc
+                enrich_with_edges=False  # Do not fetch edge info to speed up
             )
-            # Lưu entity count vào state (để frontend có thể lấy ngay)
+            # Lưu số lượng thực thể vào trạng thái (để frontend lấy ngay)
             state.entities_count = filtered_preview.filtered_count
             state.entity_types = list(filtered_preview.entity_types)
             logger.info(f"Expected entity count: {filtered_preview.filtered_count}, types: {filtered_preview.entity_types}")
         except Exception as e:
             logger.warning(f"Failed to synchronously fetch entity count (will retry in background task): {e}")
-            # Lỗi này không ảnh hưởng flow tiếp theo, background task sẽ lấy lại
-        # Tạo async task
+            # Lỗi này không ảnh hưởng luồng tiếp theo, tác vụ nền sẽ lấy lại
+        
+        # Tạo tác vụ bất đồng bộ
         task_manager = TaskManager()
         task_id = task_manager.create_task(
             task_type="simulation_prepare",
@@ -420,10 +497,12 @@ def prepare_simulation():
                 "project_id": state.project_id
             }
         )
-        # Cập nhật simulation status (bao gồm entity count đã lấy trước)
+        
+        # Cập nhật trạng thái mô phỏng (bao gồm số lượng thực thể đã lấy trước)
         state.status = SimulationStatus.PREPARING
         manager._save_simulation_state(state)
-        # Định nghĩa background task
+        
+        # Định nghĩa tác vụ nền
         def run_prepare():
             try:
                 task_manager.update_task(
@@ -432,32 +511,35 @@ def prepare_simulation():
                     progress=0,
                     message="Start preparing simulation environment..."
                 )
-                # Prepare simulation (có progress callback)
-                # Lưu chi tiết tiến trình từng stage
+                
+                # Chuẩn bị mô phỏng (có callback tiến độ)
+                # Lưu chi tiết tiến độ theo giai đoạn
                 stage_details = {}
                 
                 def progress_callback(stage, progress, message, **kwargs):
-                    # Tính tổng progress
+                    # Tính tổng tiến độ
                     stage_weights = {
-                        "reading": (0, 20),              # 0-20%
-                        "generating_profiles": (20, 70), # 20-70%
-                        "generating_config": (70, 90),   # 70-90%
-                        "copying_scripts": (90, 100)     # 90-100%
+                        "reading": (0, 20),           # 0-20%
+                        "generating_profiles": (20, 70),  # 20-70%
+                        "generating_config": (70, 90),    # 70-90%
+                        "copying_scripts": (90, 100)       # 90-100%
                     }
-
+                    
                     start, end = stage_weights.get(stage, (0, 100))
                     current_progress = int(start + (end - start) * progress / 100)
-                    # Tên stage
+                    
+                    # Tạo thông tin tiến độ chi tiết
                     stage_names = {
                         "reading": "Reading graph entities",
-                        "generating_profiles": "Generating agent profiles",
+                        "generating_profiles": "Generating agent personas",
                         "generating_config": "Generating simulation config",
                         "copying_scripts": "Preparing simulation scripts"
                     }
-
+                    
                     stage_index = list(stage_weights.keys()).index(stage) + 1 if stage in stage_weights else 1
                     total_stages = len(stage_weights)
-                    # Cập nhật chi tiết stage
+                    
+                    # Cập nhật chi tiết giai đoạn
                     stage_details[stage] = {
                         "stage_name": stage_names.get(stage, stage),
                         "stage_progress": progress,
@@ -465,7 +547,8 @@ def prepare_simulation():
                         "total": kwargs.get("total", 0),
                         "item_name": kwargs.get("item_name", "")
                     }
-                
+                    
+                    # Tạo thông tin tiến độ chi tiết
                     detail = stage_details[stage]
                     progress_detail_data = {
                         "current_stage": stage,
@@ -477,7 +560,8 @@ def prepare_simulation():
                         "total_items": detail["total"],
                         "item_description": message
                     }
-                    # Build progress message
+                    
+                    # Tạo thông báo ngắn gọn
                     if detail["total"] > 0:
                         detailed_message = (
                             f"[{stage_index}/{total_stages}] {stage_names.get(stage, stage)}: "
@@ -502,37 +586,41 @@ def prepare_simulation():
                     progress_callback=progress_callback,
                     parallel_profile_count=parallel_profile_count
                 )
-
-                # Task hoàn thành
+                
+                # Task completed
                 task_manager.complete_task(
                     task_id,
                     result=result_state.to_simple_dict()
                 )
                 
             except Exception as e:
-                logger.error(f"Simulation preparation failed: {str(e)}")
+                logger.error(f"Failed to prepare simulation: {str(e)}")
                 task_manager.fail_task(task_id, str(e))
-                # Cập nhật simulation status = FAILED
+                
+                # Cập nhật trạng thái mô phỏng thành failed
                 state = manager.get_simulation(simulation_id)
                 if state:
                     state.status = SimulationStatus.FAILED
                     state.error = str(e)
                     manager._save_simulation_state(state)
-            # Khởi chạy background thread
-            thread = threading.Thread(target=run_prepare, daemon=True)
-            thread.start()
-            return jsonify({
-                "success": True,
-                "data": {
-                    "simulation_id": simulation_id,
-                    "task_id": task_id,
-                    "status": "preparing",
-                    "message": "Preparation task started. Check progress via /api/simulation/prepare/status",
-                    "already_prepared": False,
-                    "expected_entities_count": state.entities_count,  # Tổng số Agent dự kiến
-                    "entity_types": state.entity_types  # Danh sách entity type
-                }
-            })
+        
+        # Khởi chạy luồng nền
+        thread = threading.Thread(target=run_prepare, daemon=True)
+        thread.start()
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "simulation_id": simulation_id,
+                "task_id": task_id,
+                "status": "preparing",
+                "message": "Preparation task has started. Please check progress via /api/simulation/prepare/status",
+                "already_prepared": False,
+                "expected_entities_count": state.entities_count,  # Expected total Agent count
+                "entity_types": state.entity_types  # Entity type list
+            }
+        })
+        
     except ValueError as e:
         return jsonify({
             "success": False,
@@ -551,16 +639,16 @@ def prepare_simulation():
 @simulation_bp.route('/prepare/status', methods=['POST'])
 def get_prepare_status():
     """
-    Kiểm tra tiến độ tác vụ chuẩn bị
+    Query preparation task progress.
     
-    Hỗ trợ hai cách truy vấn:
-    1. Dùng task_id để truy vấn tiến độ tác vụ đang chạy
-    2. Dùng simulation_id để kiểm tra đã có bản chuẩn bị hoàn tất hay chưa
+    Supports two query modes:
+    1. Query ongoing task progress by task_id.
+    2. Check whether completed preparation already exists by simulation_id.
     
     Yêu cầu (JSON):
         {
-            "task_id": "task_xxxx",          // tuỳ chọn, task_id trả về từ prepare
-            "simulation_id": "sim_xxxx"      // tuỳ chọn, simulation ID (dùng để kiểm tra chuẩn bị đã hoàn tất)
+            "task_id": "task_xxxx",          // tùy chọn, task_id trả về từ prepare
+            "simulation_id": "sim_xxxx"      // tùy chọn, simulation ID (để kiểm tra phần chuẩn bị đã hoàn tất)
         }
     
     Trả về:
@@ -571,8 +659,8 @@ def get_prepare_status():
                 "status": "processing|completed|ready",
                 "progress": 45,
                 "message": "...",
-                "already_prepared": true|false,  // đã có bản chuẩn bị hoàn tất hay chưa
-                "prepare_info": {...}            // thông tin chi tiết khi đã chuẩn bị xong
+                "already_prepared": true|false,  // đã có phần chuẩn bị hoàn tất hay chưa
+                "prepare_info": {...}            // thông tin chi tiết khi đã chuẩn bị hoàn tất
             }
         }
     """
@@ -584,7 +672,7 @@ def get_prepare_status():
         task_id = data.get('task_id')
         simulation_id = data.get('simulation_id')
         
-        # Nếu có simulation_id, kiểm tra trước xem đã chuẩn bị xong chưa
+        # Nếu có simulation_id, kiểm tra trước xem đã chuẩn bị hoàn tất chưa
         if simulation_id:
             is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
             if is_prepared:
@@ -594,23 +682,23 @@ def get_prepare_status():
                         "simulation_id": simulation_id,
                         "status": "ready",
                         "progress": 100,
-                        "message": "Preparation already exists",
+                        "message": "Preparation already completed",
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
                 })
         
-        # Nếu không có task_id thì trả lỗi
+        # Nếu không có task_id thì trả về lỗi
         if not task_id:
             if simulation_id:
-                # Có simulation_id nhưng chưa chuẩn bị hoàn tất
+                # Có simulation_id nhưng chưa chuẩn bị xong
                 return jsonify({
                     "success": True,
                     "data": {
                         "simulation_id": simulation_id,
                         "status": "not_started",
                         "progress": 0,
-                        "message": "Preparation has not started. Call /api/simulation/prepare to start.",
+                        "message": "Preparation has not started yet. Please call /api/simulation/prepare to start",
                         "already_prepared": False
                     }
                 })
@@ -623,7 +711,7 @@ def get_prepare_status():
         task = task_manager.get_task(task_id)
         
         if not task:
-            # Task không tồn tại, nhưng nếu có simulation_id thì kiểm tra chuẩn bị hoàn tất
+            # Task không tồn tại, nhưng nếu có simulation_id thì kiểm tra đã chuẩn bị xong chưa
             if simulation_id:
                 is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
                 if is_prepared:
@@ -634,7 +722,7 @@ def get_prepare_status():
                             "task_id": task_id,
                             "status": "ready",
                             "progress": 100,
-                            "message": "Task completed (existing preparation found)",
+                            "message": "Task completed (preparation already exists)",
                             "already_prepared": True,
                             "prepare_info": prepare_info
                         }
@@ -642,7 +730,7 @@ def get_prepare_status():
             
             return jsonify({
                 "success": False,
-                "error": f"Task not found: {task_id}"
+                "error": f"Task does not exist: {task_id}"
             }), 404
         
         task_dict = task.to_dict()
@@ -663,7 +751,7 @@ def get_prepare_status():
 
 @simulation_bp.route('/<simulation_id>', methods=['GET'])
 def get_simulation(simulation_id: str):
-    """Lấy trạng thái simulation"""
+    """Lấy trạng thái mô phỏng."""
     try:
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
@@ -671,12 +759,12 @@ def get_simulation(simulation_id: str):
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": f"Simulation does not exist: {simulation_id}"
             }), 404
         
         result = state.to_dict()
         
-        # Nếu simulation đã sẵn sàng thì đính kèm hướng dẫn chạy
+        # Nếu mô phỏng đã sẵn sàng, đính kèm hướng dẫn chạy
         if state.status == SimulationStatus.READY:
             result["run_instructions"] = manager.get_run_instructions(simulation_id)
         
@@ -686,7 +774,7 @@ def get_simulation(simulation_id: str):
         })
         
     except Exception as e:
-        logger.error(f"Lấy trạng thái simulationfailed: {str(e)}")
+        logger.error(f"Failed to get simulation status: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -697,10 +785,10 @@ def get_simulation(simulation_id: str):
 @simulation_bp.route('/list', methods=['GET'])
 def list_simulations():
     """
-    Liệt kê tất cả simulation
+    Liệt kê toàn bộ mô phỏng.
     
-    Tham số Query:
-        project_id: lọc theo project ID (tuỳ chọn)
+    Tham số query:
+        project_id: Lọc theo project ID (tùy chọn)
     """
     try:
         project_id = request.args.get('project_id')
@@ -725,10 +813,10 @@ def list_simulations():
 
 def _get_report_id_for_simulation(simulation_id: str) -> str:
     """
-    Lấy report_id mới nhất tương ứng với simulation
+    Lấy report_id mới nhất tương ứng với simulation.
     
-    Duyệt thư mục reports để tìm report khớp simulation_id,
-    nếu có nhiều thì trả về bản mới nhất (sắp theo created_at)
+    Duyệt thư mục reports để tìm report khớp simulation_id.
+    Nếu có nhiều report thì trả về report mới nhất (sắp xếp theo created_at).
     
     Args:
         simulation_id: simulation ID
@@ -739,8 +827,8 @@ def _get_report_id_for_simulation(simulation_id: str) -> str:
     import json
     from datetime import datetime
     
-    # đường dẫn thư mục reports: backend/uploads/reports
-    # __file__ là app/api/simulation.py, cần đi lên 2 cấp tới backend/
+    # Đường dẫn thư mục reports: backend/uploads/reports
+    # __file__ là app/api/simulation.py, cần đi lên hai cấp để tới backend/
     reports_dir = os.path.join(os.path.dirname(__file__), '../../uploads/reports')
     if not os.path.exists(reports_dir):
         return None
@@ -773,7 +861,7 @@ def _get_report_id_for_simulation(simulation_id: str) -> str:
         if not matching_reports:
             return None
         
-        # Sắp xếp created_at giảm dần và trả về bản mới nhất
+        # Sắp xếp giảm dần theo thời gian tạo và trả về bản mới nhất
         matching_reports.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         return matching_reports[0].get("report_id")
         
@@ -785,12 +873,12 @@ def _get_report_id_for_simulation(simulation_id: str) -> str:
 @simulation_bp.route('/history', methods=['GET'])
 def get_simulation_history():
     """
-    Lấy danh sách simulation lịch sử (kèm chi tiết project)
+    Lấy danh sách lịch sử mô phỏng (kèm chi tiết dự án).
     
-    Dùng cho trang chủ để hiển thị lịch sử project, trả về dữ liệu mở rộng như tên và mô tả project
+    Dùng cho hiển thị lịch sử dự án ở trang chủ, trả về danh sách mô phỏng với thông tin đầy đủ như tên dự án, mô tả.
     
-    Tham số Query:
-        limit: giới hạn số lượng trả về (mặc định 20)
+    Tham số query:
+        limit: Giới hạn số lượng trả về (mặc định 20)
     
     Trả về:
         {
@@ -799,8 +887,8 @@ def get_simulation_history():
                 {
                     "simulation_id": "sim_xxxx",
                     "project_id": "proj_xxxx",
-                    "project_name": "Wuhan University public opinion analysis",
-                    "simulation_requirement": "If Wuhan University publishes...",
+                    "project_name": "Phân tích dư luận WU",
+                    "simulation_requirement": "Nếu Đại học Vũ Hán đăng tải...",
                     "status": "completed",
                     "entities_count": 68,
                     "profiles_count": 68,
@@ -823,18 +911,18 @@ def get_simulation_history():
         manager = SimulationManager()
         simulations = manager.list_simulations()[:limit]
         
-        # Mở rộng dữ liệu simulation, chỉ đọc từ file Simulation
+        # Bổ sung dữ liệu mô phỏng, chỉ đọc từ file Simulation
         enriched_simulations = []
         for sim in simulations:
             sim_dict = sim.to_dict()
             
-            # Lấy thông tin cấu hình simulation (đọc simulation_requirement từ simulation_config.json)
+            # Lấy thông tin cấu hình mô phỏng (đọc simulation_requirement từ simulation_config.json)
             config = manager.get_simulation_config(sim.simulation_id)
             if config:
                 sim_dict["simulation_requirement"] = config.get("simulation_requirement", "")
                 time_config = config.get("time_config", {})
                 sim_dict["total_simulation_hours"] = time_config.get("total_simulation_hours", 0)
-                # Số vòng đề xuất (giá trị dự phòng)
+                # Số vòng khuyến nghị (giá trị dự phòng)
                 recommended_rounds = int(
                     time_config.get("total_simulation_hours", 0) * 60 / 
                     max(time_config.get("minutes_per_round", 60), 1)
@@ -844,23 +932,23 @@ def get_simulation_history():
                 sim_dict["total_simulation_hours"] = 0
                 recommended_rounds = 0
             
-            # Lấy trạng thái chạy (đọc số vòng thực tế người dùng đặt trong run_state.json)
+            # Lấy trạng thái chạy (đọc số vòng thực tế do người dùng thiết lập từ run_state.json)
             run_state = SimulationRunner.get_run_state(sim.simulation_id)
             if run_state:
                 sim_dict["current_round"] = run_state.current_round
                 sim_dict["runner_status"] = run_state.runner_status.value
-                # Dùng total_rounds do người dùng đặt, nếu không có thì dùng số vòng đề xuất
+                # Dùng total_rounds do người dùng thiết lập, nếu không có thì dùng số vòng khuyến nghị
                 sim_dict["total_rounds"] = run_state.total_rounds if run_state.total_rounds > 0 else recommended_rounds
             else:
                 sim_dict["current_round"] = 0
                 sim_dict["runner_status"] = "idle"
                 sim_dict["total_rounds"] = recommended_rounds
             
-            # Lấy danh sách file của project liên kết (tối đa 3 file)
+            # Lấy danh sách file của dự án liên kết (tối đa 3 file)
             project = ProjectManager.get_project(sim.project_id)
             if project and hasattr(project, 'files') and project.files:
                 sim_dict["files"] = [
-                    {"filename": f.get("filename", "unknown_file")} 
+                    {"filename": f.get("filename", "Unknown file")} 
                     for f in project.files[:3]
                 ]
             else:
@@ -869,7 +957,7 @@ def get_simulation_history():
             # Lấy report_id liên kết (tìm report mới nhất của simulation này)
             sim_dict["report_id"] = _get_report_id_for_simulation(sim.simulation_id)
             
-            # Thêm phiên bản
+            # Thêm số phiên bản
             sim_dict["version"] = "v1.0.2"
             
             # Định dạng ngày
@@ -899,10 +987,10 @@ def get_simulation_history():
 @simulation_bp.route('/<simulation_id>/profiles', methods=['GET'])
 def get_simulation_profiles(simulation_id: str):
     """
-    Lấy Agent Profile của simulation
+    Lấy Agent Profile của mô phỏng.
     
-    Tham số Query:
-        platform: loại nền tảng (reddit/twitter, mặc định reddit)
+    Tham số query:
+        platform: Loại nền tảng (reddit/twitter, mặc định reddit)
     """
     try:
         platform = request.args.get('platform', 'reddit')
@@ -926,7 +1014,7 @@ def get_simulation_profiles(simulation_id: str):
         }), 404
         
     except Exception as e:
-        logger.error(f"Failed to get profiles: {str(e)}")
+        logger.error(f"Failed to get profile: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -937,15 +1025,15 @@ def get_simulation_profiles(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/profiles/realtime', methods=['GET'])
 def get_simulation_profiles_realtime(simulation_id: str):
     """
-    Lấy Agent Profile của simulation theo thời gian thực (dùng để theo dõi tiến độ trong lúc generate)
+    Lấy Agent Profile theo thời gian thực (dùng để theo dõi tiến độ trong quá trình sinh).
     
     Khác biệt so với endpoint /profiles:
-    - Đọc file trực tiếp, không qua SimulationManager
-    - Phù hợp để xem realtime trong quá trình generate
-    - Trả thêm metadata (như thời điểm sửa file, có đang generate hay không)
+    - Đọc trực tiếp từ file, không đi qua SimulationManager.
+    - Phù hợp cho việc xem realtime trong quá trình sinh.
+    - Trả về thêm metadata (như thời điểm sửa file, có đang sinh hay không).
     
-    Tham số Query:
-        platform: loại nền tảng (reddit/twitter, mặc định reddit)
+    Tham số query:
+        platform: Loại nền tảng (reddit/twitter, mặc định reddit)
     
     Trả về:
         {
@@ -954,8 +1042,8 @@ def get_simulation_profiles_realtime(simulation_id: str):
                 "simulation_id": "sim_xxxx",
                 "platform": "reddit",
                 "count": 15,
-                "total_expected": 93,  // tổng dự kiến (nếu có)
-                "is_generating": true,  // có đang generate không
+                "total_expected": 93,  // tổng số dự kiến (nếu có)
+                "is_generating": true,  // có đang sinh hay không
                 "file_exists": true,
                 "file_modified_at": "2025-12-04T18:20:00",
                 "profiles": [...]
@@ -969,13 +1057,13 @@ def get_simulation_profiles_realtime(simulation_id: str):
     try:
         platform = request.args.get('platform', 'reddit')
         
-        # Lấy thư mục simulation
+        # Lấy thư mục mô phỏng
         sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
         
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": f"Simulation does not exist: {simulation_id}"
             }), 404
         
         # Xác định đường dẫn file
@@ -984,7 +1072,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         else:
             profiles_file = os.path.join(sim_dir, "twitter_profiles.csv")
         
-        # Kiểm tra file có tồn tại không
+        # Kiểm tra file có tồn tại hay không
         file_exists = os.path.exists(profiles_file)
         profiles = []
         file_modified_at = None
@@ -1003,10 +1091,10 @@ def get_simulation_profiles_realtime(simulation_id: str):
                         reader = csv.DictReader(f)
                         profiles = list(reader)
             except (json.JSONDecodeError, Exception) as e:
-                logger.warning(f"Failed to read profiles file (file may still be being written): {e}")
+                logger.warning(f"Failed to read profiles file (it may still be being written): {e}")
                 profiles = []
         
-        # Kiểm tra có đang generate hay không (dựa vào state.json)
+            # Kiểm tra có đang sinh hay không (dựa vào state.json)
         is_generating = False
         total_expected = None
         
@@ -1036,7 +1124,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         })
         
     except Exception as e:
-        logger.error(f"realtimeFailed to get profiles: {str(e)}")
+        logger.error(f"Failed to get profile in real time: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1047,13 +1135,13 @@ def get_simulation_profiles_realtime(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/config/realtime', methods=['GET'])
 def get_simulation_config_realtime(simulation_id: str):
     """
-    Lấy cấu hình simulation theo thời gian thực (để xem tiến độ khi đang generate)
+    Lấy cấu hình mô phỏng theo thời gian thực (dùng để theo dõi tiến độ trong quá trình sinh).
     
     Khác biệt so với endpoint /config:
-    - Đọc file trực tiếp, không qua SimulationManager
-    - Phù hợp để xem realtime trong quá trình generate
-    - Trả thêm metadata (như thời điểm sửa file, có đang generate hay không)
-    - Ngay cả khi config chưa generate xong vẫn có thể trả về một phần thông tin
+    - Đọc trực tiếp từ file, không đi qua SimulationManager.
+    - Phù hợp cho việc xem realtime trong quá trình sinh.
+    - Trả về thêm metadata (như thời điểm sửa file, có đang sinh hay không).
+    - Ngay cả khi cấu hình chưa sinh xong vẫn có thể trả về thông tin một phần.
     
     Trả về:
         {
@@ -1062,9 +1150,9 @@ def get_simulation_config_realtime(simulation_id: str):
                 "simulation_id": "sim_xxxx",
                 "file_exists": true,
                 "file_modified_at": "2025-12-04T18:20:00",
-                "is_generating": true,  // có đang generate không
-                "generation_stage": "generating_config",  // giai đoạn generate hiện tại
-                "config": {...}  // nội dung config (nếu có)
+                "is_generating": true,  // có đang sinh hay không
+                "generation_stage": "generating_config",  // giai đoạn sinh hiện tại
+                "config": {...}  // nội dung cấu hình (nếu có)
             }
         }
     """
@@ -1072,19 +1160,19 @@ def get_simulation_config_realtime(simulation_id: str):
     from datetime import datetime
     
     try:
-        # Lấy thư mục simulation
+        # Lấy thư mục mô phỏng
         sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
         
         if not os.path.exists(sim_dir):
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": f"Simulation does not exist: {simulation_id}"
             }), 404
         
-        # Đường dẫn file config
+        # Đường dẫn file cấu hình
         config_file = os.path.join(sim_dir, "simulation_config.json")
         
-        # Kiểm tra file có tồn tại không
+        # Kiểm tra file có tồn tại hay không
         file_exists = os.path.exists(config_file)
         config = None
         file_modified_at = None
@@ -1098,10 +1186,10 @@ def get_simulation_config_realtime(simulation_id: str):
                 with open(config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
             except (json.JSONDecodeError, Exception) as e:
-                logger.warning(f"Failed to read config file (file may still be being written): {e}")
+                logger.warning(f"Failed to read config file (it may still be being written): {e}")
                 config = None
         
-        # Kiểm tra có đang generate hay không (dựa vào state.json)
+            # Kiểm tra có đang sinh hay không (dựa vào state.json)
         is_generating = False
         generation_stage = None
         config_generated = False
@@ -1126,7 +1214,7 @@ def get_simulation_config_realtime(simulation_id: str):
             except Exception:
                 pass
         
-        # Tạo dữ liệu phản hồi
+        # Tạo dữ liệu trả về
         response_data = {
             "simulation_id": simulation_id,
             "file_exists": file_exists,
@@ -1137,7 +1225,7 @@ def get_simulation_config_realtime(simulation_id: str):
             "config": config
         }
         
-        # Nếu config tồn tại, trích xuất một số thống kê chính
+        # Nếu cấu hình tồn tại, trích xuất một số thống kê quan trọng
         if config:
             response_data["summary"] = {
                 "total_agents": len(config.get("agent_configs", [])),
@@ -1156,7 +1244,7 @@ def get_simulation_config_realtime(simulation_id: str):
         })
         
     except Exception as e:
-        logger.error(f"Failed to get realtime config: {str(e)}")
+        logger.error(f"Failed to get config in real time: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1167,14 +1255,14 @@ def get_simulation_config_realtime(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/config', methods=['GET'])
 def get_simulation_config(simulation_id: str):
     """
-    Lấy cấu hình simulation (đầy đủ, do LLM sinh)
+    Lấy cấu hình mô phỏng (cấu hình đầy đủ do LLM sinh).
     
-    Response includes:
-        - time_config: cấu hình thời gian (thời lượng simulation, số vòng, khung cao điểm/thấp điểm)
-        - agent_configs: cấu hình hoạt động cho từng Agent (mức độ hoạt động, tần suất phát biểu, lập trường...)
-        - event_config: cấu hình sự kiện (bài đăng khởi tạo, chủ đề nóng)
-        - platform_configs: cấu hình nền tảng
-        - generation_reasoning: phần giải thích suy luận khi sinh config của LLM
+    Bao gồm:
+        - time_config: Cấu hình thời gian (thời lượng mô phỏng, số vòng, khung giờ cao điểm/thấp điểm)
+        - agent_configs: Cấu hình hoạt động của từng Agent (mức độ hoạt động, tần suất phát biểu, lập trường...)
+        - event_config: Cấu hình sự kiện (bài đăng khởi tạo, chủ đề nóng)
+        - platform_configs: Cấu hình nền tảng
+        - generation_reasoning: Giải thích suy luận cấu hình của LLM
     """
     try:
         manager = SimulationManager()
@@ -1183,7 +1271,7 @@ def get_simulation_config(simulation_id: str):
         if not config:
             return jsonify({
                 "success": False,
-                "error": f"Simulation config not found. Please call /prepare first."
+                "error": "Simulation config does not exist. Please call /prepare first"
             }), 404
         
         return jsonify({
@@ -1202,7 +1290,7 @@ def get_simulation_config(simulation_id: str):
 
 @simulation_bp.route('/<simulation_id>/config/download', methods=['GET'])
 def download_simulation_config(simulation_id: str):
-    """Tải xuống file cấu hình simulation"""
+    """Tải file cấu hình mô phỏng."""
     try:
         manager = SimulationManager()
         sim_dir = manager._get_simulation_dir(simulation_id)
@@ -1211,7 +1299,7 @@ def download_simulation_config(simulation_id: str):
         if not os.path.exists(config_path):
             return jsonify({
                 "success": False,
-                "error": "Config file not found. Please call /prepare first."
+                "error": "Config file does not exist. Please call /prepare first"
             }), 404
         
         return send_file(
@@ -1232,7 +1320,7 @@ def download_simulation_config(simulation_id: str):
 @simulation_bp.route('/script/<script_name>/download', methods=['GET'])
 def download_simulation_script(script_name: str):
     """
-    Tải xuống script chạy simulation (script dùng chung, nằm trong backend/scripts/)
+    Tải file script chạy mô phỏng (script dùng chung, nằm trong backend/scripts/).
     
     script_name có thể là:
         - run_twitter_simulation.py
@@ -1241,10 +1329,10 @@ def download_simulation_script(script_name: str):
         - action_logger.py
     """
     try:
-        # script nằm trong thư mục backend/scripts/
+        # Script nằm trong thư mục backend/scripts/
         scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../scripts'))
         
-        # Xác thực tên script
+        # Kiểm tra tên script
         allowed_scripts = [
             "run_twitter_simulation.py",
             "run_reddit_simulation.py", 
@@ -1263,7 +1351,7 @@ def download_simulation_script(script_name: str):
         if not os.path.exists(script_path):
             return jsonify({
                 "success": False,
-                "error": f"Script file not found: {script_name}"
+                "error": f"Script file does not exist: {script_name}"
             }), 404
         
         return send_file(
@@ -1281,19 +1369,19 @@ def download_simulation_script(script_name: str):
         }), 500
 
 
-# ============== API tạo Profile (dùng độc lập) ==============
+# ============== API sinh Profile (dùng độc lập) ==============
 
 @simulation_bp.route('/generate-profiles', methods=['POST'])
 def generate_profiles():
     """
-    Sinh OASIS Agent Profile trực tiếp từ graph (không tạo simulation)
+    Sinh trực tiếp OASIS Agent Profile từ đồ thị (không tạo mô phỏng).
     
     Yêu cầu (JSON):
         {
-            "graph_id": "mirofish_xxxx",     // required
-            "entity_types": ["Student"],      // optional
-            "use_llm": true,                  // optional
-            "platform": "reddit"              // optional
+            "graph_id": "mirofish_xxxx",     // bắt buộc
+            "entity_types": ["Student"],      // tùy chọn
+            "use_llm": true,                  // tùy chọn
+            "platform": "reddit"              // tùy chọn
         }
     """
     try:
@@ -1320,7 +1408,7 @@ def generate_profiles():
         if filtered.filtered_count == 0:
             return jsonify({
                 "success": False,
-                "error": "No entities matched the filter"
+                "error": "No matching entities found"
             }), 400
         
         generator = OasisProfileGenerator()
@@ -1347,7 +1435,7 @@ def generate_profiles():
         })
         
     except Exception as e:
-        logger.error(f"Failed to generate profiles: {str(e)}")
+        logger.error(f"Failed to generate profile: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1355,33 +1443,33 @@ def generate_profiles():
         }), 500
 
 
-# ============== Simulation run control endpoints ==============
+# ============== API điều khiển chạy mô phỏng ==============
 
 @simulation_bp.route('/start', methods=['POST'])
 def start_simulation():
     """
-    Bắt đầu chạy simulation
+    Bắt đầu chạy mô phỏng.
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",          // required，simulation ID
-            "platform": "parallel",                // optional: twitter / reddit / parallel (default)
-            "max_rounds": 100,                     // optional: maximum simulation rounds，used to cap overly long simulations
-            "enable_graph_memory_update": false,   // optional: whether to dynamically write Agent activity to Zep graph memory
-            "force": false                         // optional: force restart (stops running simulation and cleans logs)
+            "simulation_id": "sim_xxxx",          // bắt buộc, simulation ID
+            "platform": "parallel",                // tùy chọn: twitter / reddit / parallel (mặc định)
+            "max_rounds": 100,                     // tùy chọn: số vòng mô phỏng tối đa, dùng để cắt bớt mô phỏng quá dài
+            "enable_graph_memory_update": false,   // tùy chọn: có cập nhật động hoạt động Agent vào bộ nhớ đồ thị Zep hay không
+            "force": false                         // tùy chọn: buộc chạy lại (sẽ dừng mô phỏng đang chạy và dọn log)
         }
 
     Về tham số force:
-        - when enabled, if simulation is running or completed, it will stop first and clean run logs
-        - cleanup includes run_state.json, actions.jsonl, simulation.log, etc.
-        - config file (simulation_config.json) and profile files are not deleted
-        - suitable when you need to rerun a simulation
+        - Khi bật, nếu mô phỏng đang chạy hoặc đã hoàn tất thì sẽ dừng trước và dọn log chạy.
+        - Nội dung dọn bao gồm: run_state.json, actions.jsonl, simulation.log...
+        - Không dọn file cấu hình (simulation_config.json) và file profile.
+        - Phù hợp cho tình huống cần chạy lại mô phỏng.
 
     Về enable_graph_memory_update:
-        - Khi bật, toàn bộ hoạt động của Agent (đăng bài, bình luận, like...) sẽ được cập nhật realtime lên Zep graph
-        - this allows the graph to remember the simulation process for later analysis or AI chat
-        - requires a valid graph_id on the linked project
-        - uses batched updates to reduce API calls
+        - Khi bật, toàn bộ hoạt động của Agent trong mô phỏng (đăng bài, bình luận, thả like...) sẽ được cập nhật realtime vào đồ thị Zep.
+        - Điều này giúp đồ thị "ghi nhớ" quá trình mô phỏng để phục vụ phân tích hoặc hội thoại AI về sau.
+        - Dự án liên kết với mô phỏng cần có graph_id hợp lệ.
+        - Dùng cơ chế cập nhật theo lô để giảm số lần gọi API.
 
     Trả về:
         {
@@ -1393,8 +1481,8 @@ def start_simulation():
                 "twitter_running": true,
                 "reddit_running": true,
                 "started_at": "2025-12-01T10:00:00",
-                "graph_memory_update_enabled": true,  // whether graph memory update is enabled
-                "force_restarted": true               // whether this was a forced restart
+                "graph_memory_update_enabled": true,  // có bật cập nhật bộ nhớ đồ thị hay không
+                "force_restarted": true               // có phải là chạy lại bắt buộc hay không
             }
         }
     """
@@ -1409,9 +1497,9 @@ def start_simulation():
             }), 400
 
         platform = data.get('platform', 'parallel')
-        max_rounds = data.get('max_rounds')  # optional：maximum simulation rounds
-        enable_graph_memory_update = data.get('enable_graph_memory_update', False)  # optional：có bật cập nhật graph memory hay không
-        force = data.get('force', False)  # optional：khởi động lại cưỡng bức
+        max_rounds = data.get('max_rounds')  # Tùy chọn: số vòng mô phỏng tối đa
+        enable_graph_memory_update = data.get('enable_graph_memory_update', False)  # Tùy chọn: có bật cập nhật bộ nhớ đồ thị hay không
+        force = data.get('force', False)  # Tùy chọn: buộc chạy lại
 
         # Kiểm tra tham số max_rounds
         if max_rounds is not None:
@@ -1434,33 +1522,33 @@ def start_simulation():
                 "error": f"Invalid platform type: {platform}. Allowed: twitter/reddit/parallel"
             }), 400
 
-        # Kiểm tra simulation đã sẵn sàng chưa
+        # Kiểm tra mô phỏng đã sẵn sàng hay chưa
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
 
         if not state:
             return jsonify({
                 "success": False,
-                "error": f"Simulation not found: {simulation_id}"
+                "error": f"Simulation does not exist: {simulation_id}"
             }), 404
 
         force_restarted = False
         
         # Xử lý trạng thái thông minh: nếu chuẩn bị đã hoàn tất thì cho phép khởi động lại
         if state.status != SimulationStatus.READY:
-            # Kiểm tra chuẩn bị đã hoàn tất chưa
+            # Kiểm tra phần chuẩn bị đã hoàn tất chưa
             is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
 
             if is_prepared:
                 # Chuẩn bị đã hoàn tất, kiểm tra có tiến trình đang chạy hay không
                 if state.status == SimulationStatus.RUNNING:
-                    # Kiểm tra tiến trình simulation có thực sự đang chạy không
+                    # Kiểm tra tiến trình mô phỏng có thực sự đang chạy không
                     run_state = SimulationRunner.get_run_state(simulation_id)
                     if run_state and run_state.runner_status.value == "running":
                         # Tiến trình thực sự đang chạy
                         if force:
-                            # Force mode: stop running simulation
-                            logger.info(f"Force mode: stop running simulation {simulation_id}")
+                            # Chế độ force: dừng mô phỏng đang chạy
+                            logger.info(f"Force mode: stopping running simulation {simulation_id}")
                             try:
                                 SimulationRunner.stop_simulation(simulation_id)
                             except Exception as e:
@@ -1468,35 +1556,35 @@ def start_simulation():
                         else:
                             return jsonify({
                                 "success": False,
-                                "error": f"Simulation is running. Call /stop first, or use force=true to restart forcibly"
+                                "error": "Simulation is running. Please call /stop first, or use force=true to restart"
                             }), 400
 
-                # Nếu là force mode, dọn dẹp log chạy
+                # Nếu là chế độ force thì dọn log chạy
                 if force:
-                    logger.info(f"Force mode: cleanup simulation logs {simulation_id}")
+                    logger.info(f"Force mode: cleaning simulation logs {simulation_id}")
                     cleanup_result = SimulationRunner.cleanup_simulation_logs(simulation_id)
                     if not cleanup_result.get("success"):
                         logger.warning(f"Warning while cleaning logs: {cleanup_result.get('errors')}")
                     force_restarted = True
 
-                # process does not exist or has ended, resetting status to ready
-                logger.info(f"Simulation {simulation_id} preparation completed, resetting status to ready (previous status: {state.status.value})")
+                # Tiến trình không tồn tại hoặc đã kết thúc, đặt lại trạng thái về ready
+                logger.info(f"Simulation {simulation_id} is prepared, resetting status to ready (previous: {state.status.value})")
                 state.status = SimulationStatus.READY
                 manager._save_simulation_state(state)
             else:
                 # Chuẩn bị chưa hoàn tất
                 return jsonify({
                     "success": False,
-                    "error": f"Simulation is not ready, current status: {state.status.value}. Please call /prepare first"
+                    "error": f"Simulation is not ready. Current status: {state.status.value}. Please call /prepare first"
                 }), 400
         
-        # Lấy graph ID (dùng cho cập nhật graph memory)
+        # Lấy graph ID (dùng cho cập nhật bộ nhớ đồ thị)
         graph_id = None
         if enable_graph_memory_update:
-            # Lấy graph_id từ trạng thái simulation hoặc project
+            # Lấy graph_id từ trạng thái mô phỏng hoặc từ dự án
             graph_id = state.graph_id
             if not graph_id:
-                # Thử lấy từ project
+                # Thử lấy từ dự án
                 project = ProjectManager.get_project(state.project_id)
                 if project:
                     graph_id = project.graph_id
@@ -1504,12 +1592,12 @@ def start_simulation():
             if not graph_id:
                 return jsonify({
                     "success": False,
-                    "error": "Enabling graph memory update requires a valid graph_id. Please ensure the project graph has been built"
+                    "error": "Enabling graph memory update requires a valid graph_id. Please ensure the project graph is built"
                 }), 400
             
             logger.info(f"Graph memory update enabled: simulation_id={simulation_id}, graph_id={graph_id}")
         
-        # Khởi động simulation
+        # Khởi chạy mô phỏng
         run_state = SimulationRunner.start_simulation(
             simulation_id=simulation_id,
             platform=platform,
@@ -1518,7 +1606,7 @@ def start_simulation():
             graph_id=graph_id
         )
         
-        # Cập nhật trạng thái simulation
+        # Cập nhật trạng thái mô phỏng
         state.status = SimulationStatus.RUNNING
         manager._save_simulation_state(state)
         
@@ -1542,7 +1630,7 @@ def start_simulation():
         }), 400
         
     except Exception as e:
-        logger.error(f"Khởi động simulationfailed: {str(e)}")
+        logger.error(f"Failed to start simulation: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1553,11 +1641,11 @@ def start_simulation():
 @simulation_bp.route('/stop', methods=['POST'])
 def stop_simulation():
     """
-    Stop simulation
+    Dừng mô phỏng.
     
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx"  // required，simulation ID
+            "simulation_id": "sim_xxxx"  // bắt buộc, simulation ID
         }
     
     Trả về:
@@ -1582,7 +1670,7 @@ def stop_simulation():
         
         run_state = SimulationRunner.stop_simulation(simulation_id)
         
-        # Cập nhật trạng thái simulation
+        # Cập nhật trạng thái mô phỏng
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
         if state:
@@ -1601,7 +1689,7 @@ def stop_simulation():
         }), 400
         
     except Exception as e:
-        logger.error(f"Stop simulationfailed: {str(e)}")
+        logger.error(f"Failed to stop simulation: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1609,12 +1697,12 @@ def stop_simulation():
         }), 500
 
 
-# ============== API giám sát trạng thái realtime ==============
+# ============== API giám sát trạng thái thời gian thực ==============
 
 @simulation_bp.route('/<simulation_id>/run-status', methods=['GET'])
 def get_run_status(simulation_id: str):
     """
-    Lấy trạng thái chạy simulation realtime (cho frontend polling)
+    Lấy trạng thái chạy mô phỏng theo thời gian thực (dùng cho frontend polling).
     
     Trả về:
         {
@@ -1672,12 +1760,12 @@ def get_run_status(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/run-status/detail', methods=['GET'])
 def get_run_status_detail(simulation_id: str):
     """
-    Get detailed simulation run status (including all actions)
+    Lấy trạng thái chạy mô phỏng chi tiết (bao gồm toàn bộ hành động).
     
-    Dùng cho frontend hiển thị diễn biến realtime
+    Dùng cho frontend hiển thị diễn biến thời gian thực.
     
-    Tham số Query:
-        platform: lọc nền tảng (twitter/reddit, optional)
+    Tham số query:
+        platform: Lọc theo nền tảng (twitter/reddit, tùy chọn)
     
     Trả về:
         {
@@ -1701,8 +1789,8 @@ def get_run_status_detail(simulation_id: str):
                     },
                     ...
                 ],
-                "twitter_actions": [...],  # tất cả action trên Twitter
-                "reddit_actions": [...]    # tất cả action trên Reddit
+                "twitter_actions": [...],  # toàn bộ hành động trên Twitter
+                "reddit_actions": [...]    # toàn bộ hành động trên Reddit
             }
         }
     """
@@ -1722,13 +1810,13 @@ def get_run_status_detail(simulation_id: str):
                 }
             })
         
-        # Get full action list
+        # Lấy danh sách hành động đầy đủ
         all_actions = SimulationRunner.get_all_actions(
             simulation_id=simulation_id,
             platform=platform_filter
         )
         
-        # Get actions by platform
+        # Lấy hành động theo từng nền tảng
         twitter_actions = SimulationRunner.get_all_actions(
             simulation_id=simulation_id,
             platform="twitter"
@@ -1739,7 +1827,7 @@ def get_run_status_detail(simulation_id: str):
             platform="reddit"
         ) if not platform_filter or platform_filter == "reddit" else []
         
-        # Get actions for current round (recent_actions shows only the latest round)
+        # Lấy hành động của vòng hiện tại (recent_actions chỉ hiển thị vòng mới nhất)
         current_round = run_state.current_round
         recent_actions = SimulationRunner.get_all_actions(
             simulation_id=simulation_id,
@@ -1747,13 +1835,13 @@ def get_run_status_detail(simulation_id: str):
             round_num=current_round
         ) if current_round > 0 else []
         
-        # Get base status info
+        # Lấy thông tin trạng thái cơ bản
         result = run_state.to_dict()
         result["all_actions"] = [a.to_dict() for a in all_actions]
         result["twitter_actions"] = [a.to_dict() for a in twitter_actions]
         result["reddit_actions"] = [a.to_dict() for a in reddit_actions]
         result["rounds_count"] = len(run_state.rounds)
-        # recent_actions chỉ hiển thị nội dung vòng mới nhất của hai nền tảng
+        # recent_actions chỉ hiển thị nội dung của vòng mới nhất trên hai nền tảng
         result["recent_actions"] = [a.to_dict() for a in recent_actions]
         
         return jsonify({
@@ -1762,7 +1850,7 @@ def get_run_status_detail(simulation_id: str):
         })
         
     except Exception as e:
-        logger.error(f"Failed to get detailed status: {str(e)}")
+        logger.error(f"Failed to get detailed run status: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1773,14 +1861,14 @@ def get_run_status_detail(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/actions', methods=['GET'])
 def get_simulation_actions(simulation_id: str):
     """
-    Get agent action history in simulation
+    Lấy lịch sử hành động Agent trong mô phỏng.
     
-    Tham số Query:
-        limit: số lượng trả về (default 100)
-        offset: độ lệch (default 0)
-        platform: filter platform (twitter/reddit)
-        agent_id: filter Agent ID
-        round_num: filter round
+    Tham số query:
+        limit: Số lượng trả về (mặc định 100)
+        offset: Độ lệch (mặc định 0)
+        platform: Lọc nền tảng (twitter/reddit)
+        agent_id: Lọc theo Agent ID
+        round_num: Lọc theo vòng
     
     Trả về:
         {
@@ -1827,15 +1915,15 @@ def get_simulation_actions(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/timeline', methods=['GET'])
 def get_simulation_timeline(simulation_id: str):
     """
-    Get simulation timeline (aggregated by rounds)
+    Lấy timeline mô phỏng (tổng hợp theo vòng).
     
-    For frontend progress bar and timeline view
+    Dùng cho frontend hiển thị thanh tiến độ và timeline.
     
-    Tham số Query:
-        start_round: vòng bắt đầu (default 0)
-        end_round: vòng kết thúc (default all)
+    Tham số query:
+        start_round: Vòng bắt đầu (mặc định 0)
+        end_round: Vòng kết thúc (mặc định toàn bộ)
     
-    Return per-round summary info
+    Trả về thông tin tổng hợp theo từng vòng.
     """
     try:
         start_round = request.args.get('start_round', 0, type=int)
@@ -1867,9 +1955,9 @@ def get_simulation_timeline(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/agent-stats', methods=['GET'])
 def get_agent_stats(simulation_id: str):
     """
-    Get per-agent statistics
+    Lấy thống kê của từng Agent.
     
-    For frontend agent activity ranking and action distribution
+    Dùng cho frontend hiển thị bảng xếp hạng mức độ hoạt động và phân bố hành động của Agent.
     """
     try:
         stats = SimulationRunner.get_agent_stats(simulation_id)
@@ -1883,7 +1971,7 @@ def get_agent_stats(simulation_id: str):
         })
         
     except Exception as e:
-        logger.error(f"Failed to get agent stats: {str(e)}")
+        logger.error(f"Failed to get agent statistics: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -1891,19 +1979,19 @@ def get_agent_stats(simulation_id: str):
         }), 500
 
 
-# ============== Database query endpoints ==============
+# ============== API truy vấn cơ sở dữ liệu ==============
 
 @simulation_bp.route('/<simulation_id>/posts', methods=['GET'])
 def get_simulation_posts(simulation_id: str):
     """
-    Get posts from simulation
+    Lấy bài đăng trong mô phỏng.
     
-    Tham số Query:
-        platform: platform type (twitter/reddit)
-        limit: số lượng trả về (default 50)
-        offset: độ lệch
+    Tham số query:
+        platform: Loại nền tảng (twitter/reddit)
+        limit: Số lượng trả về (mặc định 50)
+        offset: Độ lệch
     
-    Return post list (read from SQLite)
+    Trả về danh sách bài đăng (đọc từ cơ sở dữ liệu SQLite).
     """
     try:
         platform = request.args.get('platform', 'reddit')
@@ -1925,7 +2013,7 @@ def get_simulation_posts(simulation_id: str):
                     "platform": platform,
                     "count": 0,
                     "posts": [],
-                    "message": "Database does not exist. Simulation may not have started."
+                    "message": "Database does not exist. The simulation may not have run yet"
                 }
             })
         
@@ -1974,12 +2062,12 @@ def get_simulation_posts(simulation_id: str):
 @simulation_bp.route('/<simulation_id>/comments', methods=['GET'])
 def get_simulation_comments(simulation_id: str):
     """
-    Get comments from simulation (Reddit only)
+    Lấy bình luận trong mô phỏng (chỉ Reddit).
     
-    Tham số Query:
-        post_id: lọc theo post ID (optional)
-        limit: số lượng trả về
-        offset: độ lệch
+    Tham số query:
+        post_id: Lọc theo post ID (tùy chọn)
+        limit: Số lượng trả về
+        offset: Độ lệch
     """
     try:
         post_id = request.args.get('post_id')
@@ -2046,31 +2134,32 @@ def get_simulation_comments(simulation_id: str):
         }), 500
 
 
-# ============== Interview endpoints ==============
+# ============== Interview API ==============
 
 @simulation_bp.route('/interview', methods=['POST'])
 def interview_agent():
     """
-    Interview a single Agent
+    Phỏng vấn một Agent.
 
-    Note: this feature requires the simulation environment to be running (after simulation loop finishes, it enters command-wait mode)
+    Lưu ý: chức năng này yêu cầu môi trường mô phỏng đang chạy
+    (sau khi hoàn tất vòng mô phỏng, hệ thống vào chế độ chờ lệnh).
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",       // required，simulation ID
-            "agent_id": 0,                     // required，Agent ID
-            "prompt": "What is your view on this event?",  // required，interview question
-            "platform": "twitter",             // optional, chỉ định nền tảng (twitter/reddit)
-                                               // if not specified: in dual-platform simulation, interview both platforms simultaneously
-            "timeout": 60                      // optional，timeout (seconds)，default60
+            "simulation_id": "sim_xxxx",       // Bắt buộc, simulation ID
+            "agent_id": 0,                     // Bắt buộc, Agent ID
+            "prompt": "Bạn nghĩ gì về vấn đề này?",  // Bắt buộc, câu hỏi phỏng vấn
+            "platform": "twitter",             // Tùy chọn, chỉ định nền tảng (twitter/reddit)
+                                               // Nếu không chỉ định: mô phỏng 2 nền tảng sẽ phỏng vấn cả hai
+            "timeout": 60                      // Tùy chọn, timeout (giây), mặc định 60
         }
 
-    Response (platform not specified, dual-platform mode):
+    Trả về (không chỉ định `platform`, chế độ hai nền tảng):
         {
             "success": true,
             "data": {
                 "agent_id": 0,
-                "prompt": "What is your view on this event?",
+                "prompt": "Bạn nghĩ gì về vấn đề này?",
                 "result": {
                     "agent_id": 0,
                     "prompt": "...",
@@ -2083,15 +2172,15 @@ def interview_agent():
             }
         }
 
-    Response (platform specified):
+    Trả về (có chỉ định `platform`):
         {
             "success": true,
             "data": {
                 "agent_id": 0,
-                "prompt": "What is your view on this event?",
+                "prompt": "Bạn nghĩ gì về vấn đề này?",
                 "result": {
                     "agent_id": 0,
-                    "response": "I think...",
+                    "response": "Tôi nghĩ...",
                     "platform": "twitter",
                     "timestamp": "2025-12-08T10:00:00"
                 },
@@ -2105,7 +2194,7 @@ def interview_agent():
         simulation_id = data.get('simulation_id')
         agent_id = data.get('agent_id')
         prompt = data.get('prompt')
-        platform = data.get('platform')  # optional：twitter/reddit/None
+        platform = data.get('platform')  # Tùy chọn: twitter/reddit/None
         timeout = data.get('timeout', 60)
         
         if not simulation_id:
@@ -2130,17 +2219,17 @@ def interview_agent():
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be either twitter or reddit"
+                "error": "platform must be 'twitter' or 'reddit'"
             }), 400
         
-        # Kiểm tra trạng thái môi trường
+        # Check environment status
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "Simulation environment is not running or has been closed. Ensure simulation is completed and in command-wait mode."
+                "error": "Simulation environment is not running or has been closed. Ensure simulation has completed and entered command-wait mode."
             }), 400
         
-        # Tối ưu prompt, thêm prefix để tránh Agent gọi tool
+        # Optimize prompt by adding a prefix to avoid Agent tool calls
         optimized_prompt = optimize_interview_prompt(prompt)
         
         result = SimulationRunner.interview_agent(
@@ -2165,11 +2254,11 @@ def interview_agent():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Interview response timeout: {str(e)}"
+            "error": f"Timeout waiting for interview response: {str(e)}"
         }), 504
         
     except Exception as e:
-        logger.error(f"Interviewfailed: {str(e)}")
+        logger.error(f"Interview failed: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -2180,27 +2269,27 @@ def interview_agent():
 @simulation_bp.route('/interview/batch', methods=['POST'])
 def interview_agents_batch():
     """
-    Batch interview multiple Agents
+    Phỏng vấn hàng loạt nhiều Agent.
 
-    Lưu ý: tính năng này yêu cầu môi trường simulation đang chạy
+    Lưu ý: chức năng này yêu cầu môi trường mô phỏng đang chạy.
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",       // required，simulation ID
-            "interviews": [                    // required，interview list
+            "simulation_id": "sim_xxxx",       // Bắt buộc, simulation ID
+            "interviews": [                    // Bắt buộc, danh sách phỏng vấn
                 {
                     "agent_id": 0,
-                    "prompt": "What is your opinion on A?",
-                    "platform": "twitter"      // optional，specify interview platform for this Agent
+                    "prompt": "Bạn nghĩ gì về A?",
+                    "platform": "twitter"      // Tùy chọn, chỉ định nền tảng cho Agent này
                 },
                 {
                     "agent_id": 1,
-                    "prompt": "What is your opinion on B?"  // nếu không chỉ định platform thì dùng giá trị mặc định
+                    "prompt": "Bạn nghĩ gì về B?"  // Nếu không chỉ định `platform`, dùng giá trị mặc định
                 }
             ],
-            "platform": "reddit",              // optional, nền tảng mặc định (bị ghi đè bởi platform từng mục)
-                                               // nếu không chỉ định: với mô phỏng hai nền tảng, mỗi Agent sẽ được phỏng vấn đồng thời trên cả hai nền tảng
-            "timeout": 120                     // optional，timeout (seconds)，default120
+            "platform": "reddit",              // Tùy chọn, nền tảng mặc định (bị ghi đè bởi `platform` của từng mục)
+                                               // Nếu không chỉ định: mô phỏng 2 nền tảng sẽ phỏng vấn cả hai nền tảng cho mỗi Agent
+            "timeout": 120                     // Tùy chọn, timeout (giây), mặc định 120
         }
 
     Trả về:
@@ -2226,7 +2315,7 @@ def interview_agents_batch():
 
         simulation_id = data.get('simulation_id')
         interviews = data.get('interviews')
-        platform = data.get('platform')  # optional：twitter/reddit/None
+        platform = data.get('platform')  # Tùy chọn: twitter/reddit/None
         timeout = data.get('timeout', 120)
 
         if not simulation_id:
@@ -2245,7 +2334,7 @@ def interview_agents_batch():
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be either twitter or reddit"
+                "error": "platform must be 'twitter' or 'reddit'"
             }), 400
 
         # Validate each interview item
@@ -2253,29 +2342,29 @@ def interview_agents_batch():
             if 'agent_id' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"Interview list item #{i+1} is missing agent_id"
+                    "error": f"Interview item {i+1} is missing agent_id"
                 }), 400
             if 'prompt' not in interview:
                 return jsonify({
                     "success": False,
-                    "error": f"Interview list item #{i+1} is missing prompt"
+                    "error": f"Interview item {i+1} is missing prompt"
                 }), 400
-            # Validate platform for each item (if provided)
+            # Validate platform in each item (if provided)
             item_platform = interview.get('platform')
             if item_platform and item_platform not in ("twitter", "reddit"):
                 return jsonify({
                     "success": False,
-                    "error": f"Interview list item #{i+1} platform must be twitter or reddit"
+                    "error": f"platform in interview item {i+1} must be 'twitter' or 'reddit'"
                 }), 400
 
-        # Kiểm tra trạng thái môi trường
+        # Check environment status
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "Simulation environment is not running or has been closed. Ensure simulation is completed and in command-wait mode."
+                "error": "Simulation environment is not running or has been closed. Ensure simulation has completed and entered command-wait mode."
             }), 400
 
-        # Optimize each prompt and add prefix to prevent Agent tool calls
+        # Optimize prompts in each interview item to avoid Agent tool calls
         optimized_interviews = []
         for interview in interviews:
             optimized_interview = interview.copy()
@@ -2303,7 +2392,7 @@ def interview_agents_batch():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Batch interview response timeout: {str(e)}"
+            "error": f"Timeout waiting for batch interview response: {str(e)}"
         }), 504
 
     except Exception as e:
@@ -2318,17 +2407,17 @@ def interview_agents_batch():
 @simulation_bp.route('/interview/all', methods=['POST'])
 def interview_all_agents():
     """
-    Global interview - use the same question for all Agents
+    Phỏng vấn toàn cục - dùng cùng một câu hỏi để phỏng vấn tất cả Agent.
 
-    Lưu ý: tính năng này yêu cầu môi trường simulation đang chạy
+    Lưu ý: chức năng này yêu cầu môi trường mô phỏng đang chạy.
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",            // required，simulation ID
-            "prompt": "What is your overall view on this event?",  // required，interview question（all Agents use the same question）
-            "platform": "reddit",                   // optional, chỉ định nền tảng (twitter/reddit)
-                                                    // nếu không chỉ định: với mô phỏng hai nền tảng, mỗi Agent sẽ được phỏng vấn đồng thời trên cả hai nền tảng
-            "timeout": 180                          // optional，timeout (seconds)，default180
+            "simulation_id": "sim_xxxx",            // Bắt buộc, simulation ID
+            "prompt": "Bạn có quan điểm tổng thể gì về vấn đề này?",  // Bắt buộc, câu hỏi phỏng vấn (mọi Agent dùng cùng câu hỏi)
+            "platform": "reddit",                   // Tùy chọn, chỉ định nền tảng (twitter/reddit)
+                                                    // Nếu không chỉ định: mô phỏng 2 nền tảng sẽ phỏng vấn cả hai nền tảng cho mỗi Agent
+            "timeout": 180                          // Tùy chọn, timeout (giây), mặc định 180
         }
 
     Trả về:
@@ -2353,7 +2442,7 @@ def interview_all_agents():
 
         simulation_id = data.get('simulation_id')
         prompt = data.get('prompt')
-        platform = data.get('platform')  # optional：twitter/reddit/None
+        platform = data.get('platform')  # Tùy chọn: twitter/reddit/None
         timeout = data.get('timeout', 180)
 
         if not simulation_id:
@@ -2372,17 +2461,17 @@ def interview_all_agents():
         if platform and platform not in ("twitter", "reddit"):
             return jsonify({
                 "success": False,
-                "error": "platform must be either twitter or reddit"
+                "error": "platform must be 'twitter' or 'reddit'"
             }), 400
 
-        # Kiểm tra trạng thái môi trường
+        # Check environment status
         if not SimulationRunner.check_env_alive(simulation_id):
             return jsonify({
                 "success": False,
-                "error": "Simulation environment is not running or has been closed. Ensure simulation is completed and in command-wait mode."
+                "error": "Simulation environment is not running or has been closed. Ensure simulation has completed and entered command-wait mode."
             }), 400
 
-        # Tối ưu prompt, thêm prefix để tránh Agent gọi tool
+        # Optimize prompt by adding a prefix to avoid Agent tool calls
         optimized_prompt = optimize_interview_prompt(prompt)
 
         result = SimulationRunner.interview_all_agents(
@@ -2406,7 +2495,7 @@ def interview_all_agents():
     except TimeoutError as e:
         return jsonify({
             "success": False,
-            "error": f"Global interview response timeout: {str(e)}"
+            "error": f"Timeout waiting for global interview response: {str(e)}"
         }), 504
 
     except Exception as e:
@@ -2421,17 +2510,17 @@ def interview_all_agents():
 @simulation_bp.route('/interview/history', methods=['POST'])
 def get_interview_history():
     """
-    Get interview history
+    Lấy lịch sử Interview.
 
-    Read all interview records from simulation databases
+    Đọc toàn bộ bản ghi Interview từ cơ sở dữ liệu mô phỏng.
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",  // required，simulation ID
-            "platform": "reddit",          // optional，platform type (reddit/twitter)
-                                           // if not specified, return history from both platforms
-            "agent_id": 0,                 // optional，only get interview history of this Agent
-            "limit": 100                   // optional, return count, default 100
+            "simulation_id": "sim_xxxx",  // Bắt buộc, simulation ID
+            "platform": "reddit",          // Tùy chọn, loại nền tảng (reddit/twitter)
+                                           // Nếu không chỉ định, trả về toàn bộ lịch sử của cả hai nền tảng
+            "agent_id": 0,                 // Tùy chọn, chỉ lấy lịch sử phỏng vấn của Agent này
+            "limit": 100                   // Tùy chọn, số lượng trả về, mặc định 100
         }
 
     Trả về:
@@ -2442,8 +2531,8 @@ def get_interview_history():
                 "history": [
                     {
                         "agent_id": 0,
-                        "response": "I think...",
-                        "prompt": "What is your view on this event?",
+                        "response": "Tôi nghĩ...",
+                        "prompt": "Bạn nghĩ gì về vấn đề này?",
                         "timestamp": "2025-12-08T10:00:00",
                         "platform": "reddit"
                     },
@@ -2456,7 +2545,7 @@ def get_interview_history():
         data = request.get_json() or {}
         
         simulation_id = data.get('simulation_id')
-        platform = data.get('platform')  # if not specified, return history for both platforms
+        platform = data.get('platform')  # If omitted, return history from both platforms
         agent_id = data.get('agent_id')
         limit = data.get('limit', 100)
         
@@ -2493,13 +2582,13 @@ def get_interview_history():
 @simulation_bp.route('/env-status', methods=['POST'])
 def get_env_status():
     """
-    Get simulation environment status
+    Lấy trạng thái môi trường mô phỏng.
 
-    Check if simulation environment is alive (can receive Interview commands)
+    Kiểm tra môi trường mô phỏng còn hoạt động không (có thể nhận lệnh Interview).
 
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx"  // required，simulation ID
+            "simulation_id": "sim_xxxx"  // Bắt buộc, simulation ID
         }
 
     Trả về:
@@ -2558,24 +2647,24 @@ def get_env_status():
 @simulation_bp.route('/close-env', methods=['POST'])
 def close_simulation_env():
     """
-    Close simulation environment
+    Đóng môi trường mô phỏng.
     
-    Send a close-environment command so simulation exits command-wait mode gracefully.
+    Gửi lệnh đóng môi trường tới mô phỏng để thoát chế độ chờ lệnh một cách graceful.
     
-    Note: this differs from /stop, where /stop forcefully terminates the process,
-    while this endpoint closes environment and exits gracefully.
+    Lưu ý: API này khác với `/stop`; `/stop` sẽ buộc dừng tiến trình,
+    còn API này sẽ cho mô phỏng đóng môi trường và thoát một cách graceful.
     
     Yêu cầu (JSON):
         {
-            "simulation_id": "sim_xxxx",  // required，simulation ID
-            "timeout": 30                  // optional，timeout (seconds)，default30
+            "simulation_id": "sim_xxxx",  // Bắt buộc, simulation ID
+            "timeout": 30                  // Tùy chọn, timeout (giây), mặc định 30
         }
     
     Trả về:
         {
             "success": true,
             "data": {
-                "message": "Environment close command sent",
+                "message": "Environment close command has been sent",
                 "result": {...},
                 "timestamp": "2025-12-08T10:00:01"
             }
@@ -2598,7 +2687,7 @@ def close_simulation_env():
             timeout=timeout
         )
         
-        # Cập nhật trạng thái simulation
+        # Update simulation status
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
         if state:
