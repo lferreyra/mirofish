@@ -306,35 +306,18 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* Global variables & reset */
-:root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF4500;
-  --gray-light: #F5F5F5;
-  --gray-text: #666666;
-  --border: #E5E5E5;
-  /*
-    Use Space Grotesk as main heading font, JetBrains Mono for code/label font
-    Make sure these Google Fonts are imported in index.html
-  */
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
-  --font-cn: 'Noto Sans SC', system-ui, sans-serif;
-}
-
 .home-container {
   min-height: 100vh;
-  background: var(--white);
-  font-family: var(--font-sans);
-  color: var(--black);
+  background: var(--background);
+  font-family: 'Geist Sans', 'Inter', system-ui, sans-serif;
+  color: var(--foreground);
 }
 
 /* Top Navigation */
 .navbar {
   height: 60px;
-  background: var(--black);
-  color: var(--white);
+  background: var(--card);
+  color: var(--foreground);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -342,7 +325,7 @@ const startSimulation = () => {
 }
 
 .nav-brand {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 800;
   letter-spacing: 1px;
   font-size: 1.2rem;
@@ -354,9 +337,9 @@ const startSimulation = () => {
 }
 
 .github-link {
-  color: var(--white);
+  color: var(--foreground);
   text-decoration: none;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.9rem;
   font-weight: 500;
   display: flex;
@@ -398,13 +381,13 @@ const startSimulation = () => {
   align-items: center;
   gap: 15px;
   margin-bottom: 25px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
 }
 
 .orange-tag {
-  background: var(--orange);
-  color: var(--white);
+  background: var(--primary);
+  color: var(--primary-foreground);
   padding: 4px 10px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -423,11 +406,11 @@ const startSimulation = () => {
   font-weight: 500;
   margin: 0 0 40px 0;
   letter-spacing: -2px;
-  color: var(--black);
+  color: var(--foreground);
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, #000000 0%, #444444 100%);
+  background: linear-gradient(90deg, var(--foreground) 0%, var(--muted-foreground) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -436,7 +419,7 @@ const startSimulation = () => {
 .hero-desc {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: var(--gray-text);
+  color: var(--muted-foreground);
   max-width: 640px;
   margin-bottom: 50px;
   font-weight: 400;
@@ -448,38 +431,38 @@ const startSimulation = () => {
 }
 
 .highlight-bold {
-  color: var(--black);
+  color: var(--foreground);
   font-weight: 700;
 }
 
 .highlight-orange {
-  color: var(--orange);
+  color: var(--primary);
   font-weight: 700;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .highlight-code {
   background: rgba(0, 0, 0, 0.05);
   padding: 2px 6px;
   border-radius: 2px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.9em;
-  color: var(--black);
+  color: var(--foreground);
   font-weight: 600;
 }
 
 .slogan-text {
   font-size: 1.2rem;
   font-weight: 520;
-  color: var(--black);
+  color: var(--foreground);
   letter-spacing: 1px;
-  border-left: 3px solid var(--orange);
+  border-left: 3px solid var(--primary);
   padding-left: 15px;
   margin-top: 20px;
 }
 
 .blinking-cursor {
-  color: var(--orange);
+  color: var(--primary);
   animation: blink 1s step-end infinite;
   font-weight: 700;
 }
@@ -492,7 +475,7 @@ const startSimulation = () => {
 .decoration-square {
   width: 16px;
   height: 16px;
-  background: var(--orange);
+  background: var(--primary);
 }
 
 .hero-right {
@@ -524,13 +507,13 @@ const startSimulation = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--orange);
+  color: var(--primary);
   font-size: 1.2rem;
   transition: all 0.2s;
 }
 
 .scroll-down-btn:hover {
-  border-color: var(--orange);
+  border-color: var(--accent);
 }
 
 /* Dashboard dual panel layout */
@@ -554,7 +537,7 @@ const startSimulation = () => {
 }
 
 .panel-header {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   color: #999;
   display: flex;
@@ -564,7 +547,7 @@ const startSimulation = () => {
 }
 
 .status-dot {
-  color: var(--orange);
+  color: var(--primary);
   font-size: 0.8rem;
 }
 
@@ -575,7 +558,7 @@ const startSimulation = () => {
 }
 
 .section-desc {
-  color: var(--gray-text);
+  color: var(--muted-foreground);
   margin-bottom: 25px;
   line-height: 1.6;
 }
@@ -593,7 +576,7 @@ const startSimulation = () => {
 }
 
 .metric-value {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 1.8rem;
   font-weight: 520;
   margin-bottom: 5px;
@@ -612,7 +595,7 @@ const startSimulation = () => {
 }
 
 .steps-header {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   color: #999;
   margin-bottom: 25px;
@@ -639,9 +622,9 @@ const startSimulation = () => {
 }
 
 .step-num {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: var(--black);
+  color: var(--foreground);
   opacity: 0.3;
 }
 
@@ -657,7 +640,7 @@ const startSimulation = () => {
 
 .step-desc {
   font-size: 0.85rem;
-  color: var(--gray-text);
+  color: var(--muted-foreground);
 }
 
 /* Right interactive console */
@@ -682,7 +665,7 @@ const startSimulation = () => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 15px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
   color: #666;
 }
@@ -730,7 +713,7 @@ const startSimulation = () => {
 }
 
 .upload-hint {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
   color: #999;
 }
@@ -746,10 +729,10 @@ const startSimulation = () => {
 .file-item {
   display: flex;
   align-items: center;
-  background: var(--white);
+  background: var(--background);
   padding: 8px 12px;
   border: 1px solid #EEE;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
 }
 
@@ -782,7 +765,7 @@ const startSimulation = () => {
 
 .console-divider span {
   padding: 0 15px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   color: #BBB;
   letter-spacing: 1px;
@@ -799,7 +782,7 @@ const startSimulation = () => {
   border: none;
   background: transparent;
   padding: 20px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.9rem;
   line-height: 1.6;
   resize: vertical;
@@ -811,18 +794,18 @@ const startSimulation = () => {
   position: absolute;
   bottom: 10px;
   right: 15px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   color: #AAA;
 }
 
 .start-engine-btn {
   width: 100%;
-  background: var(--black);
-  color: var(--white);
+  background: var(--foreground);
+  color: var(--background);
   border: none;
   padding: 20px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
   font-size: 1.1rem;
   display: flex;
@@ -837,14 +820,14 @@ const startSimulation = () => {
 
 /* Clickable state (not disabled) */
 .start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
+  background: var(--foreground);
+  border: 1px solid var(--foreground);
   animation: pulse-border 2s infinite;
 }
 
 .start-engine-btn:hover:not(:disabled) {
-  background: var(--orange);
-  border-color: var(--orange);
+  background: var(--accent);
+  border-color: var(--accent);
   transform: translateY(-2px);
 }
 
