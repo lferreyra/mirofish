@@ -1,12 +1,12 @@
 """
-Report Agent服务
-使用LangChain + Zep实现ReACT模式的模拟报告生成
+Report Agent Service
+Generate simulated reports using ReACT pattern (via GraphStorage / Neo4j)
 
-功能：
-1. 根据模拟需求和Zep图谱信息生成报告
-2. 先规划目录结构，然后分段生成
-3. 每段采用ReACT多轮思考与反思模式
-4. 支持与用户对话，在对话中自主调用检索工具
+Features:
+1. Generate reports based on simulation requirements and graph information
+2. First plan the outline structure, then generate section by section
+3. Each section uses ReACT multi-round thinking and reflection pattern
+4. Support conversations with users, autonomously call retrieval tools during conversations
 """
 
 import os
@@ -34,18 +34,18 @@ logger = get_logger('mirofish.report_agent')
 
 class ReportLogger:
     """
-    Report Agent 详细日志记录器
-    
-    在报告文件夹中生成 agent_log.jsonl 文件，记录每一步详细动作。
-    每行是一个完整的 JSON 对象，包含时间戳、动作类型、详细内容等。
+    Report Agent Detailed Logger
+
+    Generates agent_log.jsonl file in the report folder, recording detailed actions at each step.
+    Each line is a complete JSON object containing timestamp, action type, details, etc.
     """
     
     def __init__(self, report_id: str):
         """
-        初始化日志记录器
-        
+        Initialize the logger
+
         Args:
-            report_id: 报告ID，用于确定日志文件路径
+            report_id: Report ID, used to determine the log file path
         """
         self.report_id = report_id
         self.log_file_path = os.path.join(
@@ -55,7 +55,7 @@ class ReportLogger:
         self._ensure_log_file()
     
     def _ensure_log_file(self):
-        """确保日志文件所在目录存在"""
+        """Ensure the log file directory exists"""
         log_dir = os.path.dirname(self.log_file_path)
         os.makedirs(log_dir, exist_ok=True)
     
@@ -473,392 +473,393 @@ class Report:
 # ── 工具描述 ──
 
 TOOL_DESC_INSIGHT_FORGE = """\
-【深度洞察检索 - 强大的检索工具】
-这是我们强大的检索函数，专为深度分析设计。它会：
-1. 自动将你的问题分解为多个子问题
-2. 从多个维度检索模拟图谱中的信息
-3. 整合语义搜索、实体分析、关系链追踪的结果
-4. 返回最全面、最深度的检索内容
+[Deep Insight Retrieval - Powerful Retrieval Tool]
+This is our powerful retrieval function, designed for deep analysis. It will:
+1. Automatically decompose your question into multiple sub-questions
+2. Retrieve information from the simulated knowledge graph from multiple dimensions
+3. Integrate results from semantic search, entity analysis, and relationship chain tracking
+4. Return the most comprehensive and deep retrieval content
 
-【使用场景】
-- 需要深入分析某个话题
-- 需要了解事件的多个方面
-- 需要获取支撑报告章节的丰富素材
+[Use Cases]
+- Need to deeply analyze a topic
+- Need to understand multiple aspects of an event
+- Need to obtain rich materials to support report sections
 
-【返回内容】
-- 相关事实原文（可直接引用）
-- 核心实体洞察
-- 关系链分析"""
+[Return Content]
+- Relevant facts in original text (can be directly cited)
+- Core entity insights
+- Relationship chain analysis"""
 
 TOOL_DESC_PANORAMA_SEARCH = """\
-【广度搜索 - 获取全貌视图】
-这个工具用于获取模拟结果的完整全貌，特别适合了解事件演变过程。它会：
-1. 获取所有相关节点和关系
-2. 区分当前有效的事实和历史/过期的事实
-3. 帮助你了解舆情是如何演变的
+[Breadth Search - Get Complete Overview]
+This tool is used to get a complete panoramic view of simulation results, especially suitable for understanding the evolution of events. It will:
+1. Retrieve all relevant nodes and relationships
+2. Distinguish between current valid facts and historical/expired facts
+3. Help you understand how events have evolved
 
-【使用场景】
-- 需要了解事件的完整发展脉络
-- 需要对比不同阶段的舆情变化
-- 需要获取全面的实体和关系信息
+[Use Cases]
+- Need to understand the complete development trajectory of an event
+- Need to compare public sentiment changes across different stages
+- Need to get comprehensive entity and relationship information
 
-【返回内容】
-- 当前有效事实（模拟最新结果）
-- 历史/过期事实（演变记录）
-- 所有涉及的实体"""
+[Return Content]
+- Current valid facts (latest simulation results)
+- Historical/expired facts (evolution records)
+- All involved entities"""
 
 TOOL_DESC_QUICK_SEARCH = """\
-【简单搜索 - 快速检索】
-轻量级的快速检索工具，适合简单、直接的信息查询。
+[Simple Search - Quick Retrieval]
+A lightweight quick retrieval tool suitable for simple and direct information queries.
 
-【使用场景】
-- 需要快速查找某个具体信息
-- 需要验证某个事实
-- 简单的信息检索
+[Use Cases]
+- Need to quickly find specific information
+- Need to verify a fact
+- Simple information retrieval
 
-【返回内容】
-- 与查询最相关的事实列表"""
+[Return Content]
+- List of facts most relevant to the query"""
 
 TOOL_DESC_INTERVIEW_AGENTS = """\
-【深度采访 - 真实Agent采访（双平台）】
-调用OASIS模拟环境的采访API，对正在运行的模拟Agent进行真实采访！
-这不是LLM模拟，而是调用真实的采访接口获取模拟Agent的原始回答。
-默认在Twitter和Reddit两个平台同时采访，获取更全面的观点。
+[Deep Interview - Real Agent Interview (Dual Platform)]
+Call the OASIS simulation environment's interview API to conduct real interviews with running simulation agents!
+This is not an LLM simulation, but calls the real interview interface to get original responses from simulation agents.
+By default, interview on Twitter and Reddit simultaneously to get more comprehensive perspectives.
 
-功能流程：
-1. 自动读取人设文件，了解所有模拟Agent
-2. 智能选择与采访主题最相关的Agent（如学生、媒体、官方等）
-3. 自动生成采访问题
-4. 调用 /api/simulation/interview/batch 接口在双平台进行真实采访
-5. 整合所有采访结果，提供多视角分析
+Function Flow:
+1. Automatically read character profile files to understand all simulation agents
+2. Intelligently select agents most relevant to the interview topic (e.g., students, media, officials)
+3. Automatically generate interview questions
+4. Call /api/simulation/interview/batch interface to conduct real interviews on dual platforms
+5. Integrate all interview results and provide multi-perspective analysis
 
-【使用场景】
-- 需要从不同角色视角了解事件看法（学生怎么看？媒体怎么看？官方怎么说？）
-- 需要收集多方意见和立场
-- 需要获取模拟Agent的真实回答（来自OASIS模拟环境）
-- 想让报告更生动，包含"采访实录"
+[Use Cases]
+- Need to understand event perspectives from different role angles (How do students view it? How does media view it? What does the official say?)
+- Need to collect diverse opinions and positions
+- Need to get real responses from simulation agents (from OASIS simulation environment)
+- Want to make the report more vivid, including "interview records"
 
-【返回内容】
-- 被采访Agent的身份信息
-- 各Agent在Twitter和Reddit两个平台的采访回答
-- 关键引言（可直接引用）
-- 采访摘要和观点对比
+[Return Content]
+- Identity information of interviewed agents
+- Interview responses from each agent on Twitter and Reddit platforms
+- Key quotes (can be directly cited)
+- Interview summary and perspective comparison
 
-【重要】需要OASIS模拟环境正在运行才能使用此功能！"""
+[Important] This feature requires the OASIS simulation environment to be running!"""
 
-# ── 大纲规划 prompt ──
+# ── Outline Planning Prompt ──
 
 PLAN_SYSTEM_PROMPT = """\
-你是一个「未来预测报告」的撰写专家，拥有对模拟世界的「上帝视角」——你可以洞察模拟中每一位Agent的行为、言论和互动。
+You are an expert in writing "future prediction reports" with a "god's eye view" of the simulated world - you can gain insights into the behavior, statements, and interactions of every agent in the simulation.
 
-【核心理念】
-我们构建了一个模拟世界，并向其中注入了特定的「模拟需求」作为变量。模拟世界的演化结果，就是对未来可能发生情况的预测。你正在观察的不是"实验数据"，而是"未来的预演"。
+[Core Concept]
+We built a simulated world and injected specific "simulation requirements" as variables into it. The evolution result of the simulated world is a prediction of what might happen in the future. What you're observing is not "experimental data" but a "rehearsal of the future".
 
-【你的任务】
-撰写一份「未来预测报告」，回答：
-1. 在我们设定的条件下，未来发生了什么？
-2. 各类Agent（人群）是如何反应和行动？
-3. 这个模拟揭示了哪些值得关注的未来趋势和风险？
+[Your Task]
+Write a "future prediction report" that answers:
+1. What happened in the future under the conditions we set?
+2. How do various agents (groups) react and act?
+3. What future trends and risks does this simulation reveal that deserve attention?
 
-【报告定位】
-- ✅ 这是一份基于模拟的未来预测报告，揭示"如果这样，未来会怎样"
-- ✅ 聚焦于预测结果：事件走向、群体反应、涌现现象、潜在风险
-- ✅ 模拟世界中的Agent言行就是对未来人群行为的预测
-- ❌ 不是对现实世界现状的分析
-- ❌ 不是泛泛而谈的舆情综述
+[Report Positioning]
+- ✅ This is a future prediction report based on simulation, revealing "if this happens, how will the future unfold"
+- ✅ Focus on prediction results: event trajectories, group reactions, emergent phenomena, potential risks
+- ✅ Agent statements and behaviors in the simulated world are predictions of future human behavior
+- ❌ Not an analysis of the current state of the real world
+- ❌ Not a general overview of public sentiment
 
-【章节数量限制】
-- 最少2个章节，最多5个章节
-- 不需要子章节，每个章节直接撰写完整内容
-- 内容要精炼，聚焦于核心预测发现
-- 章节结构由你根据预测结果自主设计
+[Section Number Limit]
+- Minimum 2 sections, maximum 5 sections
+- No subsections needed, each section directly writes complete content
+- Content should be concise, focused on core prediction findings
+- Section structure is designed independently based on prediction results
 
-请输出JSON格式的报告大纲，格式如下：
+Please output the report outline in JSON format as follows:
 {
-    "title": "报告标题",
-    "summary": "报告摘要（一句话概括核心预测发现）",
+    "title": "Report Title",
+    "summary": "Report Summary (one sentence summarizing core prediction findings)",
     "sections": [
         {
-            "title": "章节标题",
-            "description": "章节内容描述"
+            "title": "Section Title",
+            "description": "Section Content Description"
         }
     ]
 }
 
-注意：sections数组最少2个，最多5个元素！"""
+Note: sections array must have at least 2 and at most 5 elements!"""
 
 PLAN_USER_PROMPT_TEMPLATE = """\
-【预测场景设定】
-我们向模拟世界注入的变量（模拟需求）：{simulation_requirement}
+[Prediction Scenario Settings]
+Variable (simulation requirement) injected into the simulated world: {simulation_requirement}
 
-【模拟世界规模】
-- 参与模拟的实体数量: {total_nodes}
-- 实体间产生的关系数量: {total_edges}
-- 实体类型分布: {entity_types}
-- 活跃Agent数量: {total_entities}
+[Simulated World Scale]
+- Number of entities participating in simulation: {total_nodes}
+- Number of relationships generated between entities: {total_edges}
+- Entity type distribution: {entity_types}
+- Number of active agents: {total_entities}
 
-【模拟预测到的部分未来事实样本】
+[Sample of Some Future Facts Predicted by Simulation]
 {related_facts_json}
 
-请以「上帝视角」审视这个未来预演：
-1. 在我们设定的条件下，未来呈现出了什么样的状态？
-2. 各类人群（Agent）是如何反应和行动的？
-3. 这个模拟揭示了哪些值得关注的未来趋势？
+Please examine this future rehearsal from a "god's eye view":
+1. What state does the future present under the conditions we set?
+2. How do various groups (agents) react and act?
+3. What future trends does this simulation reveal that deserve attention?
 
-根据预测结果，设计最合适的报告章节结构。
+Based on the prediction results, design the most appropriate report section structure.
 
-【再次提醒】报告章节数量：最少2个，最多5个，内容要精炼聚焦于核心预测发现。"""
+[Reminder] Report section count: minimum 2, maximum 5, content should be concise and focused on core prediction findings."""
 
-# ── 章节生成 prompt ──
+# ── Section Generation Prompt ──
 
 SECTION_SYSTEM_PROMPT_TEMPLATE = """\
-你是一个「未来预测报告」的撰写专家，正在撰写报告的一个章节。
+You are an expert in writing "future prediction reports" and are writing a section of the report.
 
-报告标题: {report_title}
-报告摘要: {report_summary}
-预测场景（模拟需求）: {simulation_requirement}
+Report Title: {report_title}
+Report Summary: {report_summary}
+Prediction Scenario (Simulation Requirement): {simulation_requirement}
 
-当前要撰写的章节: {section_title}
-
-═══════════════════════════════════════════════════════════════
-【核心理念】
-═══════════════════════════════════════════════════════════════
-
-模拟世界是对未来的预演。我们向模拟世界注入了特定条件（模拟需求），
-模拟中Agent的行为和互动，就是对未来人群行为的预测。
-
-你的任务是：
-- 揭示在设定条件下，未来发生了什么
-- 预测各类人群（Agent）是如何反应和行动的
-- 发现值得关注的未来趋势、风险和机会
-
-❌ 不要写成对现实世界现状的分析
-✅ 要聚焦于"未来会怎样"——模拟结果就是预测的未来
+Current Section to Write: {section_title}
 
 ═══════════════════════════════════════════════════════════════
-【最重要的规则 - 必须遵守】
+[Core Concept]
 ═══════════════════════════════════════════════════════════════
 
-1. 【必须调用工具观察模拟世界】
-   - 你正在以「上帝视角」观察未来的预演
-   - 所有内容必须来自模拟世界中发生的事件和Agent言行
-   - 禁止使用你自己的知识来编写报告内容
-   - 每个章节至少调用3次工具（最多5次）来观察模拟的世界，它代表了未来
+The simulated world is a rehearsal of the future. We injected specific conditions (simulation requirements) into the simulated world.
+The behavior and interactions of agents in the simulation are predictions of future human behavior.
 
-2. 【必须引用Agent的原始言行】
-   - Agent的发言和行为是对未来人群行为的预测
-   - 在报告中使用引用格式展示这些预测，例如：
-     > "某类人群会表示：原文内容..."
-   - 这些引用是模拟预测的核心证据
+Your task is to:
+- Reveal what happens in the future under the set conditions
+- Predict how various groups (agents) react and act
+- Discover future trends, risks, and opportunities worth paying attention to
 
-3. 【语言一致性 - 引用内容必须翻译为报告语言】
-   - 工具返回的内容可能包含英文或中英文混杂的表述
-   - 如果模拟需求和材料原文是中文的，报告必须全部使用中文撰写
-   - 当你引用工具返回的英文或中英混杂内容时，必须将其翻译为流畅的中文后再写入报告
-   - 翻译时保持原意不变，确保表述自然通顺
-   - 这一规则同时适用于正文和引用块（> 格式）中的内容
-
-4. 【忠实呈现预测结果】
-   - 报告内容必须反映模拟世界中的代表未来的模拟结果
-   - 不要添加模拟中不存在的信息
-   - 如果某方面信息不足，如实说明
+❌ Don't write it as an analysis of the current state of the real world
+✅ Focus on "how the future will unfold" - simulation results are the predicted future
 
 ═══════════════════════════════════════════════════════════════
-【⚠️ 格式规范 - 极其重要！】
+[Most Important Rules - Must Follow]
 ═══════════════════════════════════════════════════════════════
 
-【一个章节 = 最小内容单位】
-- 每个章节是报告的最小分块单位
-- ❌ 禁止在章节内使用任何 Markdown 标题（#、##、###、#### 等）
-- ❌ 禁止在内容开头添加章节主标题
-- ✅ 章节标题由系统自动添加，你只需撰写纯正文内容
-- ✅ 使用**粗体**、段落分隔、引用、列表来组织内容，但不要用标题
+1. [Must Call Tools to Observe the Simulated World]
+   - You are observing a rehearsal of the future from a "god's eye view"
+   - All content must come from events and agent statements/behaviors in the simulated world
+   - Forbidden to use your own knowledge to write report content
+   - Each section must call tools at least 3 times (maximum 5 times) to observe the simulated world, which represents the future
 
-【正确示例】
+2. [Must Quote Original Agent Statements and Behaviors]
+   - Agent statements and behaviors are predictions of future human behavior
+   - Use quote format in the report to display these predictions, for example:
+     > "Certain groups will state: original content..."
+   - These quotes are core evidence of simulation predictions
+
+3. [Language Consistency - Quoted Content Must Be Translated to Report Language]
+   - Tool returned content may contain English or mixed Chinese-English expressions
+   - If the simulation requirement and source material are in Chinese, the report must be entirely in Chinese
+   - When you quote English or mixed Chinese-English content from tools, you must translate it to fluent Chinese before including it in the report
+   - When translating, preserve the original meaning and ensure natural expression
+   - This rule applies to both regular text and quoted blocks (> format)
+
+4. [Faithfully Present Prediction Results]
+   - Report content must reflect simulation results that represent the future in the simulated world
+   - Don't add information that doesn't exist in the simulation
+   - If information is insufficient in some aspects, state it truthfully
+
+═══════════════════════════════════════════════════════════════
+[⚠️ Format Specification - Extremely Important!]
+═══════════════════════════════════════════════════════════════
+
+[One Section = Minimum Content Unit]
+- Each section is the minimum content unit of the report
+- ❌ Forbidden to use any Markdown titles (#, ##, ###, ####, etc.) within the section
+- ❌ Forbidden to add section titles at the beginning of content
+- ✅ Section titles are added automatically by the system, just write pure body text
+- ✅ Use **bold**, paragraph separation, quotes, and lists to organize content, but don't use titles
+
+[Correct Example]
 ```
-本章节分析了事件的舆论传播态势。通过对模拟数据的深入分析，我们发现...
+This section analyzes the public sentiment propagation of the event. Through in-depth analysis of simulation data, we found...
 
-**首发引爆阶段**
+**Initial Explosion Phase**
 
-微博作为舆情的第一现场，承担了信息首发的核心功能：
+Weibo, as the first scene of public sentiment, undertook the core function of initial information dissemination:
 
-> "微博贡献了68%的首发声量..."
+> "Weibo contributed 68% of initial voice..."
 
-**情绪放大阶段**
+**Emotion Amplification Phase**
 
-抖音平台进一步放大了事件影响力：
+The TikTok platform further amplified the impact of the event:
 
-- 视觉冲击力强
-- 情绪共鸣度高
-```
-
-【错误示例】
-```
-## 执行摘要          ← 错误！不要添加任何标题
-### 一、首发阶段     ← 错误！不要用###分小节
-#### 1.1 详细分析   ← 错误！不要用####细分
-
-本章节分析了...
+- Strong visual impact
+- High emotional resonance
 ```
 
+[Incorrect Example]
+```
+## Executive Summary          ← Wrong! Don't add any titles
+### 1. Initial Phase         ← Wrong! Don't use ### for subsections
+#### 1.1 Detailed Analysis   ← Wrong! Don't use #### for subdivisions
+
+This section analyzes...
+```
+
 ═══════════════════════════════════════════════════════════════
-【可用检索工具】（每章节调用3-5次）
+[Available Retrieval Tools] (call 3-5 times per section)
 ═══════════════════════════════════════════════════════════════
 
 {tools_description}
 
-【工具使用建议 - 请混合使用不同工具，不要只用一种】
-- insight_forge: 深度洞察分析，自动分解问题并多维度检索事实和关系
-- panorama_search: 广角全景搜索，了解事件全貌、时间线和演变过程
-- quick_search: 快速验证某个具体信息点
-- interview_agents: 采访模拟Agent，获取不同角色的第一人称观点和真实反应
+[Tool Usage Suggestions - Please Mix Different Tools, Don't Use Only One]
+- insight_forge: Deep insight analysis, automatically decompose problems and retrieve facts and relationships from multiple dimensions
+- panorama_search: Wide-angle panoramic search, understand complete event view, timeline, and evolution process
+- quick_search: Quick verification of specific information points
+- interview_agents: Interview simulated agents, get first-person perspectives and real reactions from different roles
 
 ═══════════════════════════════════════════════════════════════
-【工作流程】
+[Workflow]
 ═══════════════════════════════════════════════════════════════
 
-每次回复你只能做以下两件事之一（不可同时做）：
+Each reply you can only do one of two things (cannot do both):
 
-选项A - 调用工具：
-输出你的思考，然后用以下格式调用一个工具：
+Option A - Call Tool:
+Output your thinking, then call a tool using the following format:
 <tool_call>
-{{"name": "工具名称", "parameters": {{"参数名": "参数值"}}}}
+{{"name": "Tool Name", "parameters": {{"parameter_name": "parameter_value"}}}}
 </tool_call>
-系统会执行工具并把结果返回给你。你不需要也不能自己编写工具返回结果。
+The system will execute the tool and return the result to you. You don't need to and cannot write tool return results yourself.
 
-选项B - 输出最终内容：
-当你已通过工具获取了足够信息，以 "Final Answer:" 开头输出章节内容。
+Option B - Output Final Content:
+When you have gathered enough information through tools, start with "Final Answer:" and output section content.
 
-⚠️ 严格禁止：
-- 禁止在一次回复中同时包含工具调用和 Final Answer
-- 禁止自己编造工具返回结果（Observation），所有工具结果由系统注入
-- 每次回复最多调用一个工具
+⚠️ Strictly Forbidden:
+- Forbidden to include both tool calls and Final Answer in one reply
+- Forbidden to fabricate tool return results (Observation), all tool results are injected by the system
+- At most one tool call per reply
 
 ═══════════════════════════════════════════════════════════════
-【章节内容要求】
+[Section Content Requirements]
 ═══════════════════════════════════════════════════════════════
 
-1. 内容必须基于工具检索到的模拟数据
-2. 大量引用原文来展示模拟效果
-3. 使用Markdown格式（但禁止使用标题）：
-   - 使用 **粗体文字** 标记重点（代替子标题）
-   - 使用列表（-或1.2.3.）组织要点
-   - 使用空行分隔不同段落
-   - ❌ 禁止使用 #、##、###、#### 等任何标题语法
-4. 【引用格式规范 - 必须单独成段】
-   引用必须独立成段，前后各有一个空行，不能混在段落中：
+1. Content must be based on simulation data retrieved by tools
+2. Heavily quote original text to demonstrate simulation effects
+3. Use Markdown format (but forbidden to use titles):
+   - Use **bold text** to mark key points (replacing sub-titles)
+   - Use lists (- or 1.2.3.) to organize points
+   - Use blank lines to separate paragraphs
+   - ❌ Forbidden to use any title syntax like #, ##, ###, ####
+4. [Quote Format Specification - Must Be Separate Paragraph]
+   Quotes must be standalone paragraphs with blank lines before and after, cannot be mixed in paragraphs:
 
-   ✅ 正确格式：
+   ✅ Correct Format:
    ```
-   校方的回应被认为缺乏实质内容。
+   School officials' response was considered lacking substantive content.
 
-   > "校方的应对模式在瞬息万变的社交媒体环境中显得僵化和迟缓。"
+   > "School's response pattern appears rigid and slow in the rapidly changing social media environment."
 
-   这一评价反映了公众的普遍不满。
+   This assessment reflects widespread public dissatisfaction.
    ```
 
-   ❌ 错误格式：
+   ❌ Incorrect Format:
    ```
-   校方的回应被认为缺乏实质内容。> "校方的应对模式..." 这一评价反映了...
+   School officials' response was considered lacking substantive content.> "School's response pattern..." This assessment reflects...
    ```
-5. 保持与其他章节的逻辑连贯性
-6. 【避免重复】仔细阅读下方已完成的章节内容，不要重复描述相同的信息
-7. 【再次强调】不要添加任何标题！用**粗体**代替小节标题"""
+5. Maintain logical coherence with other sections
+6. [Avoid Duplication] Carefully read the completed section content below, don't repeat describing the same information
+7. [Emphasis Again] Don't add any titles! Use **bold** instead of section sub-titles"""
 
 SECTION_USER_PROMPT_TEMPLATE = """\
-已完成的章节内容（请仔细阅读，避免重复）：
+Completed Section Content (Please Read Carefully to Avoid Duplication):
 {previous_content}
 
 ═══════════════════════════════════════════════════════════════
-【当前任务】撰写章节: {section_title}
+[Current Task] Write Section: {section_title}
 ═══════════════════════════════════════════════════════════════
 
-【重要提醒】
-1. 仔细阅读上方已完成的章节，避免重复相同的内容！
-2. 开始前必须先调用工具获取模拟数据
-3. 请混合使用不同工具，不要只用一种
-4. 报告内容必须来自检索结果，不要使用自己的知识
+[Important Reminders]
+1. Carefully read the completed sections above to avoid repeating the same content!
+2. You must call tools to get simulation data before starting
+3. Please mix different tools, don't use only one
+4. Report content must come from retrieval results, don't use your own knowledge
 
-【⚠️ 格式警告 - 必须遵守】
-- ❌ 不要写任何标题（#、##、###、####都不行）
-- ❌ 不要写"{section_title}"作为开头
-- ✅ 章节标题由系统自动添加
-- ✅ 直接写正文，用**粗体**代替小节标题
+[⚠️ Format Warning - Must Follow]
+- ❌ Don't write any titles (#, ##, ###, #### none allowed)
+- ❌ Don't write "{section_title}" as the opening
+- ✅ Section titles are added automatically by the system
+- ✅ Write the body directly, use **bold** instead of sub-section titles
 
-请开始：
-1. 首先思考（Thought）这个章节需要什么信息
-2. 然后调用工具（Action）获取模拟数据
-3. 收集足够信息后输出 Final Answer（纯正文，无任何标题）"""
+Please start:
+1. First think (Thought) what information this section needs
+2. Then call tools (Action) to get simulation data
+3. After collecting enough information, output Final Answer (pure body text, no titles)"""
 
-# ── ReACT 循环内消息模板 ──
+# ── ReACT Loop Message Templates ──
 
 REACT_OBSERVATION_TEMPLATE = """\
-Observation（检索结果）:
+Observation (Retrieval Result):
 
-═══ 工具 {tool_name} 返回 ═══
+═══ Tool {tool_name} Returned ═══
 {result}
 
 ═══════════════════════════════════════════════════════════════
-已调用工具 {tool_calls_count}/{max_tool_calls} 次（已用: {used_tools_str}）{unused_hint}
-- 如果信息充分：以 "Final Answer:" 开头输出章节内容（必须引用上述原文）
-- 如果需要更多信息：调用一个工具继续检索
+Called tools {tool_calls_count}/{max_tool_calls} times (Used: {used_tools_str}){unused_hint}
+- If information is sufficient: Start with "Final Answer:" and output section content (must quote the above original text)
+- If more information is needed: Call a tool to continue retrieving
 ═══════════════════════════════════════════════════════════════"""
 
 REACT_INSUFFICIENT_TOOLS_MSG = (
-    "【注意】你只调用了{tool_calls_count}次工具，至少需要{min_tool_calls}次。"
-    "请再调用工具获取更多模拟数据，然后再输出 Final Answer。{unused_hint}"
+    "[Notice] You have only called {tool_calls_count} tools, need at least {min_tool_calls}. "
+    "Please call tools again to get more simulation data, then output Final Answer. {unused_hint}"
 )
 
 REACT_INSUFFICIENT_TOOLS_MSG_ALT = (
-    "当前只调用了 {tool_calls_count} 次工具，至少需要 {min_tool_calls} 次。"
-    "请调用工具获取模拟数据。{unused_hint}"
+    "Currently called {tool_calls_count} tools, need at least {min_tool_calls}. "
+    "Please call tools to get simulation data. {unused_hint}"
 )
 
 REACT_TOOL_LIMIT_MSG = (
-    "工具调用次数已达上限（{tool_calls_count}/{max_tool_calls}），不能再调用工具。"
-    '请立即基于已获取的信息，以 "Final Answer:" 开头输出章节内容。'
+    "Tool call count has reached the limit ({tool_calls_count}/{max_tool_calls}), cannot call tools anymore. "
+    'Please immediately start with "Final Answer:" and output section content based on acquired information.'
 )
 
-REACT_UNUSED_TOOLS_HINT = "\n💡 你还没有使用过: {unused_list}，建议尝试不同工具获取多角度信息"
+REACT_UNUSED_TOOLS_HINT = "\n💡 You haven't used yet: {unused_list}, suggest trying different tools to get multi-perspective information"
 
-REACT_FORCE_FINAL_MSG = "已达到工具调用限制，请直接输出 Final Answer: 并生成章节内容。"
+REACT_FORCE_FINAL_MSG = "Tool call limit reached, please directly output Final Answer: and generate section content."
 
-# ── Chat prompt ──
+# ── Chat Prompt ──
 
 CHAT_SYSTEM_PROMPT_TEMPLATE = """\
-你是一个简洁高效的模拟预测助手。
+You are a concise and efficient simulation prediction assistant.
 
-【背景】
-预测条件: {simulation_requirement}
+[Background]
+Prediction Condition: {simulation_requirement}
 
-【已生成的分析报告】
+[Generated Analysis Report]
 {report_content}
 
-【规则】
-1. 优先基于上述报告内容回答问题
-2. 直接回答问题，避免冗长的思考论述
-3. 仅在报告内容不足以回答时，才调用工具检索更多数据
-4. 回答要简洁、清晰、有条理
+[Rules]
+1. Prioritize answering questions based on the above report content
+2. Answer questions directly, avoid lengthy deliberation
+3. Only call tools to retrieve more data if the report content is insufficient to answer
+4. Answers should be concise, clear, and well-organized
 
-【可用工具】（仅在需要时使用，最多调用1-2次）
+[Available Tools] (use only when needed, call at most 1-2 times)
 {tools_description}
 
-【工具调用格式】
+[Tool Call Format]
 <tool_call>
-{{"name": "工具名称", "parameters": {{"参数名": "参数值"}}}}
+{{"name": "Tool Name", "parameters": {{"parameter_name": "parameter_value"}}}}
 </tool_call>
 
-【回答风格】
-- 简洁直接，不要长篇大论
-- 使用 > 格式引用关键内容
-- 优先给出结论，再解释原因"""
+[Answer Style]
+- Concise and direct, don't write lengthy passages
+- Use > format to quote key content
+- Give conclusions first, then explain reasons"""
 
-CHAT_OBSERVATION_SUFFIX = "\n\n请简洁回答问题。"
+CHAT_OBSERVATION_SUFFIX = "\n\nPlease answer the question concisely."
 
 
 # ═══════════════════════════════════════════════════════════════
-# ReportAgent 主类
+# ReportAgent Main Class
 # ═══════════════════════════════════════════════════════════════
+
 
 
 class ReportAgent:
@@ -1704,6 +1705,7 @@ class ReportAgent:
             )
             
             # 使用ReportManager组装完整报告
+            
             report.markdown_content = ReportManager.assemble_full_report(report_id, outline)
             report.status = ReportStatus.COMPLETED
             report.completed_at = datetime.now().isoformat()

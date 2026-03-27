@@ -213,12 +213,19 @@ def generate_ontology():
         
         # 生成本体
         logger.info("调用 LLM 生成本体定义...")
+        # till this point
         generator = OntologyGenerator()
-        ontology = generator.generate(
-            document_texts=document_texts,
-            simulation_requirement=simulation_requirement,
-            additional_context=additional_context if additional_context else None
-        )
+        logger.info("OntologyGenerator....................")
+        try:
+            ontology = generator.generate(
+                document_texts=document_texts,
+                simulation_requirement=simulation_requirement,
+                additional_context=additional_context if additional_context else None
+            )
+            logger.info("OntologyGenerator  try....................")
+        except Exception as e:
+            logger.error(f"本体生成失败: {traceback.format_exc()}")  # ADD
+            raise 
         
         # 保存本体到项目
         entity_count = len(ontology.get("entity_types", []))
