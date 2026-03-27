@@ -8,9 +8,11 @@
 
 ---
 
-## Phase 1 — English Localization
+## Phase 1: English Localization
 
 **Goal:** Remove all Chinese text from the full stack — UI, status messages, logs, and source code.
+
+**Requirements:** [R1.1, R1.2, R1.3, R1.4]
 
 **Scope:**
 - Translate all Chinese strings in `frontend/src/**/*.vue` (labels, toasts, placeholder text, comments)
@@ -20,16 +22,18 @@
 - Translate Chinese comments in `backend/scripts/*.py`
 
 **Plans:**
-1. `plan-frontend-localization` — Audit and translate all `.vue` files
-2. `plan-backend-localization` — Audit and translate all `.py` files (services, tools, utils, scripts)
+- [x] 01-01-PLAN.md — Audit and translate all `.vue` files
+- [x] 01-02-PLAN.md — Audit and translate all `.py` files (services, tools, utils, scripts)
 
 **Done when:** Running a full simulation from upload to report shows zero Chinese characters anywhere in the UI, logs, or console output.
 
 ---
 
-## Phase 2 — Slater Consulting Brand UI
+## Phase 2: Slater Consulting Brand UI
 
 **Goal:** Apply Slater Consulting's visual identity to the Vue frontend.
+
+**Requirements:** [R2.1, R2.2, R2.3, R2.4]
 
 **Scope:**
 - Replace current CSS color variables with Slater Consulting palette
@@ -38,16 +42,18 @@
 - Ensure all components (buttons, cards, progress bars, status badges) use the new palette consistently
 
 **Plans:**
-1. `plan-brand-theming` — CSS variables, font import, color system
-2. `plan-brand-components` — Header rebrand, component audit, favicon
+- [x] 02-01-PLAN.md — Token system (style.css, Geist Sans font, index.html metadata, App.vue globals, favicon, Home.vue :root cleanup)
+- [ ] 02-02-PLAN.md — Component audit (5 views header rebrand + color tokens, 7 components color tokens + D3 palette, visual verification)
 
 **Done when:** App visually matches Slater Consulting dark navy/blue theme. Screenshot comparison passes against brand reference.
 
 ---
 
-## Phase 3 — Simulation Rate Limit Control
+## Phase 3: Simulation Rate Limit Control
 
 **Goal:** Add configurable LLM throttling and automatic 429 retry to simulation runs.
+
+**Requirements:** [R3.1, R3.2, R3.3, R3.4]
 
 **Scope:**
 - Inter-turn delay injected into simulation execution loops (`scripts/run_twitter_simulation.py`, `scripts/run_reddit_simulation.py`, `scripts/run_parallel_simulation.py`)
@@ -57,8 +63,8 @@
 - Settings persisted to localStorage
 
 **Plans:**
-1. `plan-rate-limit-backend` — Delay injection, 429 retry logic, config endpoint
-2. `plan-rate-limit-frontend` — Settings UI panel, localStorage persistence
+- [ ] 03-01-PLAN.md — Delay injection, 429 retry logic, config endpoint
+- [ ] 03-02-PLAN.md — Settings UI panel, localStorage persistence
 
 **Done when:** A simulation run that would normally hit rate limits completes successfully with configurable throttling. 429 errors are retried automatically with logged backoff.
 
