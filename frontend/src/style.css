@@ -1,0 +1,17 @@
+/* Slater Consulting brand tokens — Phase 2 */
+
+:root {
+  --background:             hsl(210, 57%, 11%);
+  --foreground:             hsl(220, 33%, 97%);
+  --primary:                hsl(217, 75%, 47%);
+  --primary-foreground:     hsl(0, 0%, 100%);
+  --secondary:              hsl(213, 40%, 18%);
+  --secondary-foreground:   hsl(220, 33%, 97%);
+  --accent:                 hsl(213, 75%, 60%);
+  --accent-foreground:      hsl(0, 0%, 100%);
+  --muted-foreground:       hsl(213, 20%, 60%);
+  --border:                 hsl(213, 30%, 22%);
+  --card:                   hsl(213, 50%, 14%);
+  --destructive:            hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+}
