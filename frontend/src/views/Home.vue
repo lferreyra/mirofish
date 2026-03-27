@@ -2,7 +2,7 @@
   <div class="home-container">
     <!-- Top Navigation Bar -->
     <nav class="navbar">
-      <div class="nav-brand">MIROFISH</div>
+      <div class="nav-brand">Slater Consulting</div>
       <div class="nav-links">
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           Visit our Github page <span class="arrow">↗</span>
@@ -395,7 +395,7 @@ const startSimulation = () => {
 }
 
 .version-text {
-  color: #999;
+  color: var(--muted-foreground);
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -442,7 +442,7 @@ const startSimulation = () => {
 }
 
 .highlight-code {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.4);
   padding: 2px 6px;
   border-radius: 2px;
   font-family: 'JetBrains Mono', monospace;
@@ -539,7 +539,7 @@ const startSimulation = () => {
 .panel-header {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
-  color: #999;
+  color: var(--muted-foreground);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -584,7 +584,7 @@ const startSimulation = () => {
 
 .metric-label {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 /* Simulation workflow steps */
@@ -597,7 +597,7 @@ const startSimulation = () => {
 .steps-header {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
-  color: #999;
+  color: var(--muted-foreground);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -649,7 +649,7 @@ const startSimulation = () => {
 }
 
 .console-box {
-  border: 1px solid #CCC; /* Outer solid border */
+  border: 1px solid var(--border); /* Outer solid border */
   padding: 8px; /* Inner padding for double-border effect */
 }
 
@@ -667,11 +667,11 @@ const startSimulation = () => {
   margin-bottom: 15px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 .upload-zone {
-  border: 1px dashed #CCC;
+  border: 1px dashed var(--border);
   height: 200px;
   overflow-y: auto;
   display: flex;
@@ -679,7 +679,7 @@ const startSimulation = () => {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
-  background: #FAFAFA;
+  background: var(--secondary);
 }
 
 .upload-zone.has-files {
@@ -687,8 +687,8 @@ const startSimulation = () => {
 }
 
 .upload-zone:hover {
-  background: #F0F0F0;
-  border-color: #999;
+  background: var(--card);
+  border-color: var(--muted-foreground);
 }
 
 .upload-placeholder {
@@ -698,12 +698,12 @@ const startSimulation = () => {
 .upload-icon {
   width: 40px;
   height: 40px;
-  border: 1px solid #DDD;
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 15px;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .upload-title {
@@ -715,7 +715,7 @@ const startSimulation = () => {
 .upload-hint {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .file-list {
@@ -731,7 +731,7 @@ const startSimulation = () => {
   align-items: center;
   background: var(--background);
   padding: 8px 12px;
-  border: 1px solid #EEE;
+  border: 1px solid var(--border);
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
 }
@@ -746,7 +746,7 @@ const startSimulation = () => {
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .console-divider {
@@ -760,21 +760,21 @@ const startSimulation = () => {
   content: '';
   flex: 1;
   height: 1px;
-  background: #EEE;
+  background: var(--border);
 }
 
 .console-divider span {
   padding: 0 15px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
-  color: #BBB;
+  color: var(--muted-foreground);
   letter-spacing: 1px;
 }
 
 .input-wrapper {
   position: relative;
-  border: 1px solid #DDD;
-  background: #FAFAFA;
+  border: 1px solid var(--border);
+  background: var(--secondary);
 }
 
 .code-input {
@@ -788,6 +788,7 @@ const startSimulation = () => {
   resize: vertical;
   outline: none;
   min-height: 150px;
+  color: var(--foreground);
 }
 
 .model-badge {
@@ -796,13 +797,13 @@ const startSimulation = () => {
   right: 15px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
-  color: #AAA;
+  color: var(--muted-foreground);
 }
 
 .start-engine-btn {
   width: 100%;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   padding: 20px;
   font-family: 'JetBrains Mono', monospace;
@@ -820,8 +821,8 @@ const startSimulation = () => {
 
 /* Clickable state (not disabled) */
 .start-engine-btn:not(:disabled) {
-  background: var(--foreground);
-  border: 1px solid var(--foreground);
+  background: var(--primary);
+  border: 1px solid var(--primary);
   animation: pulse-border 2s infinite;
 }
 
@@ -836,11 +837,11 @@ const startSimulation = () => {
 }
 
 .start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
+  background: var(--secondary);
+  color: var(--muted-foreground);
   cursor: not-allowed;
   transform: none;
-  border: 1px solid #E5E5E5;
+  border: 1px solid var(--border);
 }
 
 /* Guide animation: subtle border pulse */
