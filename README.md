@@ -122,9 +122,21 @@ LLM_API_KEY=your_api_key
 LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_MODEL_NAME=qwen-plus
 
-# ZEP memory graph configuration
-# The free monthly quota is enough for basic usage: https://app.getzep.com/
+# Graph backend selection
+# Use zep_cloud for hosted Zep, or graphiti_local for local Neo4j + Graphiti
+GRAPH_BACKEND=zep_cloud
+
+# Zep Cloud configuration
+# Required only when GRAPH_BACKEND=zep_cloud
 ZEP_API_KEY=your_zep_api_key
+
+# Local Graphiti + Neo4j configuration
+# Required only when GRAPH_BACKEND=graphiti_local
+# Note: the local Graphiti backend stores all graphs in one Neo4j database
+# and isolates each MiroFish graph by Graphiti `group_id`.
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_neo4j_password
 ```
 
 #### 2. Install Dependencies
@@ -151,6 +163,17 @@ npm run setup:backend
 npm run dev
 ```
 
+If you use `GRAPH_BACKEND=graphiti_local`, start Neo4j too:
+
+```bash
+docker compose up -d neo4j
+```
+
+The bundled `docker-compose.yml` uses `neo4j:5.26.22-enterprise` with
+`NEO4J_ACCEPT_LICENSE_AGREEMENT=yes` as the safe default for local compatibility.
+The current local backend still keeps all graphs in the default Neo4j database
+and maps each MiroFish `graph_id` directly to a Graphiti `group_id`.
+
 **Service URLs:**
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5001`
@@ -175,6 +198,7 @@ docker compose up -d
 Docker reads `.env` from the project root by default and maps ports `3000 (frontend) / 5001 (backend)`.
 
 > A mirror image URL is provided as a comment in `docker-compose.yml` if you need a faster pull source.
+> When `GRAPH_BACKEND=graphiti_local`, the bundled compose stack starts a local Neo4j instance for Graphiti storage. The repo keeps the enterprise image as the default compose target because existing local stores may use the block format.
 
 ## 📬 Join the Conversation
 
