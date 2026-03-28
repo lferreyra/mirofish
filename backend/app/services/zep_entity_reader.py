@@ -88,19 +88,19 @@ class ZepEntityReader:
                 last_exception = e
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Zep {operation_name} 第 {attempt + 1} 次尝试失败: {str(e)[:100]}, "
-                        f"{delay:.1f}秒后重试..."
+                        f"Zep {operation_name} attempt {attempt + 1} failed: {str(e)[:100]}. "
+                        f"Retrying in {delay:.1f}s..."
                     )
                     time.sleep(delay)
                     delay *= 2  
                 else:
-                    logger.error(f"Zep {operation_name} 在 {max_retries} 次尝试后仍失败: {str(e)}")
+                    logger.error(f"Zep {operation_name} still failed after {max_retries} attempts: {str(e)}")
         
         raise last_exception
     
     def get_all_nodes(self, graph_id: str) -> List[Dict[str, Any]]:
         """Get all nodes."""
-        logger.info(f"获取图谱 {graph_id} 的所有节点...")
+        logger.info(f"Loading all nodes for graph {graph_id}...")
 
         nodes = self.provider.get_all_nodes(graph_id)
 
@@ -114,12 +114,12 @@ class ZepEntityReader:
                 "attributes": node.attributes or {},
             })
 
-        logger.info(f"共获取 {len(nodes_data)} 个节点")
+        logger.info(f"Loaded {len(nodes_data)} nodes")
         return nodes_data
 
     def get_all_edges(self, graph_id: str) -> List[Dict[str, Any]]:
         """Get all edges."""
-        logger.info(f"获取图谱 {graph_id} 的所有边...")
+        logger.info(f"Loading all edges for graph {graph_id}...")
 
         edges = self.provider.get_all_edges(graph_id)
 
@@ -134,7 +134,7 @@ class ZepEntityReader:
                 "attributes": edge.attributes or {},
             })
 
-        logger.info(f"共获取 {len(edges_data)} 条边")
+        logger.info(f"Loaded {len(edges_data)} edges")
         return edges_data
     
     def get_node_edges(self, graph_id: str, node_uuid: str) -> List[Dict[str, Any]]:
@@ -143,7 +143,7 @@ class ZepEntityReader:
             
             edges = self._call_with_retry(
                 func=lambda: self.provider.get_node_edges(graph_id, node_uuid),
-                operation_name=f"获取节点边(node={node_uuid[:8]}...)"
+                operation_name=f"get node edges (node={node_uuid[:8]}...)"
             )
             
             edges_data = []
@@ -159,7 +159,7 @@ class ZepEntityReader:
             
             return edges_data
         except Exception as e:
-            logger.warning(f"获取节点 {node_uuid} 的边失败: {str(e)}")
+            logger.warning(f"Failed to load edges for node {node_uuid}: {str(e)}")
             return []
     
     def filter_defined_entities(
@@ -169,7 +169,7 @@ class ZepEntityReader:
         enrich_with_edges: bool = True
     ) -> FilteredEntities:
         """Filter defined entities."""
-        logger.info(f"开始筛选图谱 {graph_id} 的实体...")
+        logger.info(f"Starting entity filtering for graph {graph_id}...")
         
         
         all_nodes = self.get_all_nodes(graph_id)
@@ -256,8 +256,10 @@ class ZepEntityReader:
             
             filtered_entities.append(entity)
         
-        logger.info(f"筛选完成: 总节点 {total_count}, 符合条件 {len(filtered_entities)}, "
-                   f"实体类型: {entity_types_found}")
+        logger.info(
+            f"Entity filtering completed: total_nodes={total_count}, "
+            f"matched={len(filtered_entities)}, entity_types={entity_types_found}"
+        )
         
         return FilteredEntities(
             entities=filtered_entities,
@@ -276,7 +278,7 @@ class ZepEntityReader:
             
             node = self._call_with_retry(
                 func=lambda: self.provider.get_node(graph_id, entity_uuid),
-                operation_name=f"获取节点详情(uuid={entity_uuid[:8]}...)"
+                operation_name=f"Fetch node details (uuid={entity_uuid[:8]}...)"
             )
             
             if not node:
@@ -334,7 +336,7 @@ class ZepEntityReader:
             )
             
         except Exception as e:
-            logger.error(f"获取实体 {entity_uuid} 失败: {str(e)}")
+            logger.error(f"Failed to fetch entity {entity_uuid}: {str(e)}")
             return None
     
     def get_entities_by_type(

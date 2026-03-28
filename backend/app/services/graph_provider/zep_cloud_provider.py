@@ -27,7 +27,7 @@ class ZepCloudGraphProvider(BaseGraphProvider):
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
+            raise ValueError("ZEP_API_KEY is not configured")
 
         self.client = Zep(api_key=self.api_key)
 
@@ -135,7 +135,7 @@ class ZepCloudGraphProvider(BaseGraphProvider):
 
             if progress_callback:
                 progress_callback(
-                    f"发送第 {batch_num}/{total_batches} 批数据 ({len(batch_chunks)} 块)...",
+                    f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
                     (i + len(batch_chunks)) / total_chunks if total_chunks else 1.0,
                 )
 
@@ -161,7 +161,7 @@ class ZepCloudGraphProvider(BaseGraphProvider):
     ) -> None:
         if not episode_uuids:
             if progress_callback:
-                progress_callback("无需等待（没有 episode）", 1.0)
+                progress_callback("No wait needed (no episodes)", 1.0)
             return
 
         start_time = time.time()
@@ -170,13 +170,13 @@ class ZepCloudGraphProvider(BaseGraphProvider):
         total_episodes = len(episode_uuids)
 
         if progress_callback:
-            progress_callback(f"开始等待 {total_episodes} 个文本块处理...", 0)
+            progress_callback(f"Waiting for {total_episodes} text chunks to be processed...", 0)
 
         while pending_episodes:
             if time.time() - start_time > timeout:
                 if progress_callback:
                     progress_callback(
-                        f"部分文本块超时，已完成 {completed_count}/{total_episodes}",
+                        f"Some text chunks timed out; completed {completed_count}/{total_episodes}",
                         completed_count / total_episodes if total_episodes else 1.0,
                     )
                 break
@@ -194,7 +194,8 @@ class ZepCloudGraphProvider(BaseGraphProvider):
             if progress_callback:
                 elapsed = int(time.time() - start_time)
                 progress_callback(
-                    f"Zep处理中... {completed_count}/{total_episodes} 完成, {len(pending_episodes)} 待处理 ({elapsed}秒)",
+                    f"Zep processing... {completed_count}/{total_episodes} complete, "
+                    f"{len(pending_episodes)} pending ({elapsed}s)",
                     completed_count / total_episodes if total_episodes else 1.0,
                 )
 
@@ -202,7 +203,7 @@ class ZepCloudGraphProvider(BaseGraphProvider):
                 time.sleep(3)
 
         if progress_callback:
-            progress_callback(f"处理完成: {completed_count}/{total_episodes}", 1.0)
+            progress_callback(f"Processing complete: {completed_count}/{total_episodes}", 1.0)
 
     def get_all_nodes(self, graph_id: str) -> list[GraphNodeRecord]:
         return [self._normalize_node(node) for node in fetch_all_nodes(self.client, graph_id)]
@@ -294,4 +295,3 @@ class ZepCloudGraphProvider(BaseGraphProvider):
             expired_at=str(getattr(edge, 'expired_at', None)) if getattr(edge, 'expired_at', None) else None,
             episodes=[str(episode) for episode in episodes],
         )
-

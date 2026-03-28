@@ -93,20 +93,20 @@ class Config:
 
         if cls.GRAPH_BACKEND == 'zep_cloud':
             if not cls.ZEP_API_KEY:
-                errors.append("ZEP_API_KEY 未配置")
+                errors.append("ZEP_API_KEY is not configured")
         elif cls.GRAPH_BACKEND == 'graphiti_local':
             if not cls.NEO4J_URI:
-                errors.append("NEO4J_URI 未配置")
+                errors.append("NEO4J_URI is not configured")
             if not cls.NEO4J_USER:
-                errors.append("NEO4J_USER 未配置")
+                errors.append("NEO4J_USER is not configured")
             if not cls.NEO4J_PASSWORD:
-                errors.append("NEO4J_PASSWORD 未配置")
+                errors.append("NEO4J_PASSWORD is not configured")
             if not cls.GRAPHITI_LLM_API_KEY:
-                errors.append("GRAPHITI_LLM_API_KEY/LLM_API_KEY 未配置")
+                errors.append("GRAPHITI_LLM_API_KEY/LLM_API_KEY is not configured")
             if not cls.GRAPHITI_EMBEDDER_API_KEY:
-                errors.append("GRAPHITI_EMBEDDER_API_KEY/LLM_API_KEY 未配置")
+                errors.append("GRAPHITI_EMBEDDER_API_KEY/LLM_API_KEY is not configured")
         else:
-            errors.append(f"不支持的 GRAPH_BACKEND: {cls.GRAPH_BACKEND}")
+            errors.append(f"Unsupported GRAPH_BACKEND: {cls.GRAPH_BACKEND}")
 
         return errors
 
@@ -115,6 +115,6 @@ class Config:
         """Validate the configuration."""
         errors = []
         if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY 未配置")
+            errors.append("LLM_API_KEY is not configured")
         errors.extend(cls.validate_graph_backend())
         return errors

@@ -25,10 +25,10 @@ def main():
     
     errors = Config.validate()
     if errors:
-        print("配置错误:")
+        print("Configuration errors:")
         for err in errors:
             print(f"  - {err}")
-        print("\n请检查 .env 文件中的配置")
+        print("\nPlease check the configuration in your .env file")
         sys.exit(1)
     
     
@@ -45,4 +45,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
