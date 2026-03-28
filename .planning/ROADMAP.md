@@ -42,7 +42,7 @@
 - Ensure all components (buttons, cards, progress bars, status badges) use the new palette consistently
 
 **Plans:**
-- [x] 02-01-PLAN.md — Token system (style.css, Geist Sans font, index.html metadata, App.vue globals, favicon, Home.vue :root cleanup)
+2/2 plans complete
 - [ ] 02-02-PLAN.md — Component audit (5 views header rebrand + color tokens, 7 components color tokens + D3 palette, visual verification)
 
 **Done when:** App visually matches Slater Consulting dark navy/blue theme. Screenshot comparison passes against brand reference.
