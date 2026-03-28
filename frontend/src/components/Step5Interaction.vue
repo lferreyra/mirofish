@@ -54,8 +54,8 @@
                 <div v-else-if="currentSectionIndex === idx + 1" class="loading-state">
                   <div class="loading-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <circle cx="12" cy="12" r="10" stroke-width="4" stroke="#E5E7EB"></circle>
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
+                      <circle cx="12" cy="12" r="10" stroke-width="4" stroke="var(--border)"></circle>
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="var(--accent)" stroke-linecap="round"></path>
                     </svg>
                   </div>
                   <span class="loading-text">Generating {{ section.title }}...</span>
@@ -973,8 +973,7 @@ watch(() => props.simulationId, (newId) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #F8F9FA;
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  background: var(--background);
   overflow: hidden;
 }
 
@@ -994,8 +993,8 @@ watch(() => props.simulationId, (newId) => {
 .left-panel.report-style {
   width: 45%;
   min-width: 450px;
-  background: #FFFFFF;
-  border-right: 1px solid #E5E7EB;
+  background: var(--secondary);
+  border-right: 1px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1017,11 +1016,11 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .left-panel:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .left-panel::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Report Header */
@@ -1043,8 +1042,8 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .report-tag {
-  background: #000000;
-  color: #FFFFFF;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
@@ -1054,7 +1053,7 @@ watch(() => props.simulationId, (newId) => {
 
 .report-id {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -1063,7 +1062,7 @@ watch(() => props.simulationId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 36px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   line-height: 1.2;
   margin: 0 0 16px 0;
   letter-spacing: -0.02em;
@@ -1072,7 +1071,7 @@ watch(() => props.simulationId, (newId) => {
 .sub-title {
   font-family: 'Times New Roman', Times, serif;
   font-size: 16px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   font-style: italic;
   line-height: 1.6;
   margin: 0 0 30px 0;
@@ -1081,7 +1080,7 @@ watch(() => props.simulationId, (newId) => {
 
 .header-divider {
   height: 1px;
-  background: #E5E7EB;
+  background: var(--border);
   width: 100%;
 }
 
@@ -1113,12 +1112,12 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .section-header-row.clickable:hover {
-  background-color: #F9FAFB;
+  background-color: var(--secondary);
 }
 
 .collapse-icon {
   margin-left: auto;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   transition: transform 0.3s ease;
   flex-shrink: 0;
   align-self: center;
@@ -1131,7 +1130,7 @@ watch(() => props.simulationId, (newId) => {
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  color: #E5E7EB;
+  color: var(--border);
   font-weight: 500;
   transition: color 0.3s ease;
 }
@@ -1140,27 +1139,27 @@ watch(() => props.simulationId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 24px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   transition: color 0.3s ease;
 }
 
 /* States */
 .report-section-item.is-pending .section-number {
-  color: #E5E7EB;
+  color: var(--border);
 }
 .report-section-item.is-pending .section-title {
-  color: #D1D5DB;
+  color: var(--muted-foreground);
 }
 
 .report-section-item.is-active .section-number,
 .report-section-item.is-completed .section-number {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .report-section-item.is-active .section-title,
 .report-section-item.is-completed .section-title {
-  color: #111827;
+  color: var(--foreground);
 }
 
 .section-body {
@@ -1170,10 +1169,9 @@ watch(() => props.simulationId, (newId) => {
 
 /* Generated Content */
 .generated-content {
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.8;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .generated-content :deep(p) {
@@ -1184,13 +1182,13 @@ watch(() => props.simulationId, (newId) => {
 .generated-content :deep(.md-h3),
 .generated-content :deep(.md-h4) {
   font-family: 'Times New Roman', Times, serif;
-  color: #111827;
+  color: var(--foreground);
   margin-top: 1.5em;
   margin-bottom: 0.8em;
   font-weight: 700;
 }
 
-.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px solid #F3F4F6; padding-bottom: 8px; }
+.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 .generated-content :deep(.md-h3) { font-size: 18px; }
 .generated-content :deep(.md-h4) { font-size: 16px; }
 
@@ -1205,28 +1203,28 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .generated-content :deep(.md-quote) {
-  border-left: 3px solid #E5E7EB;
+  border-left: 3px solid var(--border);
   padding-left: 16px;
   margin: 1.5em 0;
-  color: #6B7280;
+  color: var(--muted-foreground);
   font-style: italic;
   font-family: 'Times New Roman', Times, serif;
 }
 
 .generated-content :deep(.code-block) {
-  background: #F9FAFB;
+  background: var(--secondary);
   padding: 12px;
   border-radius: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   overflow-x: auto;
   margin: 1em 0;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
 }
 
 .generated-content :deep(strong) {
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
 }
 
 /* Loading State */
@@ -1234,7 +1232,7 @@ watch(() => props.simulationId, (newId) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   font-size: 14px;
   margin-top: 4px;
 }
@@ -1251,7 +1249,7 @@ watch(() => props.simulationId, (newId) => {
 .loading-text {
   font-family: 'Times New Roman', Times, serif;
   font-size: 15px;
-  color: #4B5563;
+  color: var(--muted-foreground);
 }
 
 @keyframes spin {
@@ -1274,7 +1272,7 @@ watch(() => props.simulationId, (newId) => {
   justify-content: center;
   gap: 20px;
   padding: 40px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .waiting-animation {
@@ -1287,7 +1285,7 @@ watch(() => props.simulationId, (newId) => {
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 50%;
   animation: ripple 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -1314,7 +1312,7 @@ watch(() => props.simulationId, (newId) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #FFFFFF;
+  background: var(--background);
   overflow: hidden;
 }
 
@@ -1324,8 +1322,8 @@ watch(() => props.simulationId, (newId) => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid #E5E7EB;
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%);
+  border-bottom: 1px solid var(--border);
+  background: var(--secondary);
   gap: 16px;
 }
 
@@ -1337,7 +1335,7 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .action-bar-icon {
-  color: #1F2937;
+  color: var(--foreground);
   flex-shrink: 0;
 }
 
@@ -1350,13 +1348,13 @@ watch(() => props.simulationId, (newId) => {
 .action-bar-title {
   font-size: 13px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   letter-spacing: -0.01em;
 }
 
 .action-bar-subtitle {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .action-bar-subtitle.mono {
@@ -1378,8 +1376,8 @@ watch(() => props.simulationId, (newId) => {
   padding: 8px 14px;
   font-size: 12px;
   font-weight: 500;
-  color: #6B7280;
-  background: #F3F4F6;
+  color: var(--muted-foreground);
+  background: var(--card);
   border: 1px solid transparent;
   border-radius: 20px;
   cursor: pointer;
@@ -1388,14 +1386,14 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .tab-pill:hover {
-  background: #E5E7EB;
-  color: #374151;
+  background: var(--secondary);
+  color: var(--foreground);
 }
 
 .tab-pill.active {
-  background: #1F2937;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.15);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
 }
 
 .tab-pill svg {
@@ -1410,7 +1408,7 @@ watch(() => props.simulationId, (newId) => {
 .tab-divider {
   width: 1px;
   height: 24px;
-  background: #E5E7EB;
+  background: var(--border);
   margin: 0 6px;
 }
 
@@ -1428,26 +1426,26 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .survey-pill {
-  background: #ECFDF5;
-  color: #047857;
+  background: var(--secondary);
+  color: var(--accent);
 }
 
 .survey-pill:hover {
-  background: #D1FAE5;
-  color: #065F46;
+  background: var(--card);
+  color: var(--accent);
 }
 
 .survey-pill.active {
-  background: #047857;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.2);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: 0 2px 8px rgba(45, 212, 191, 0.2);
 }
 
 /* Interaction Header */
 .interaction-header {
   padding: 16px 24px;
-  border-bottom: 1px solid #E5E7EB;
-  background: #FAFAFA;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 
 .tab-switcher {
@@ -1462,23 +1460,23 @@ watch(() => props.simulationId, (newId) => {
   padding: 10px 20px;
   font-size: 13px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--muted-foreground);
   background: transparent;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tab-btn:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: var(--secondary);
+  border-color: var(--muted-foreground);
 }
 
 .tab-btn.active {
-  background: #1F2937;
-  color: #FFFFFF;
-  border-color: #1F2937;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 
 .tab-btn svg {
@@ -1495,8 +1493,8 @@ watch(() => props.simulationId, (newId) => {
 
 /* Report Agent Tools Card */
 .report-agent-tools-card {
-  border-bottom: 1px solid #E5E7EB;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-bottom: 1px solid var(--border);
+  background: var(--secondary);
 }
 
 .tools-card-header {
@@ -1511,8 +1509,8 @@ watch(() => props.simulationId, (newId) => {
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
-  color: #FFFFFF;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1520,7 +1518,7 @@ watch(() => props.simulationId, (newId) => {
   font-size: 18px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.2);
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
 }
 
 .tools-card-info {
@@ -1531,33 +1529,33 @@ watch(() => props.simulationId, (newId) => {
 .tools-card-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   margin-bottom: 2px;
 }
 
 .tools-card-subtitle {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .tools-card-toggle {
   width: 28px;
   height: 28px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6B7280;
+  color: var(--muted-foreground);
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .tools-card-toggle:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: var(--secondary);
+  border-color: var(--muted-foreground);
 }
 
 .tools-card-toggle svg {
@@ -1582,14 +1580,14 @@ watch(() => props.simulationId, (newId) => {
   display: flex;
   gap: 10px;
   padding: 12px;
-  background: #FFFFFF;
+  background: var(--card);
   border-radius: 10px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   transition: all 0.2s ease;
 }
 
 .tool-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .tool-icon-wrapper {
@@ -1604,23 +1602,23 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .tool-purple .tool-icon-wrapper {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8B5CF6;
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
 }
 
 .tool-blue .tool-icon-wrapper {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3B82F6;
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--accent);
 }
 
 .tool-orange .tool-icon-wrapper {
-  background: rgba(249, 115, 22, 0.1);
-  color: #F97316;
+  background: rgba(251, 146, 60, 0.15);
+  color: #FB923C;
 }
 
 .tool-green .tool-icon-wrapper {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22C55E;
+  background: rgba(52, 211, 153, 0.15);
+  color: #34D399;
 }
 
 .tool-content {
@@ -1631,13 +1629,13 @@ watch(() => props.simulationId, (newId) => {
 .tool-name {
   font-size: 12px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   margin-bottom: 4px;
 }
 
 .tool-desc {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1647,8 +1645,8 @@ watch(() => props.simulationId, (newId) => {
 
 /* Agent Profile Card */
 .agent-profile-card {
-  border-bottom: 1px solid #E5E7EB;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-bottom: 1px solid var(--border);
+  background: var(--secondary);
 }
 
 .profile-card-header {
@@ -1663,8 +1661,8 @@ watch(() => props.simulationId, (newId) => {
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
-  color: #FFFFFF;
+  background: var(--card);
+  color: var(--foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1672,7 +1670,7 @@ watch(() => props.simulationId, (newId) => {
   font-size: 18px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .profile-card-info {
@@ -1683,7 +1681,7 @@ watch(() => props.simulationId, (newId) => {
 .profile-card-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   margin-bottom: 2px;
 }
 
@@ -1692,16 +1690,16 @@ watch(() => props.simulationId, (newId) => {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .profile-card-handle {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .profile-card-profession {
   padding: 2px 8px;
-  background: #E5E7EB;
+  background: var(--border);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -1710,21 +1708,21 @@ watch(() => props.simulationId, (newId) => {
 .profile-card-toggle {
   width: 28px;
   height: 28px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6B7280;
+  color: var(--muted-foreground);
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .profile-card-toggle:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: var(--secondary);
+  border-color: var(--muted-foreground);
 }
 
 .profile-card-toggle svg {
@@ -1745,36 +1743,36 @@ watch(() => props.simulationId, (newId) => {
 .profile-card-label {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
 
 .profile-card-bio {
-  background: #FFFFFF;
+  background: var(--card);
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
 }
 
 .profile-card-bio p {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: #4B5563;
+  color: var(--muted-foreground);
 }
 
 /* Target Selector */
 .target-selector {
   padding: 16px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border);
 }
 
 .selector-label {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 10px;
@@ -1792,22 +1790,22 @@ watch(() => props.simulationId, (newId) => {
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .target-option:hover {
-  border-color: #D1D5DB;
+  border-color: var(--muted-foreground);
 }
 
 .target-option.active {
-  background: #1F2937;
-  color: #FFFFFF;
-  border-color: #1F2937;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 
 /* Agent Dropdown */
@@ -1831,8 +1829,8 @@ watch(() => props.simulationId, (newId) => {
   left: 50%;
   transform: translateX(-50%);
   min-width: 240px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
   max-height: 320px;
@@ -1844,10 +1842,10 @@ watch(() => props.simulationId, (newId) => {
   padding: 12px 16px 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px solid var(--border);
 }
 
 .dropdown-item {
@@ -1861,8 +1859,8 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .dropdown-item:hover {
-  background: #F9FAFB;
-  border-left-color: #1F2937;
+  background: var(--card);
+  border-left-color: var(--primary);
 }
 
 .dropdown-item:first-of-type {
@@ -1878,8 +1876,8 @@ watch(() => props.simulationId, (newId) => {
   height: 32px;
   min-width: 32px;
   min-height: 32px;
-  background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
-  color: #FFFFFF;
+  background: var(--card);
+  color: var(--foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1887,7 +1885,7 @@ watch(() => props.simulationId, (newId) => {
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(31, 41, 55, 0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
 
 .agent-info {
@@ -1901,7 +1899,7 @@ watch(() => props.simulationId, (newId) => {
 .agent-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1909,7 +1907,7 @@ watch(() => props.simulationId, (newId) => {
 
 .agent-role {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1932,7 +1930,7 @@ watch(() => props.simulationId, (newId) => {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .empty-icon {
@@ -1970,13 +1968,13 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .chat-message.user .message-avatar {
-  background: #1F2937;
-  color: #FFFFFF;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .chat-message.assistant .message-avatar {
-  background: #F3F4F6;
-  color: #374151;
+  background: var(--secondary);
+  color: var(--foreground);
 }
 
 .message-content {
@@ -2003,12 +2001,12 @@ watch(() => props.simulationId, (newId) => {
 .sender-name {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .message-time {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .message-text {
@@ -2019,14 +2017,14 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .chat-message.user .message-text {
-  background: #1F2937;
-  color: #FFFFFF;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-bottom-right-radius: 4px;
 }
 
 .chat-message.assistant .message-text {
-  background: #F3F4F6;
-  color: #374151;
+  background: var(--secondary);
+  color: var(--foreground);
   border-bottom-left-radius: 4px;
 }
 
@@ -2059,7 +2057,7 @@ watch(() => props.simulationId, (newId) => {
 .message-text :deep(.md-oli)::before {
   content: counter(list-counter) ".";
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
   min-width: 20px;
   flex-shrink: 0;
 }
@@ -2079,7 +2077,7 @@ watch(() => props.simulationId, (newId) => {
   display: flex;
   gap: 4px;
   padding: 10px 14px;
-  background: #F3F4F6;
+  background: var(--secondary);
   border-radius: 12px;
   border-bottom-left-radius: 4px;
 }
@@ -2087,7 +2085,7 @@ watch(() => props.simulationId, (newId) => {
 .typing-indicator span {
   width: 8px;
   height: 8px;
-  background: #9CA3AF;
+  background: var(--muted-foreground);
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out;
 }
@@ -2104,7 +2102,7 @@ watch(() => props.simulationId, (newId) => {
 /* Chat Input */
 .chat-input-area {
   padding: 16px 24px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 12px;
   align-items: flex-end;
@@ -2114,29 +2112,31 @@ watch(() => props.simulationId, (newId) => {
   flex: 1;
   padding: 12px 16px;
   font-size: 14px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 8px;
   resize: none;
   font-family: inherit;
   line-height: 1.5;
   transition: border-color 0.2s ease;
+  background: var(--secondary);
+  color: var(--foreground);
 }
 
 .chat-input:focus {
   outline: none;
-  border-color: #1F2937;
+  border-color: var(--primary);
 }
 
 .chat-input:disabled {
-  background: #F9FAFB;
+  background: var(--card);
   cursor: not-allowed;
 }
 
 .send-btn {
   width: 44px;
   height: 44px;
-  background: #1F2937;
-  color: #FFFFFF;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -2147,12 +2147,12 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #374151;
+  background: var(--accent);
 }
 
 .send-btn:disabled {
-  background: #E5E7EB;
-  color: #9CA3AF;
+  background: var(--secondary);
+  color: var(--muted-foreground);
   cursor: not-allowed;
 }
 
@@ -2169,7 +2169,7 @@ watch(() => props.simulationId, (newId) => {
   display: flex;
   flex-direction: column;
   padding: 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -2199,12 +2199,12 @@ watch(() => props.simulationId, (newId) => {
 .setup-section .section-header .section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .selection-count {
   font-size: 12px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 /* Agents Grid */
@@ -2223,20 +2223,20 @@ watch(() => props.simulationId, (newId) => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .agent-checkbox:hover {
-  border-color: #D1D5DB;
+  border-color: var(--muted-foreground);
 }
 
 .agent-checkbox.checked {
-  background: #F0FDF4;
-  border-color: #10B981;
+  background: var(--card);
+  border-color: var(--accent);
 }
 
 .agent-checkbox input {
@@ -2248,8 +2248,8 @@ watch(() => props.simulationId, (newId) => {
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  background: #E5E7EB;
-  color: #374151;
+  background: var(--border);
+  color: var(--foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2260,8 +2260,8 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .agent-checkbox.checked .checkbox-avatar {
-  background: #10B981;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .checkbox-info {
@@ -2273,7 +2273,7 @@ watch(() => props.simulationId, (newId) => {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2282,7 +2282,7 @@ watch(() => props.simulationId, (newId) => {
 .checkbox-role {
   display: block;
   font-size: 10px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2291,7 +2291,7 @@ watch(() => props.simulationId, (newId) => {
 .checkbox-indicator {
   width: 20px;
   height: 20px;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -2301,9 +2301,9 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .agent-checkbox.checked .checkbox-indicator {
-  background: #10B981;
-  border-color: #10B981;
-  color: #FFFFFF;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .checkbox-indicator svg {
@@ -2325,7 +2325,7 @@ watch(() => props.simulationId, (newId) => {
 
 .action-link {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   background: none;
   border: none;
   cursor: pointer;
@@ -2333,12 +2333,12 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .action-link:hover {
-  color: #1F2937;
+  color: var(--foreground);
   text-decoration: underline;
 }
 
 .action-divider {
-  color: #E5E7EB;
+  color: var(--border);
 }
 
 /* Survey Input */
@@ -2346,17 +2346,19 @@ watch(() => props.simulationId, (newId) => {
   width: 100%;
   padding: 14px 16px;
   font-size: 14px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 8px;
   resize: none;
   font-family: inherit;
   line-height: 1.5;
   transition: border-color 0.2s ease;
+  background: var(--secondary);
+  color: var(--foreground);
 }
 
 .survey-input:focus {
   outline: none;
-  border-color: #1F2937;
+  border-color: var(--primary);
 }
 
 .survey-submit-btn {
@@ -2364,8 +2366,8 @@ watch(() => props.simulationId, (newId) => {
   padding: 14px 24px;
   font-size: 14px;
   font-weight: 600;
-  color: #FFFFFF;
-  background: #1F2937;
+  color: var(--primary-foreground);
+  background: var(--primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -2378,12 +2380,12 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .survey-submit-btn:hover:not(:disabled) {
-  background: #374151;
+  background: var(--accent);
 }
 
 .survey-submit-btn:disabled {
-  background: #E5E7EB;
-  color: #9CA3AF;
+  background: var(--secondary);
+  color: var(--muted-foreground);
   cursor: not-allowed;
 }
 
@@ -2391,7 +2393,7 @@ watch(() => props.simulationId, (newId) => {
   width: 18px;
   height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #FFFFFF;
+  border-top-color: var(--primary-foreground);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2417,12 +2419,12 @@ watch(() => props.simulationId, (newId) => {
 .results-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
 }
 
 .results-count {
   font-size: 12px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .results-list {
@@ -2432,8 +2434,8 @@ watch(() => props.simulationId, (newId) => {
 }
 
 .result-card {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
 }
@@ -2450,8 +2452,8 @@ watch(() => props.simulationId, (newId) => {
   height: 36px;
   min-width: 36px;
   min-height: 36px;
-  background: #1F2937;
-  color: #FFFFFF;
+  background: var(--card);
+  color: var(--foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2470,12 +2472,12 @@ watch(() => props.simulationId, (newId) => {
 .result-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--foreground);
 }
 
 .result-role {
   font-size: 12px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .result-question {
@@ -2483,11 +2485,11 @@ watch(() => props.simulationId, (newId) => {
   align-items: flex-start;
   gap: 8px;
   padding: 12px 14px;
-  background: #FFFFFF;
+  background: var(--card);
   border-radius: 8px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .result-question svg {
@@ -2498,7 +2500,7 @@ watch(() => props.simulationId, (newId) => {
 .result-answer {
   font-size: 14px;
   line-height: 1.7;
-  color: #374151;
+  color: var(--foreground);
 }
 
 /* Markdown Styles */
@@ -2509,28 +2511,28 @@ watch(() => props.simulationId, (newId) => {
 :deep(.md-h2) {
   font-size: 20px;
   font-weight: 700;
-  color: #1F2937;
+  color: var(--foreground);
   margin: 24px 0 12px 0;
 }
 
 :deep(.md-h3) {
   font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
   margin: 20px 0 10px 0;
 }
 
 :deep(.md-h4) {
   font-size: 14px;
   font-weight: 600;
-  color: #4B5563;
+  color: var(--muted-foreground);
   margin: 16px 0 8px 0;
 }
 
 :deep(.md-h5) {
   font-size: 13px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--muted-foreground);
   margin: 12px 0 6px 0;
 }
 
@@ -2548,15 +2550,15 @@ watch(() => props.simulationId, (newId) => {
 .result-answer :deep(.md-quote) {
   margin: 12px 0;
   padding: 12px 16px;
-  background: #F9FAFB;
-  border-left: 3px solid #1F2937;
-  color: #4B5563;
+  background: var(--card);
+  border-left: 3px solid var(--primary);
+  color: var(--muted-foreground);
 }
 
 :deep(.code-block) {
   margin: 12px 0;
   padding: 12px 16px;
-  background: #1F2937;
+  background: var(--card);
   border-radius: 6px;
   overflow-x: auto;
 }
@@ -2564,21 +2566,21 @@ watch(() => props.simulationId, (newId) => {
 :deep(.code-block code) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  color: #E5E7EB;
+  color: var(--foreground);
 }
 
 :deep(.inline-code) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  background: #F3F4F6;
+  background: var(--secondary);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #1F2937;
+  color: var(--foreground);
 }
 
 :deep(.md-hr) {
   border: none;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
   margin: 24px 0;
 }
 </style>
