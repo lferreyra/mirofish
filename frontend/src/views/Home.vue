@@ -32,20 +32,8 @@
               Let the future rehearse among Agents, let decisions prevail after countless trials<span class=”blinking-cursor”>_</span>
             </p>
           </div>
-           
-          <div class="decoration-square"></div>
         </div>
         
-        <div class="hero-right">
-          <!-- Logo Area -->
-          <div class="logo-container">
-            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
-          </div>
-          
-          <button class="scroll-down-btn" @click="scrollToBottom">
-            ↓
-          </button>
-        </div>
       </section>
 
       <!-- Bottom Half: Dual Panel Layout -->
@@ -280,14 +268,6 @@ const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// Scroll to bottom
-const scrollToBottom = () => {
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  })
-}
-
 // Start simulation - navigate immediately, API calls happen on Process page
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
@@ -472,49 +452,6 @@ const startSimulation = () => {
   50% { opacity: 0; }
 }
 
-.decoration-square {
-  width: 16px;
-  height: 16px;
-  background: var(--primary);
-}
-
-.hero-right {
-  flex: 0.8;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.logo-container {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 40px;
-}
-
-.hero-logo {
-  max-width: 500px; /* Adjust logo size */
-  width: 100%;
-}
-
-.scroll-down-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--primary);
-  font-size: 1.2rem;
-  transition: all 0.2s;
-}
-
-.scroll-down-btn:hover {
-  border-color: var(--accent);
-}
 
 /* Dashboard dual panel layout */
 .dashboard-section {
@@ -864,11 +801,6 @@ const startSimulation = () => {
   .hero-left {
     padding-right: 0;
     margin-bottom: 40px;
-  }
-  
-  .hero-logo {
-    max-width: 200px;
-    margin-bottom: 20px;
   }
 }
 </style>
