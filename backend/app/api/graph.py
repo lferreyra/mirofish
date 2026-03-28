@@ -283,9 +283,7 @@ def build_graph():
         logger.info("=== Starting graph build ===")
         
         # 检查配置
-        errors = []
-        if not Config.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY is not configured")
+        errors = Config.validate_graph_backend()
         if errors:
             logger.error(f"Configuration error: {errors}")
             return jsonify({
@@ -382,7 +380,7 @@ def build_graph():
                 )
                 
                 # 创建图谱构建服务
-                builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+                builder = GraphBuilderService()
                 
                 # 分块
                 task_manager.update_task(
@@ -400,7 +398,7 @@ def build_graph():
                 # 创建图谱
                 task_manager.update_task(
                     task_id,
-                    message="Creating the Zep graph...",
+                    message="Creating graph namespace...",
                     progress=10
                 )
                 graph_id = builder.create_graph(name=graph_name)
@@ -442,7 +440,7 @@ def build_graph():
                 # 等待Zep处理完成（查询每个episode的processed状态）
                 task_manager.update_task(
                     task_id,
-                    message="Waiting for Zep to process the data...",
+                    message="Waiting for graph ingestion to complete...",
                     progress=55
                 )
                 
@@ -454,7 +452,7 @@ def build_graph():
                         progress=progress
                     )
                 
-                builder._wait_for_episodes(episode_uuids, wait_progress_callback)
+                builder._wait_for_episodes(graph_id, episode_uuids, wait_progress_callback)
                 
                 # 获取图谱数据
                 task_manager.update_task(
@@ -567,13 +565,13 @@ def get_graph_data(graph_id: str):
     获取图谱数据（节点和边）
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if Config.validate_graph_backend():
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": "Graph backend is not configured correctly"
             }), 500
         
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         graph_data = builder.get_graph_data(graph_id)
         
         return jsonify({
@@ -595,13 +593,13 @@ def delete_graph(graph_id: str):
     删除Zep图谱
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if Config.validate_graph_backend():
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY is not configured"
+                "error": "Graph backend is not configured correctly"
             }), 500
         
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         builder.delete_graph(graph_id)
         
         return jsonify({
