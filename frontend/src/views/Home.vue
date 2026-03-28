@@ -1,6 +1,6 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
+    
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
@@ -11,7 +11,7 @@
     </nav>
 
     <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
+      
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
@@ -37,7 +37,7 @@
         </div>
         
         <div class="hero-right">
-          <!-- Logo 区域 -->
+          
           <div class="logo-container">
             <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
           </div>
@@ -48,9 +48,9 @@
         </div>
       </section>
 
-      <!-- 下半部分：双栏布局 -->
+      
       <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
+        
         <div class="left-panel">
           <div class="panel-header">
             <span class="status-dot">■</span> System Status
@@ -61,7 +61,7 @@
             The prediction engine is standing by. Upload multiple unstructured files to initialize a simulation run.
           </p>
           
-          <!-- 数据指标卡片 -->
+          
           <div class="metrics-row">
             <div class="metric-card">
               <div class="metric-value">Low Cost</div>
@@ -73,7 +73,7 @@
             </div>
           </div>
 
-          <!-- 项目模拟步骤介绍 (新增区域) -->
+          
           <div class="steps-container">
             <div class="steps-header">
                <span class="diamond-icon">◇</span> Workflow Sequence
@@ -118,10 +118,10 @@
           </div>
         </div>
 
-        <!-- 右栏：交互控制台 -->
+        
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
+            
             <div class="console-section">
               <div class="console-header">
                 <span class="console-label">01 / Seed Data</span>
@@ -162,12 +162,12 @@
               </div>
             </div>
 
-            <!-- 分割线 -->
+            
             <div class="console-divider">
               <span>Input Parameters</span>
             </div>
 
-            <!-- 输入区域 -->
+            
             <div class="console-section">
               <div class="console-header">
                 <span class="console-label">>_ 02 / Simulation Prompt</span>
@@ -184,7 +184,7 @@
               </div>
             </div>
 
-            <!-- 启动按钮 -->
+            
             <div class="console-section btn-section">
               <button 
                 class="start-engine-btn"
@@ -200,7 +200,7 @@
         </div>
       </section>
 
-      <!-- 历史项目数据库 -->
+      
       <HistoryDatabase />
     </div>
   </div>
@@ -213,41 +213,41 @@ import HistoryDatabase from '../components/HistoryDatabase.vue'
 
 const router = useRouter()
 
-// 表单数据
+
 const formData = ref({
   simulationRequirement: ''
 })
 
-// 文件列表
+
 const files = ref([])
 
-// 状态
+
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
 
-// 文件输入引用
+
 const fileInput = ref(null)
 
-// 计算属性:是否可以提交
+
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
 
-// 触发文件选择
+
 const triggerFileInput = () => {
   if (!loading.value) {
     fileInput.value?.click()
   }
 }
 
-// 处理文件选择
+
 const handleFileSelect = (event) => {
   const selectedFiles = Array.from(event.target.files)
   addFiles(selectedFiles)
 }
 
-// 处理拖拽相关
+
 const handleDragOver = (e) => {
   if (!loading.value) {
     isDragOver.value = true
@@ -266,7 +266,7 @@ const handleDrop = (e) => {
   addFiles(droppedFiles)
 }
 
-// 添加文件
+
 const addFiles = (newFiles) => {
   const validFiles = newFiles.filter(file => {
     const ext = file.name.split('.').pop().toLowerCase()
@@ -275,12 +275,12 @@ const addFiles = (newFiles) => {
   files.value.push(...validFiles)
 }
 
-// 移除文件
+
 const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// 滚动到底部
+
 const scrollToBottom = () => {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -288,15 +288,15 @@ const scrollToBottom = () => {
   })
 }
 
-// 开始模拟 - 立即跳转，API调用在Process页面进行
+
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
-  // 存储待上传的数据
+  
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
     
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
+    
     router.push({
       name: 'Process',
       params: { projectId: 'new' }
@@ -306,7 +306,7 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
+
 :root {
   --black: #000000;
   --white: #FFFFFF;
@@ -314,10 +314,7 @@ const startSimulation = () => {
   --gray-light: #F5F5F5;
   --gray-text: #666666;
   --border: #E5E5E5;
-  /* 
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
-  */
+  
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
   --font-cn: 'Noto Sans SC', system-ui, sans-serif;
@@ -330,7 +327,7 @@ const startSimulation = () => {
   color: var(--black);
 }
 
-/* 顶部导航 */
+
 .navbar {
   height: 60px;
   background: var(--black);
@@ -373,14 +370,14 @@ const startSimulation = () => {
   font-family: sans-serif;
 }
 
-/* 主要内容区 */
+
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 60px 40px;
 }
 
-/* Hero 区域 */
+
 .hero-section {
   display: flex;
   justify-content: space-between;
@@ -511,7 +508,7 @@ const startSimulation = () => {
 }
 
 .hero-logo {
-  max-width: 500px; /* 调整logo大小 */
+  max-width: 500px; 
   width: 100%;
 }
 
@@ -533,7 +530,7 @@ const startSimulation = () => {
   border-color: var(--orange);
 }
 
-/* Dashboard 双栏布局 */
+
 .dashboard-section {
   display: flex;
   gap: 60px;
@@ -548,7 +545,7 @@ const startSimulation = () => {
   flex-direction: column;
 }
 
-/* 左侧面板 */
+
 .left-panel {
   flex: 0.8;
 }
@@ -604,7 +601,7 @@ const startSimulation = () => {
   color: #999;
 }
 
-/* 项目模拟步骤介绍 */
+
 .steps-container {
   border: 1px solid var(--border);
   padding: 30px;
@@ -660,14 +657,14 @@ const startSimulation = () => {
   color: var(--gray-text);
 }
 
-/* 右侧交互控制台 */
+
 .right-panel {
   flex: 1.2;
 }
 
 .console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
+  border: 1px solid #CCC; 
+  padding: 8px; 
 }
 
 .console-section {
@@ -835,7 +832,7 @@ const startSimulation = () => {
   overflow: hidden;
 }
 
-/* 可点击状态（非禁用） */
+
 .start-engine-btn:not(:disabled) {
   background: var(--black);
   border: 1px solid var(--black);
@@ -860,14 +857,14 @@ const startSimulation = () => {
   border: 1px solid #E5E5E5;
 }
 
-/* 引导动画：微妙的边框脉冲 */
+
 @keyframes pulse-border {
   0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
   70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 }
 
-/* 响应式适配 */
+
 @media (max-width: 1024px) {
   .dashboard-section {
     flex-direction: column;
