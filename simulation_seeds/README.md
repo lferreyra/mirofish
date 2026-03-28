@@ -29,6 +29,7 @@ Seed documents for MiroFish simulations. Each file provides the source material 
 | File | Topic | Type | Description |
 |---|---|---|---|
 | `review_insights_market_sim.md` | Review Insights | market | Shopify merchant swarm simulation for PMF, adoption curves, and path to $10K MRR |
+| `polymarket_mirofish_claims_contrarian_sim.md` | MiroFish × Polymarket | narrative | Contrarian stress-test of viral AI prediction market profit claims — who gains, who loses, what's real |
 
 ## Seed Document Structure
 
