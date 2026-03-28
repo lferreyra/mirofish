@@ -618,13 +618,13 @@ class ZepToolsService:
         logger.info(f"获取到 {len(result)} 条边")
         return result
     
-    def get_node_detail(self, node_uuid: str) -> Optional[NodeInfo]:
+    def get_node_detail(self, graph_id: str, node_uuid: str) -> Optional[NodeInfo]:
         """Get node detail."""
         logger.info(f"获取节点详情: {node_uuid[:8]}...")
         
         try:
             node = self._call_with_retry(
-                func=lambda: self.provider.get_node("", node_uuid),
+                func=lambda: self.provider.get_node(graph_id, node_uuid),
                 operation_name=f"获取节点详情(uuid={node_uuid[:8]}...)"
             )
             
@@ -877,7 +877,7 @@ class ZepToolsService:
                 continue
             try:
                 
-                node = self.get_node_detail(uuid)
+                node = self.get_node_detail(graph_id, uuid)
                 if node:
                     node_map[uuid] = node
                     entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "实体")
