@@ -1,7 +1,7 @@
 # Project State — MiroFish SIPE
 
 ## Status
-`IN PROGRESS` — Phase 1 complete. Phase 2 Plan 01 (token system) complete. Phase 2 Plan 02 (component audit) next.
+`IN PROGRESS` — Phase 1 complete. Phase 2 Plans 01 and 02 complete. Phase 2 Plan 03 (visual verification checkpoint) next.
 
 ## Current Milestone
 Milestone 1: Production-Ready for Slater Consulting
@@ -11,11 +11,11 @@ Milestone 1: Production-Ready for Slater Consulting
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1 — English Localization | `COMPLETE` | Both plans executed, 0 Chinese chars remain |
-| Phase 2 — Brand UI | `IN PROGRESS` | Plan 01 (token system) complete. Plan 02 (component audit) ready. |
+| Phase 2 — Brand UI | `IN PROGRESS` | Plans 01-02 complete. Plan 03 (visual verification checkpoint) next. |
 | Phase 3 — Rate Limit Control | `NOT STARTED` | Unblocked — ready to plan |
 
 ## Last Session
-2026-03-27 — Phase 2 Plan 01 executed. Created style.css with 13 Slater Consulting CSS tokens. Installed @fontsource/geist-sans (weights 400, 600). Updated main.js, index.html (title/meta/favicon/CDN trimmed), App.vue (token vars for all colors). Created favicon.svg (SC on dark navy). Deleted Home.vue :root conflict block; replaced all --orange/--black/--white vars with global tokens. Build passes (679 modules, 0 errors). 3 bugs auto-fixed: navbar color inversion, gradient-text invisibility, missing --font-mono references.
+2026-03-27 — Phase 2 Plan 02 executed. Tokenized all 12 Vue files (5 views + 7 components). Replaced all hardcoded hex values with CSS custom property tokens. Swapped D3 graph palette to Slater brand colors. D3 JS stroke/fill values use HSL strings (CSS vars not accessible in JS). HistoryDatabase.vue (86 hex), GraphPanel.vue (90+ hex + D3 palette), Step5Interaction.vue (119 hex), Step2EnvSetup.vue (55 hex) all fully tokenized. Build passes (679 modules, 0 errors). Commit: 51243a5.
 
 ## Key Decisions
 - Phase 1 must precede Phases 2 and 3 (avoid mixing translation with feature work)
@@ -27,6 +27,9 @@ Milestone 1: Production-Ready for Slater Consulting
 - @fontsource/geist-sans used for font delivery (not CDN) — weights 400 and 600 only
 - style.css contains only :root token block (no * or body reset — those stay in App.vue)
 - Navbar in Home.vue uses var(--card) for background (dark surface, not foreground)
+- D3 JS stroke/fill values use HSL strings (not CSS vars — D3 runs in JS and cannot access CSS custom properties)
+- Tool badge classes use D3 new palette colors (A78BFA, 34D399, FB923C, 2DD4BF, F472B6) for consistency with graph
+- GraphPanel detail-type-badge inline style keeps color: '#fff' — applied on D3 colored node backgrounds
 
 ## Context
 - Working directory: `c:/Users/lucas/OneDrive/Documentos/AI/VS Code/MiroFish SIPE/mirofish/`
