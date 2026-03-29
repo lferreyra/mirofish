@@ -184,3 +184,12 @@ export const interviewAgents = (data) => {
 export const getSimulationHistory = (limit = 20) => {
   return service.get('/api/simulation/history', { params: { limit } })
 }
+
+/**
+ * Update simulation rate limit config
+ * @param {string} simulationId
+ * @param {Object} data - { rate_limit: { inter_turn_delay_ms, max_retries, retry_base_delay_s, tpm_limit, rpm_limit } }
+ */
+export const updateSimulationConfig = (simulationId, data) => {
+  return service.post(`/api/simulation/${simulationId}/config`, data)
+}

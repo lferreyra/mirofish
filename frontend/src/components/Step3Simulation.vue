@@ -103,6 +103,52 @@
       </div>
     </div>
 
+    <!-- Rate Limit Settings (pre-run only) -->
+    <div v-if="phase === 0" class="rate-limit-settings">
+      <div class="settings-toggle" @click="showRateLimitSettings = !showRateLimitSettings">
+        <span class="settings-toggle-label">Rate Limit Settings</span>
+        <span class="toggle-arrow">{{ showRateLimitSettings ? '\u25B2' : '\u25BC' }}</span>
+      </div>
+      <div v-if="showRateLimitSettings" class="settings-body">
+        <div class="setting-row">
+          <label class="setting-label">Inter-turn Delay</label>
+          <div class="setting-control">
+            <input type="range" v-model.number="rateLimitSettings.inter_turn_delay_ms"
+                   min="0" max="5000" step="100" class="setting-slider" />
+            <span class="setting-value mono">{{ rateLimitSettings.inter_turn_delay_ms }}ms</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Max Retries</label>
+          <div class="setting-control">
+            <input type="number" v-model.number="rateLimitSettings.max_retries"
+                   min="1" max="10" class="setting-input" />
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Retry Base Delay (s)</label>
+          <div class="setting-control">
+            <input type="number" v-model.number="rateLimitSettings.retry_base_delay_s"
+                   min="1" max="120" class="setting-input" />
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">TPM Limit <span class="setting-hint">(0 = unlimited)</span></label>
+          <div class="setting-control">
+            <input type="number" v-model.number="rateLimitSettings.tpm_limit"
+                   min="0" step="1000" class="setting-input" />
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">RPM Limit <span class="setting-hint">(0 = unlimited)</span></label>
+          <div class="setting-control">
+            <input type="number" v-model.number="rateLimitSettings.rpm_limit"
+                   min="0" class="setting-input" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content: Dual Timeline -->
     <div class="main-content-area" ref="scrollContainer">
       <!-- Timeline Header -->
@@ -288,11 +334,12 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  startSimulation, 
+import {
+  startSimulation,
   stopSimulation,
-  getRunStatus, 
-  getRunStatusDetail
+  getRunStatus,
+  getRunStatusDetail,
+  updateSimulationConfig
 } from '../api/simulation'
 import { generateReport } from '../api/report'
 
@@ -322,6 +369,17 @@ const runStatus = ref({})
 const allActions = ref([]) // all actions (incremental)
 const actionIds = ref(new Set()) // action ID set for dedup
 const scrollContainer = ref(null)
+
+// Rate limit settings
+const showRateLimitSettings = ref(false)
+const rateLimitSettings = ref({
+  inter_turn_delay_ms: 500,
+  max_retries: 3,
+  retry_base_delay_s: 30,
+  tpm_limit: 0,
+  rpm_limit: 0
+})
+const RATE_LIMIT_STORAGE_KEY = 'mirofish_rate_limit_settings'
 
 // Computed
 // Display actions in chronological order (newest at bottom)
@@ -405,7 +463,18 @@ const doStartSimulation = async () => {
     }
 
     addLog('Dynamic graph update mode enabled')
-    
+
+    // Send rate limit settings to backend before starting
+    try {
+      await updateSimulationConfig(props.simulationId, {
+        rate_limit: rateLimitSettings.value
+      })
+      addLog('Rate limit settings applied')
+    } catch (configErr) {
+      addLog(`Warning: Failed to apply rate limit settings: ${configErr.message || configErr}`)
+      // Non-blocking — simulation can still start with defaults
+    }
+
     const res = await startSimulation(params)
     
     if (res.success && res.data) {
@@ -684,7 +753,20 @@ watch(() => props.systemLogs?.length, () => {
   })
 })
 
+// Auto-save rate limit settings to localStorage on any change
+watch(rateLimitSettings, (val) => {
+  localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(val))
+}, { deep: true })
+
 onMounted(() => {
+  // Load persisted rate limit settings
+  const saved = localStorage.getItem(RATE_LIMIT_STORAGE_KEY)
+  if (saved) {
+    try {
+      Object.assign(rateLimitSettings.value, JSON.parse(saved))
+    } catch (_) { /* ignore malformed data */ }
+  }
+
   addLog('Step3 simulation run initializing')
   if (props.simulationId) {
     doStartSimulation()
@@ -1259,5 +1341,80 @@ onUnmounted(() => {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 6px;
+}
+
+/* --- Rate Limit Settings Panel --- */
+.rate-limit-settings {
+  margin: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  overflow: hidden;
+}
+.settings-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+.settings-toggle:hover {
+  background: var(--secondary);
+}
+.toggle-arrow {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.settings-body {
+  padding: 8px 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+.setting-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  min-width: 140px;
+}
+.setting-hint {
+  font-size: 10px;
+  opacity: 0.6;
+}
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.setting-slider {
+  width: 140px;
+  accent-color: var(--primary);
+}
+.setting-value {
+  font-size: 12px;
+  color: var(--foreground);
+  min-width: 60px;
+  text-align: right;
+}
+.setting-input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 12px;
+  text-align: right;
+}
+.setting-input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 </style>
