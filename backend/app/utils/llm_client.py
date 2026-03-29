@@ -6,12 +6,53 @@ Supports OpenAI API, Anthropic API, Claude CLI, and Codex CLI
 import json
 import re
 import subprocess
+import time
+import threading
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 from ..config import Config
 from .logger import get_logger
 
 logger = get_logger('mirofish.llm_client')
+
+try:
+    from openai import RateLimitError as _OpenAIRateLimitError
+except ImportError:
+    _OpenAIRateLimitError = None
+
+try:
+    from anthropic import RateLimitError as _AnthropicRateLimitError
+except ImportError:
+    _AnthropicRateLimitError = None
+
+
+class _TokenBucket:
+    """Fixed-window per-minute rate limiter for RPM and TPM."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._rpm_count = 0
+        self._tpm_count = 0
+        self._window_start = time.time()
+
+    def check_and_consume(self, token_count: int, rpm_limit: int, tpm_limit: int) -> float:
+        """Check limits and consume quota. Returns seconds to sleep (0.0 if under limit)."""
+        with self._lock:
+            now = time.time()
+            if now - self._window_start >= 60.0:
+                self._rpm_count = 0
+                self._tpm_count = 0
+                self._window_start = now
+
+            if rpm_limit > 0 and self._rpm_count >= rpm_limit:
+                return max(0.0, 60.0 - (now - self._window_start))
+            if tpm_limit > 0 and self._tpm_count + token_count > tpm_limit:
+                return max(0.0, 60.0 - (now - self._window_start))
+
+            self._rpm_count += 1
+            self._tpm_count += token_count
+            return 0.0
 
 
 class LLMClient:
@@ -58,6 +99,33 @@ class LLMClient:
                 base_url=self.base_url
             )
 
+        self._token_bucket = _TokenBucket()
+
+    def _is_rate_limit_error(self, exc) -> bool:
+        """Detect 429 / rate limit errors across all providers."""
+        if _OpenAIRateLimitError and isinstance(exc, _OpenAIRateLimitError):
+            return True
+        if _AnthropicRateLimitError and isinstance(exc, _AnthropicRateLimitError):
+            return True
+        msg = str(exc).lower()
+        return "429" in msg or "rate limit" in msg or "too many requests" in msg
+
+    def _check_token_bucket(self, rate_limit_config: dict, max_tokens: int):
+        """Proactive RPM/TPM enforcement. Sleeps if over limit."""
+        rpm_limit = rate_limit_config.get("rpm_limit", 0)
+        tpm_limit = rate_limit_config.get("tpm_limit", 0)
+        if rpm_limit <= 0 and tpm_limit <= 0:
+            return
+        while True:
+            sleep_for = self._token_bucket.check_and_consume(max_tokens, rpm_limit, tpm_limit)
+            if sleep_for <= 0:
+                return
+            logger.warning(
+                f"[{datetime.now().isoformat()}] TPM/RPM limit reached. "
+                f"Sleeping {sleep_for:.1f}s until window resets."
+            )
+            time.sleep(sleep_for)
+
     def _detect_provider(self) -> str:
         """Auto-detect provider from base_url or model name"""
         model_lower = (self.model or "").lower()
@@ -99,28 +167,48 @@ class LLMClient:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[Dict] = None
+        response_format: Optional[Dict] = None,
+        rate_limit_config: Optional[Dict] = None
     ) -> str:
         """
-        Send a chat request.
+        Send a chat request with optional rate limit control.
 
         Args:
             messages: Message list
             temperature: Temperature parameter
             max_tokens: Maximum tokens
             response_format: Response format (e.g., JSON mode)
+            rate_limit_config: Optional dict with keys: max_retries, retry_base_delay_s,
+                               rpm_limit, tpm_limit
 
         Returns:
             Model response text
         """
-        if self.provider == "claude-cli":
-            return self._chat_claude_cli(messages, temperature, max_tokens, response_format)
-        elif self.provider == "codex-cli":
-            return self._chat_codex_cli(messages, temperature, max_tokens, response_format)
-        elif self.provider == "anthropic":
-            return self._chat_anthropic(messages, temperature, max_tokens, response_format)
-        else:
-            return self._chat_openai(messages, temperature, max_tokens, response_format)
+        cfg = rate_limit_config or {}
+        max_retries = cfg.get("max_retries", 3)
+        base_delay = cfg.get("retry_base_delay_s", 30)
+
+        for attempt in range(max_retries + 1):
+            try:
+                self._check_token_bucket(cfg, max_tokens)
+                if self.provider == "claude-cli":
+                    return self._chat_claude_cli(messages, temperature, max_tokens, response_format)
+                elif self.provider == "codex-cli":
+                    return self._chat_codex_cli(messages, temperature, max_tokens, response_format)
+                elif self.provider == "anthropic":
+                    return self._chat_anthropic(messages, temperature, max_tokens, response_format)
+                else:
+                    return self._chat_openai(messages, temperature, max_tokens, response_format)
+            except Exception as e:
+                if attempt >= max_retries or not self._is_rate_limit_error(e):
+                    raise
+                wait = min(base_delay * (2 ** attempt), 300)
+                logger.warning(
+                    f"[{datetime.now().isoformat()}] Rate limit hit "
+                    f"(attempt {attempt + 1}/{max_retries}). "
+                    f"Retrying in {wait}s. Error: {e}"
+                )
+                time.sleep(wait)
 
     def _chat_openai(
         self,
@@ -283,7 +371,8 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        rate_limit_config: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Send a chat request and return JSON.
@@ -292,6 +381,7 @@ class LLMClient:
             messages: Message list
             temperature: Temperature parameter
             max_tokens: Maximum tokens
+            rate_limit_config: Optional dict with rate limit settings (passed to chat())
 
         Returns:
             Parsed JSON object
@@ -300,7 +390,8 @@ class LLMClient:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
+            rate_limit_config=rate_limit_config
         )
         # Clean markdown code block markers
         cleaned_response = response.strip()
