@@ -63,7 +63,7 @@
 - Settings persisted to localStorage
 
 **Plans:**
-- [ ] 03-01-PLAN.md — Delay injection, 429 retry logic, config endpoint
+1/2 plans executed
 - [ ] 03-02-PLAN.md — Settings UI panel, localStorage persistence
 
 **Done when:** A simulation run that would normally hit rate limits completes successfully with configurable throttling. 429 errors are retried automatically with logged backoff.

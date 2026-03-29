@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-28T18:32:04.868Z"
+status: Executing Phase 03
+last_updated: "2026-03-29T12:15:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State — MiroFish SIPE
 
 ## Status
 
-`IN PROGRESS` — Phase 1 complete. Phase 2 complete (Plans 01 and 02 executed, visual checkpoint approved). Phase 3 (Rate Limit Control) is next.
+`IN PROGRESS` — Phase 1 complete. Phase 2 complete. Phase 3 Plan 01 (Rate Limit Backend) complete. Phase 3 Plan 02 (Settings UI) is next.
 
 ## Current Milestone
 
@@ -27,17 +27,20 @@ Milestone 1: Production-Ready for Slater Consulting
 |-------|--------|-------|
 | Phase 1 — English Localization | `COMPLETE` | Both plans executed, 0 Chinese chars remain |
 | Phase 2 — Brand UI | `COMPLETE` | All plans complete. Visual checkpoint approved by user 2026-03-27. |
-| Phase 3 — Rate Limit Control | `NOT STARTED` | Unblocked — ready to plan |
+| Phase 3 — Rate Limit Control | `IN PROGRESS` | Plan 01 complete (backend). Plan 02 (Settings UI) remaining. |
 
 ## Last Session
 
-2026-03-27 — Phase 2 Plan 02 visual checkpoint approved by user. Phase 2 fully complete. All 12 Vue files tokenized with Slater Consulting CSS design tokens, D3 palette updated, visual inspection confirmed. Phase 3 (Rate Limit Control) unblocked and ready to begin.
+2026-03-29 — Phase 3 Plan 01 executed. LLMClient now retries on 429 with exponential backoff (base 30s, max 300s), enforces RPM/TPM proactively via token bucket. POST /api/simulation/{id}/config endpoint persists rate_limit to simulation_config.json. All three simulation scripts inject inter-turn delay and retry env.step() on rate limit errors.
 
 ## Key Decisions
 
 - Phase 1 must precede Phases 2 and 3 (avoid mixing translation with feature work)
 - Phases 2 and 3 can run in parallel after Phase 1
 - Rate limit control targets simulation SCRIPTS (subprocess layer), not the Flask API layer
+- rate_limit_config passed per-call to LLMClient (not at construction time) — allows different simulations to use different throttle settings
+- Default inter_turn_delay_ms=500ms baked into scripts as safe default when no rate_limit section in simulation_config.json
+- POST /config endpoint only merges rate_limit key — leaves all other simulation config fields untouched
 - Brand colors sourced from `VS Code/Slater Consulting SaaS/src/index.css`
 - No new dependencies unless strictly required
 - All changes must remain Docker-compatible
