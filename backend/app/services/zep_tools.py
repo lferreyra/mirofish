@@ -1362,20 +1362,18 @@ class ZepToolsService:
         )
         optimized_prompt = f"{INTERVIEW_PROMPT_PREFIX}{combined_prompt}"
         
-        # Step 4: 调用真实的采访API（不指定platform，默认双平台同时采访）
+        # Step 4: 直接调用 SimulationRunner 的批量采访方法（不经过 HTTP，无循环依赖）
         try:
             # 构建批量采访列表（不指定platform，双平台采访）
             interviews_request = []
             for agent_idx in selected_indices:
                 interviews_request.append({
                     "agent_id": agent_idx,
-                    "prompt": optimized_prompt  # 使用优化后的prompt
-                    # 不指定platform，API会在twitter和reddit两个平台都采访
+                    "prompt": optimized_prompt
                 })
-            
-            logger.info(f"调用批量采访API（双平台）: {len(interviews_request)} 个Agent")
-            
-            # 调用 SimulationRunner 的批量采访方法（不传platform，双平台采访）
+
+            logger.info(f"调用批量采访（双平台，direct call）: {len(interviews_request)} 个Agent")
+
             api_result = SimulationRunner.interview_agents_batch(
                 simulation_id=simulation_id,
                 interviews=interviews_request,
