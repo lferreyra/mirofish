@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any, List
 from openai import OpenAI
 
 from ..config import Config
-from .copilot_auth import is_copilot_provider, get_copilot_token_manager
+from .copilot_auth import is_copilot_provider, get_copilot_token_manager, COPILOT_REQUEST_HEADERS
 
 
 class LLMClient:
@@ -43,10 +43,21 @@ class LLMClient:
                 "或设置 LLM_PROVIDER=github-copilot 并配置 GITHUB_TOKEN 以使用 Copilot。"
             )
         
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        self.client = self._create_openai_client()
+    
+    def _create_openai_client(self) -> OpenAI:
+        """创建 OpenAI 客户端（Copilot 模式下附加必需的请求头）"""
+        kwargs = {
+            "api_key": self.api_key,
+            "base_url": self.base_url,
+        }
+        if self._copilot_mode:
+            kwargs["default_headers"] = {
+                "Editor-Version": COPILOT_REQUEST_HEADERS["Editor-Version"],
+                "User-Agent": COPILOT_REQUEST_HEADERS["User-Agent"],
+                "X-Github-Api-Version": COPILOT_REQUEST_HEADERS["X-Github-Api-Version"],
+            }
+        return OpenAI(**kwargs)
     
     def chat(
         self,
@@ -94,10 +105,7 @@ class LLMClient:
         if new_key != self.api_key:
             self.api_key = new_key
             self.base_url = mgr.get_base_url()
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url=self.base_url
-            )
+            self.client = self._create_openai_client()
     
     def chat_json(
         self,
