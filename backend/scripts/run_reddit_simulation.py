@@ -622,26 +622,50 @@ class RedditSimulationRunner:
         # Main simulation loop
         print("\nStarting simulation loop...")
         start_time = datetime.now()
-        
+
+        rate_limit_config = self.config.get("rate_limit", {})
+        inter_turn_delay_s = rate_limit_config.get("inter_turn_delay_ms", 500) / 1000.0
+        retry_base_delay = rate_limit_config.get("retry_base_delay_s", 30)
+        max_step_retries = rate_limit_config.get("max_retries", 3)
+
         for round_num in range(total_rounds):
             simulated_minutes = round_num * minutes_per_round
             simulated_hour = (simulated_minutes // 60) % 24
             simulated_day = simulated_minutes // (60 * 24) + 1
-            
+
             active_agents = self._get_active_agents_for_round(
                 self.env, simulated_hour, round_num
             )
-            
+
             if not active_agents:
                 continue
-            
+
             actions = {
                 agent: LLMAction()
                 for _, agent in active_agents
             }
-            
-            await self.env.step(actions)
-            
+
+            # Execute actions with retry on rate limit errors
+            for step_attempt in range(max_step_retries + 1):
+                try:
+                    await self.env.step(actions)
+                    break
+                except Exception as step_err:
+                    err_msg = str(step_err).lower()
+                    if step_attempt >= max_step_retries or not (
+                        "429" in err_msg or "rate limit" in err_msg or "too many requests" in err_msg
+                    ):
+                        raise
+                    step_wait = min(retry_base_delay * (2 ** step_attempt), 300)
+                    print(
+                        f"Rate limit in env.step (attempt {step_attempt + 1}/{max_step_retries}). "
+                        f"Retrying in {step_wait}s."
+                    )
+                    await asyncio.sleep(step_wait)
+
+            if inter_turn_delay_s > 0:
+                await asyncio.sleep(inter_turn_delay_s)
+
             if (round_num + 1) % 10 == 0 or round_num == 0:
                 elapsed = (datetime.now() - start_time).total_seconds()
                 progress = (round_num + 1) / total_rounds * 100

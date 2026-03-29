@@ -1224,6 +1224,12 @@ async def run_twitter_simulation(
         if total_rounds < original_rounds:
             log_info(f"Rounds truncated: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
     
+
+    rate_limit_config = config.get("rate_limit", {})
+    inter_turn_delay_s = rate_limit_config.get("inter_turn_delay_ms", 500) / 1000.0
+    retry_base_delay = rate_limit_config.get("retry_base_delay_s", 30)
+    max_step_retries = rate_limit_config.get("max_retries", 3)
+
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
@@ -1252,8 +1258,28 @@ async def run_twitter_simulation(
             continue
         
         actions = {agent: LLMAction() for _, agent in active_agents}
-        await result.env.step(actions)
-        
+
+        # Execute actions with retry on rate limit errors
+        for step_attempt in range(max_step_retries + 1):
+            try:
+                await result.env.step(actions)
+                break
+            except Exception as step_err:
+                err_msg = str(step_err).lower()
+                if step_attempt >= max_step_retries or not (
+                    "429" in err_msg or "rate limit" in err_msg or "too many requests" in err_msg
+                ):
+                    raise
+                step_wait = min(retry_base_delay * (2 ** step_attempt), 300)
+                log_info(
+                    f"Rate limit in env.step (attempt {step_attempt + 1}/{max_step_retries}). "
+                    f"Retrying in {step_wait}s."
+                )
+                await asyncio.sleep(step_wait)
+
+        if inter_turn_delay_s > 0:
+            await asyncio.sleep(inter_turn_delay_s)
+
         # Fetch actually executed actions from database and log them
         actual_actions, last_rowid = fetch_new_actions_from_db(
             db_path, last_rowid, agent_names
@@ -1423,6 +1449,12 @@ async def run_reddit_simulation(
         if total_rounds < original_rounds:
             log_info(f"Rounds truncated: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
     
+
+    rate_limit_config = config.get("rate_limit", {})
+    inter_turn_delay_s = rate_limit_config.get("inter_turn_delay_ms", 500) / 1000.0
+    retry_base_delay = rate_limit_config.get("retry_base_delay_s", 30)
+    max_step_retries = rate_limit_config.get("max_retries", 3)
+
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
@@ -1451,8 +1483,28 @@ async def run_reddit_simulation(
             continue
         
         actions = {agent: LLMAction() for _, agent in active_agents}
-        await result.env.step(actions)
-        
+
+        # Execute actions with retry on rate limit errors
+        for step_attempt in range(max_step_retries + 1):
+            try:
+                await result.env.step(actions)
+                break
+            except Exception as step_err:
+                err_msg = str(step_err).lower()
+                if step_attempt >= max_step_retries or not (
+                    "429" in err_msg or "rate limit" in err_msg or "too many requests" in err_msg
+                ):
+                    raise
+                step_wait = min(retry_base_delay * (2 ** step_attempt), 300)
+                log_info(
+                    f"Rate limit in env.step (attempt {step_attempt + 1}/{max_step_retries}). "
+                    f"Retrying in {step_wait}s."
+                )
+                await asyncio.sleep(step_wait)
+
+        if inter_turn_delay_s > 0:
+            await asyncio.sleep(inter_turn_delay_s)
+
         # Fetch actually executed actions from database and log them
         actual_actions, last_rowid = fetch_new_actions_from_db(
             db_path, last_rowid, agent_names

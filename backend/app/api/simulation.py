@@ -3,6 +3,7 @@ Simulation-related API routes
 Step2: Entity reading & filtering, OASIS simulation preparation & execution (fully automated)
 """
 
+import json
 import os
 from flask import request, jsonify, send_file
 
@@ -890,6 +891,33 @@ def get_simulation_config(simulation_id: str):
             "success": False,
             "error": str(e)
         }), 500
+
+
+@simulation_bp.route('/<simulation_id>/config', methods=['POST'])
+def update_simulation_config(simulation_id: str):
+    """Merge rate_limit section into simulation_config.json."""
+    data = request.get_json() or {}
+    rate_limit = data.get("rate_limit")
+    if not rate_limit:
+        return jsonify({"success": False, "error": "rate_limit object is required"}), 400
+
+    sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+    config_path = os.path.join(sim_dir, "simulation_config.json")
+
+    if not os.path.exists(config_path):
+        return jsonify({"success": False, "error": "Simulation config not found"}), 404
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        config["rate_limit"] = rate_limit
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+
+        return jsonify({"success": True, "data": {"rate_limit": rate_limit}})
+    except Exception as e:
+        logger.error(f"Failed to update simulation config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @simulation_bp.route('/<simulation_id>/config/download', methods=['GET'])
