@@ -32,6 +32,10 @@ class Config:
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
     
+    # LLM Provider 选择（可选：'default' 或 'github-copilot'）
+    # 设置为 'github-copilot' 可直接使用 GitHub Copilot 订阅作为 LLM 后端
+    LLM_PROVIDER = os.environ.get('LLM_PROVIDER', 'default')
+    
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
     
