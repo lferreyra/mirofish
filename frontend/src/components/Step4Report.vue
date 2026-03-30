@@ -58,7 +58,7 @@
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
                   </div>
-                  <span class="loading-text">正在生成{{ section.title }}...</span>
+                  <span class="loading-text">{{ t('report.generating', section.title) }}</span>
                 </div>
               </div>
             </div>
@@ -393,8 +393,10 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAgentLog, getConsoleLog } from '../api/report'
+import { useT } from '../i18n/useT'
 
 const router = useRouter()
+const t = useT()
 
 const props = defineProps({
   reportId: String,

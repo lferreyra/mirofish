@@ -97,7 +97,7 @@
           @click="handleNextStep"
         >
           <span v-if="isGeneratingReport" class="loading-spinner-small"></span>
-          {{ isGeneratingReport ? '启动中...' : '开始生成结果报告' }} 
+          {{ isGeneratingReport ? t('step3.generatingBtn') : t('step3.startReportBtn') }}
           <span v-if="!isGeneratingReport" class="arrow-icon">→</span>
         </button>
       </div>
@@ -287,6 +287,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useT } from '../i18n/useT'
 import { useRouter } from 'vue-router'
 import { 
   startSimulation, 
@@ -296,9 +297,11 @@ import {
 } from '../api/simulation'
 import { generateReport } from '../api/report'
 
+const t = useT()
+
 const props = defineProps({
   simulationId: String,
-  maxRounds: Number, // 从Step2传入的最大轮数
+  maxRounds: Number,
   minutesPerRound: {
     type: Number,
     default: 30 // 默认每轮30分钟
