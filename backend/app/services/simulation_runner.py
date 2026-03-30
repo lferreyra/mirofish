@@ -215,27 +215,30 @@ class SimulationRunner:
         '../../scripts'
     )
     
-    # 内存中的运行状态
+    # In-memory run state — all shared dicts protected by _state_lock
+    _state_lock: threading.RLock = threading.RLock()
     _run_states: Dict[str, SimulationRunState] = {}
     _processes: Dict[str, subprocess.Popen] = {}
     _action_queues: Dict[str, Queue] = {}
     _monitor_threads: Dict[str, threading.Thread] = {}
-    _stdout_files: Dict[str, Any] = {}  # 存储 stdout 文件句柄
-    _stderr_files: Dict[str, Any] = {}  # 存储 stderr 文件句柄
-    
-    # 图谱记忆更新配置
+    _stdout_files: Dict[str, Any] = {}
+    _stderr_files: Dict[str, Any] = {}
+
+    # Graph memory update config
     _graph_memory_enabled: Dict[str, bool] = {}  # simulation_id -> enabled
     
     @classmethod
     def get_run_state(cls, simulation_id: str) -> Optional[SimulationRunState]:
-        """获取运行状态"""
-        if simulation_id in cls._run_states:
-            return cls._run_states[simulation_id]
-        
-        # 尝试从文件加载
+        """Get run state for a simulation, loading from disk if not in memory."""
+        with cls._state_lock:
+            if simulation_id in cls._run_states:
+                return cls._run_states[simulation_id]
+
+        # File I/O done outside the lock
         state = cls._load_run_state(simulation_id)
         if state:
-            cls._run_states[simulation_id] = state
+            with cls._state_lock:
+                cls._run_states[simulation_id] = state
         return state
     
     @classmethod
@@ -305,8 +308,10 @@ class SimulationRunner:
         
         with open(state_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        
-        cls._run_states[state.simulation_id] = state
+
+        # Update in-memory cache after file write
+        with cls._state_lock:
+            cls._run_states[state.simulation_id] = state
     
     @classmethod
     def start_simulation(
@@ -446,23 +451,23 @@ class SimulationRunner:
                 start_new_session=True,  # 创建新进程组，确保服务器关闭时能终止所有相关进程
             )
             
-            # 保存文件句柄以便后续关闭
-            cls._stdout_files[simulation_id] = main_log_file
-            cls._stderr_files[simulation_id] = None  # 不再需要单独的 stderr
-            
             state.process_pid = process.pid
             state.runner_status = RunnerStatus.RUNNING
-            cls._processes[simulation_id] = process
+            with cls._state_lock:
+                cls._stdout_files[simulation_id] = main_log_file
+                cls._stderr_files[simulation_id] = None
+                cls._processes[simulation_id] = process
             cls._save_run_state(state)
-            
-            # 启动监控线程
+
+            # Start monitor thread
             monitor_thread = threading.Thread(
                 target=cls._monitor_simulation,
                 args=(simulation_id,),
                 daemon=True
             )
             monitor_thread.start()
-            cls._monitor_threads[simulation_id] = monitor_thread
+            with cls._state_lock:
+                cls._monitor_threads[simulation_id] = monitor_thread
             
             logger.info(f"模拟启动成功: {simulation_id}, pid={process.pid}, platform={platform}")
             
@@ -483,9 +488,10 @@ class SimulationRunner:
         twitter_actions_log = os.path.join(sim_dir, "twitter", "actions.jsonl")
         reddit_actions_log = os.path.join(sim_dir, "reddit", "actions.jsonl")
         
-        process = cls._processes.get(simulation_id)
+        with cls._state_lock:
+            process = cls._processes.get(simulation_id)
         state = cls.get_run_state(simulation_id)
-        
+
         if not process or not state:
             return
         
@@ -548,32 +554,30 @@ class SimulationRunner:
             cls._save_run_state(state)
         
         finally:
-            # 停止图谱记忆更新器
-            if cls._graph_memory_enabled.get(simulation_id, False):
+            # Stop graph memory updater (outside lock — may do I/O)
+            with cls._state_lock:
+                graph_mem_on = cls._graph_memory_enabled.pop(simulation_id, False)
+            if graph_mem_on:
                 try:
                     ZepGraphMemoryManager.stop_updater(simulation_id)
-                    logger.info(f"已停止图谱记忆更新: simulation_id={simulation_id}")
+                    logger.info(f"Graph memory updater stopped: simulation_id={simulation_id}")
                 except Exception as e:
-                    logger.error(f"停止图谱记忆更新器失败: {e}")
-                cls._graph_memory_enabled.pop(simulation_id, None)
-            
-            # 清理进程资源
-            cls._processes.pop(simulation_id, None)
-            cls._action_queues.pop(simulation_id, None)
-            
-            # 关闭日志文件句柄
-            if simulation_id in cls._stdout_files:
-                try:
-                    cls._stdout_files[simulation_id].close()
-                except Exception:
-                    pass
-                cls._stdout_files.pop(simulation_id, None)
-            if simulation_id in cls._stderr_files and cls._stderr_files[simulation_id]:
-                try:
-                    cls._stderr_files[simulation_id].close()
-                except Exception:
-                    pass
-                cls._stderr_files.pop(simulation_id, None)
+                    logger.error(f"Failed to stop graph memory updater: {e}")
+
+            # Release process/queue refs and grab file handles — all under lock
+            with cls._state_lock:
+                cls._processes.pop(simulation_id, None)
+                cls._action_queues.pop(simulation_id, None)
+                stdout_fh = cls._stdout_files.pop(simulation_id, None)
+                stderr_fh = cls._stderr_files.pop(simulation_id, None)
+
+            # Close file handles outside the lock
+            for fh in (stdout_fh, stderr_fh):
+                if fh:
+                    try:
+                        fh.close()
+                    except Exception:
+                        pass
     
     @classmethod
     def _read_action_log(
