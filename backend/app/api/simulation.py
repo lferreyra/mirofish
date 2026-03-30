@@ -15,13 +15,14 @@ from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
 from ..utils.logger import get_logger
 from ..models.project import ProjectManager
+from ..i18n import get_prompt, get_format, get_string
 
 logger = get_logger('mirofish.api.simulation')
 
 
 # Interview prompt 优化前缀
 # 添加此前缀可以避免Agent调用工具，直接用文本回复
-INTERVIEW_PROMPT_PREFIX = "结合你的人设、所有的过往记忆与行动，不调用任何工具直接用文本回复我："
+INTERVIEW_PROMPT_PREFIX = get_prompt('interview_api_prefix')
 
 
 def optimize_interview_prompt(prompt: str) -> str:

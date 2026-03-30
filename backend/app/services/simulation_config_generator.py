@@ -20,6 +20,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..i18n import get_prompt, get_format, get_string
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
@@ -387,21 +388,21 @@ class SimulationConfigGenerator:
         
         # 实体摘要
         entity_summary = self._summarize_entities(entities)
-        
+
         # 构建上下文
         context_parts = [
-            f"## 模拟需求\n{simulation_requirement}",
-            f"\n## 实体信息 ({len(entities)}个)\n{entity_summary}",
+            get_string('sim_config_context_req') + "\n" + simulation_requirement,
+            "\n" + get_string('sim_config_context_entities', count=len(entities)) + "\n" + entity_summary,
         ]
-        
+
         current_length = sum(len(p) for p in context_parts)
         remaining_length = self.MAX_CONTEXT_LENGTH - current_length - 500  # 留500字符余量
-        
+
         if remaining_length > 0 and document_text:
             doc_text = document_text[:remaining_length]
             if len(document_text) > remaining_length:
-                doc_text += "\n...(文档已截断)"
-            context_parts.append(f"\n## 原始文档内容\n{doc_text}")
+                doc_text += get_string('sim_config_doc_truncated')
+            context_parts.append("\n" + get_string('sim_config_context_docs') + "\n" + doc_text)
         
         return "\n".join(context_parts)
     
@@ -539,52 +540,12 @@ class SimulationConfigGenerator:
         # 计算最大允许值（80%的agent数）
         max_agents_allowed = max(1, int(num_entities * 0.9))
         
-        prompt = f"""基于以下模拟需求，生成时间模拟配置。
+        prompt = get_prompt('sim_config_time').format(
+            context=context_truncated,
+            max_agents_allowed=max_agents_allowed
+        )
 
-{context_truncated}
-
-## 任务
-请生成时间配置JSON。
-
-### 基本原则（仅供参考，需根据具体事件和参与群体灵活调整）：
-- 用户群体为中国人，需符合北京时间作息习惯
-- 凌晨0-5点几乎无人活动（活跃度系数0.05）
-- 早上6-8点逐渐活跃（活跃度系数0.4）
-- 工作时间9-18点中等活跃（活跃度系数0.7）
-- 晚间19-22点是高峰期（活跃度系数1.5）
-- 23点后活跃度下降（活跃度系数0.5）
-- 一般规律：凌晨低活跃、早间渐增、工作时段中等、晚间高峰
-- **重要**：以下示例值仅供参考，你需要根据事件性质、参与群体特点来调整具体时段
-  - 例如：学生群体高峰可能是21-23点；媒体全天活跃；官方机构只在工作时间
-  - 例如：突发热点可能导致深夜也有讨论，off_peak_hours 可适当缩短
-
-### 返回JSON格式（不要markdown）
-
-示例：
-{{
-    "total_simulation_hours": 72,
-    "minutes_per_round": 60,
-    "agents_per_hour_min": 5,
-    "agents_per_hour_max": 50,
-    "peak_hours": [19, 20, 21, 22],
-    "off_peak_hours": [0, 1, 2, 3, 4, 5],
-    "morning_hours": [6, 7, 8],
-    "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    "reasoning": "针对该事件的时间配置说明"
-}}
-
-字段说明：
-- total_simulation_hours (int): 模拟总时长，24-168小时，突发事件短、持续话题长
-- minutes_per_round (int): 每轮时长，30-120分钟，建议60分钟
-- agents_per_hour_min (int): 每小时最少激活Agent数（取值范围: 1-{max_agents_allowed}）
-- agents_per_hour_max (int): 每小时最多激活Agent数（取值范围: 1-{max_agents_allowed}）
-- peak_hours (int数组): 高峰时段，根据事件参与群体调整
-- off_peak_hours (int数组): 低谷时段，通常深夜凌晨
-- morning_hours (int数组): 早间时段
-- work_hours (int数组): 工作时段
-- reasoning (string): 简要说明为什么这样配置"""
-
-        system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合中国人作息习惯。"
+        system_prompt = get_prompt('sim_config_time_system')
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -603,7 +564,7 @@ class SimulationConfigGenerator:
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
             "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "使用默认中国人作息配置（每轮1小时）"
+            "reasoning": get_string('sim_config_default_time_reasoning')
         }
     
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
@@ -671,36 +632,13 @@ class SimulationConfigGenerator:
         # 使用配置的上下文截断长度
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
         
-        prompt = f"""基于以下模拟需求，生成事件配置。
+        prompt = get_prompt('sim_config_event').format(
+            simulation_requirement=simulation_requirement,
+            context=context_truncated,
+            type_info=type_info
+        )
 
-模拟需求: {simulation_requirement}
-
-{context_truncated}
-
-## 可用实体类型及示例
-{type_info}
-
-## 任务
-请生成事件配置JSON：
-- 提取热点话题关键词
-- 描述舆论发展方向
-- 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
-
-**重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
-例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
-
-返回JSON格式（不要markdown）：
-{{
-    "hot_topics": ["关键词1", "关键词2", ...],
-    "narrative_direction": "<舆论发展方向描述>",
-    "initial_posts": [
-        {{"content": "帖子内容", "poster_type": "实体类型（必须从可用类型中选择）"}},
-        ...
-    ],
-    "reasoning": "<简要说明>"
-}}"""
-
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
+        system_prompt = get_prompt('sim_config_event_system')
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -710,7 +648,7 @@ class SimulationConfigGenerator:
                 "hot_topics": [],
                 "narrative_direction": "",
                 "initial_posts": [],
-                "reasoning": "使用默认配置"
+                "reasoning": get_string('sim_config_default_event_reasoning')
             }
     
     def _parse_event_config(self, result: Dict[str, Any]) -> EventConfig:
@@ -863,7 +801,7 @@ class SimulationConfigGenerator:
     ]
 }}"""
 
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
+        system_prompt = get_prompt('sim_config_agent_system')
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)
