@@ -868,8 +868,8 @@ const fetchEntityTypes = async () => {
   fetchingEntityTypes.value = true
   try {
     const res = await getGraphEntities(graphId)
-    if (res.data?.success) {
-      const entities = res.data.data.entities || []
+    if (res.success) {
+      const entities = res.data?.entities || []
       const counts = {}
       entities.forEach(e => {
         const type = (e.labels || []).find(l => l !== 'Entity' && l !== 'Node')
@@ -1202,9 +1202,21 @@ watch(() => props.systemLogs?.length, () => {
 })
 
 onMounted(() => {
-  if (props.simulationId) {
-    addLog('Step2 環境セットアップ初期化')
+  if (!props.simulationId) return
+  addLog('Step2 環境セットアップ初期化')
+
+  // projectData は親が非同期で取得するため、graph_id が揃ってから実行
+  const graphId = props.projectData?.graph_id
+  if (graphId) {
     fetchEntityTypes()
+  } else {
+    // projectData がまだ来ていない場合は watch で待つ
+    const stop = watch(() => props.projectData?.graph_id, (id) => {
+      if (id) {
+        stop()
+        fetchEntityTypes()
+      }
+    }, { immediate: false })
   }
 })
 
