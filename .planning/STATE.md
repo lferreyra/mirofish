@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 03
-last_updated: "2026-03-29T12:15:00.000Z"
+status: Phase 03 Complete
+last_updated: "2026-03-29T14:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State — MiroFish SIPE
 
 ## Status
 
-`IN PROGRESS` — Phase 1 complete. Phase 2 complete. Phase 3 Plan 01 (Rate Limit Backend) complete. Phase 3 Plan 02 (Settings UI) is next.
+`COMPLETE` — All 3 phases executed. Phase 1 (English Localization), Phase 2 (Brand UI), Phase 3 (Rate Limit Control) all done. Milestone v1.0 reached.
 
 ## Current Milestone
 
@@ -27,11 +27,11 @@ Milestone 1: Production-Ready for Slater Consulting
 |-------|--------|-------|
 | Phase 1 — English Localization | `COMPLETE` | Both plans executed, 0 Chinese chars remain |
 | Phase 2 — Brand UI | `COMPLETE` | All plans complete. Visual checkpoint approved by user 2026-03-27. |
-| Phase 3 — Rate Limit Control | `IN PROGRESS` | Plan 01 complete (backend). Plan 02 (Settings UI) remaining. |
+| Phase 3 — Rate Limit Control | `COMPLETE` | Both plans complete. Plan 01 (backend retry + config endpoint). Plan 02 (settings UI with localStorage). |
 
 ## Last Session
 
-2026-03-29 — Phase 3 Plan 01 executed. LLMClient now retries on 429 with exponential backoff (base 30s, max 300s), enforces RPM/TPM proactively via token bucket. POST /api/simulation/{id}/config endpoint persists rate_limit to simulation_config.json. All three simulation scripts inject inter-turn delay and retry env.step() on rate limit errors.
+2026-03-29 — Phase 3 Plan 02 executed. Collapsible rate limit settings panel added to Step3Simulation.vue (and Step1GraphBuild.vue). 5 controls: inter-turn delay slider, max retries, retry base delay, TPM limit, RPM limit. Settings persist via localStorage (mirofish_rate_limit_settings). Settings POSTed to backend via updateSimulationConfig before simulation start. Human-verify checkpoint approved by user. All 3 phases complete — MiroFish SIPE v1.0 milestone reached.
 
 ## Key Decisions
 
@@ -50,6 +50,9 @@ Milestone 1: Production-Ready for Slater Consulting
 - D3 JS stroke/fill values use HSL strings (not CSS vars — D3 runs in JS and cannot access CSS custom properties)
 - Tool badge classes use D3 new palette colors (A78BFA, 34D399, FB923C, 2DD4BF, F472B6) for consistency with graph
 - GraphPanel detail-type-badge inline style keeps color: '#fff' — applied on D3 colored node backgrounds
+- Rate limit settings panel gated to phase === 0 only — prevents config writes during active simulation
+- updateSimulationConfig called before startSimulation — non-blocking on failure, simulation proceeds with defaults
+- Settings panel added to both Step3Simulation.vue and Step1GraphBuild.vue for accessibility
 
 ## Context
 
