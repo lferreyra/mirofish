@@ -2,7 +2,14 @@
 
 A swarm intelligence prediction engine. Upload documents describing any scenario, and MiroFish simulates thousands of AI agents reacting on social media to predict how events will unfold.
 
-**Live:** [synth.scty.org](https://synth.scty.org)
+[![Vue](https://img.shields.io/badge/Vue-3.5-green?logo=vuedotjs)](https://vuejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-black?logo=flask)](https://flask.palletsprojects.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-compatible-black?logo=openai)](https://platform.openai.com/)
+[![Anthropic](https://img.shields.io/badge/Anthropic-Claude-orange?logo=anthropic)](https://www.anthropic.com/)
+[![KuzuDB](https://img.shields.io/badge/KuzuDB-embedded-blueviolet)](https://kuzudb.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-lightgrey)](LICENSE)
 
 > Fork of [666ghj/MiroFish](https://github.com/666ghj/MiroFish) — fully translated to English, local graph storage with embedded KuzuDB by default, Claude/Codex CLI support added, Slater Consulting brand UI, and configurable LLM rate limiting.
 
