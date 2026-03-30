@@ -4,7 +4,7 @@ A swarm intelligence prediction engine. Upload documents describing any scenario
 
 **Live:** [synth.scty.org](https://synth.scty.org)
 
-> Fork of [666ghj/MiroFish](https://github.com/666ghj/MiroFish) — fully translated to English, local graph storage with embedded KuzuDB by default, Claude/Codex CLI support added.
+> Fork of [666ghj/MiroFish](https://github.com/666ghj/MiroFish) — fully translated to English, local graph storage with embedded KuzuDB by default, Claude/Codex CLI support added, Slater Consulting brand UI, and configurable LLM rate limiting.
 
 ## What it does
 
@@ -23,6 +23,33 @@ A swarm intelligence prediction engine. Upload documents describing any scenario
 | **Graph database** | Hosted graph service | Local KuzuDB (embedded, free) |
 | **Entity extraction** | Managed extraction pipeline | LLM-based extraction (uses your own model) |
 | **Auth** | Requires API keys | Can use Claude Code or Codex CLI subscriptions (no separate API cost) |
+| **Rate limiting** | None — crashes on 429 errors | Configurable throttle + automatic retry with backoff |
+| **Brand** | Upstream UI | Slater Consulting dark theme |
+
+## Rate limiting
+
+Large simulations (300+ agents, 80+ rounds) generate hundreds of LLM calls and will hit provider rate limits without throttling. This fork adds full rate limit control:
+
+- **Automatic 429 retry** — `LLMClient` catches rate limit errors from OpenAI and Anthropic SDKs and retries with exponential backoff (default: base 30s, cap 300s, 3 retries)
+- **Token bucket throttling** — proactive RPM and TPM enforcement before each LLM call, preventing rate limit errors rather than recovering from them
+- **Inter-turn delay** — configurable sleep between simulation rounds in all three simulation scripts (Twitter, Reddit, Parallel)
+- **UI settings panel** — collapsible "Rate Limit Settings" panel in the app lets you adjust all parameters before starting a simulation, with persistence across page reloads via localStorage
+
+Configure via the UI or set defaults directly in `simulation_config.json`:
+
+```json
+{
+  "rate_limit": {
+    "inter_turn_delay_ms": 500,
+    "max_retries": 3,
+    "retry_base_delay_s": 30,
+    "tpm_limit": 0,
+    "rpm_limit": 0
+  }
+}
+```
+
+Set `tpm_limit` and `rpm_limit` to `0` to disable proactive throttling and rely on retry-only behavior.
 
 ## Quick start
 
@@ -116,7 +143,7 @@ backend/
       report_agent.py      ReACT agent with tool-calling for reports
       graph_tools.py       Search, interview, and analysis tools
     utils/
-      llm_client.py        Multi-provider LLM client (OpenAI/Anthropic/CLI)
+      llm_client.py        Multi-provider LLM client (OpenAI/Anthropic/CLI) with retry + token bucket
   scripts/         OASIS simulation runner scripts (Twitter + Reddit)
 ```
 
