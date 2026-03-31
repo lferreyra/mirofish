@@ -211,18 +211,15 @@ class GraphitiEntityReader:
                 l for l in labels if l not in ("Entity", "Node", "Episodic")
             ]
 
-            if not custom_labels:
-                continue
-
-            if defined_entity_types:
-                matching_labels = [
-                    l for l in custom_labels if l in defined_entity_types
-                ]
-                if not matching_labels:
-                    continue
-                entity_type = matching_labels[0]
-            else:
+            # Graphiti may not add custom labels — use "Entity" as fallback
+            if custom_labels:
                 entity_type = custom_labels[0]
+            else:
+                entity_type = "Entity"
+
+            if defined_entity_types and entity_type != "Entity":
+                if entity_type not in defined_entity_types:
+                    continue
 
             entity_types_found.add(entity_type)
 
