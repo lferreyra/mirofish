@@ -1,5 +1,6 @@
 """
 Research Service - calls OSINT MCP server to gather intelligence on a topic
+Uses the MCP streamable HTTP protocol (initialize → tools/call → parse SSE)
 """
 import httpx
 import json
@@ -11,6 +12,43 @@ logger = get_logger('mirofish.research_service')
 class ResearchService:
     def __init__(self, mcp_url: str = "http://localhost:8080/mcp"):
         self.mcp_url = mcp_url
+
+    def _mcp_call(self, method: str, params: dict, request_id: int, session_id: str | None = None, timeout: float = 30.0) -> tuple[dict, str]:
+        """
+        Send a JSON-RPC request to the MCP server and parse the SSE response.
+        Returns (result_dict, session_id).
+        """
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
+        if session_id:
+            headers["Mcp-Session-Id"] = session_id
+
+        payload = {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "method": method,
+            "params": params,
+        }
+
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(self.mcp_url, json=payload, headers=headers)
+            response.raise_for_status()
+
+            new_session_id = response.headers.get("mcp-session-id", session_id)
+
+            # Parse SSE response - look for "data:" lines
+            result = None
+            for line in response.text.split("\n"):
+                if line.startswith("data: "):
+                    data = json.loads(line[6:])
+                    if "result" in data:
+                        result = data["result"]
+                    elif "error" in data:
+                        raise Exception(data["error"].get("message", str(data["error"])))
+
+            return result, new_session_id
 
     def research(self, topic: str, depth: str = "shallow", output_format: str = "mirofish") -> dict:
         """
@@ -28,51 +66,60 @@ class ResearchService:
         try:
             logger.info(f"Starting OSINT research: topic='{topic}', depth='{depth}'")
 
-            # Call MCP server via HTTP using the MCP protocol
-            # The FastMCP server accepts JSON-RPC over HTTP
-            payload = {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "tools/call",
-                "params": {
+            timeout = 30.0 if depth == "shallow" else 120.0 if depth == "deep" else 660.0
+
+            # Step 1: Initialize MCP session
+            init_result, session_id = self._mcp_call(
+                method="initialize",
+                params={
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {"name": "MiroFish", "version": "1.0"},
+                },
+                request_id=1,
+                timeout=10.0,
+            )
+            logger.info(f"MCP session initialized: {session_id}")
+
+            # Step 2: Send initialized notification (no response expected)
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+                "Mcp-Session-Id": session_id,
+            }
+            with httpx.Client(timeout=5.0) as client:
+                client.post(
+                    self.mcp_url,
+                    json={"jsonrpc": "2.0", "method": "notifications/initialized"},
+                    headers=headers,
+                )
+
+            # Step 3: Call research_and_synthesize tool
+            tool_result, _ = self._mcp_call(
+                method="tools/call",
+                params={
                     "name": "research_and_synthesize",
                     "arguments": {
                         "topic": topic,
                         "depth": depth,
                         "output_format": output_format,
-                    }
-                }
-            }
+                    },
+                },
+                request_id=2,
+                session_id=session_id,
+                timeout=timeout,
+            )
 
-            timeout = 30.0 if depth == "shallow" else 120.0 if depth == "deep" else 660.0
+            # Extract report text from MCP tool result
+            if isinstance(tool_result, dict) and "content" in tool_result:
+                for item in tool_result["content"]:
+                    if isinstance(item, dict) and item.get("type") == "text":
+                        report_text = item["text"]
+                        logger.info(f"Research completed. Report length: {len(report_text)}")
+                        return {"success": True, "report": report_text, "topic": topic}
 
-            with httpx.Client(timeout=timeout) as client:
-                response = client.post(
-                    self.mcp_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                response.raise_for_status()
-                result = response.json()
-
-            # Extract the report text from MCP response
-            if "result" in result:
-                content = result["result"]
-                # MCP tool results come as content array
-                if isinstance(content, dict) and "content" in content:
-                    for item in content["content"]:
-                        if item.get("type") == "text":
-                            report_text = item["text"]
-                            logger.info(f"Research completed. Report length: {len(report_text)}")
-                            return {"success": True, "report": report_text, "topic": topic}
-                # If result is already a string
-                if isinstance(content, str):
-                    return {"success": True, "report": content, "topic": topic}
-
-            if "error" in result:
-                error_msg = result["error"].get("message", str(result["error"]))
-                logger.error(f"MCP error: {error_msg}")
-                return {"success": False, "error": error_msg}
+            if isinstance(tool_result, str):
+                return {"success": True, "report": tool_result, "topic": topic}
 
             return {"success": False, "error": "Unexpected MCP response format"}
 
