@@ -230,35 +230,45 @@ class GraphBuilderService:
         return []
 
     async def _add_text_batches_async(self, graph_id, chunks, batch_size, progress_callback):
-        from graphiti_core.graphiti import RawEpisode, EpisodeType
+        from graphiti_core.graphiti import EpisodeType
+        import time as _time
 
         graphiti = await create_graphiti()
         try:
             total_chunks = len(chunks)
-            for i in range(0, total_chunks, batch_size):
-                batch_chunks = chunks[i : i + batch_size]
-                batch_num = i // batch_size + 1
-                total_batches = (total_chunks + batch_size - 1) // batch_size
+            succeeded = 0
+            failed = 0
 
+            for i, chunk in enumerate(chunks):
                 if progress_callback:
-                    progress = (i + len(batch_chunks)) / total_chunks
+                    progress = (i + 1) / total_chunks
                     progress_callback(
-                        f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
+                        f"Processing chunk {i + 1}/{total_chunks}...",
                         progress,
                     )
 
-                episodes = [
-                    RawEpisode(
-                        name=f"chunk_{i + j}",
-                        content=chunk,
-                        source=EpisodeType.text,
-                        source_description="MiroFish document chunk",
-                        reference_time=datetime.now(),
-                        group_id=graph_id,
-                    )
-                    for j, chunk in enumerate(batch_chunks)
-                ]
-                await graphiti.add_episode_bulk(episodes)
+                # Retry each chunk up to 3 times
+                for attempt in range(3):
+                    try:
+                        await graphiti.add_episode(
+                            name=f"chunk_{i}",
+                            episode_body=chunk,
+                            source=EpisodeType.text,
+                            source_description="MiroFish document chunk",
+                            reference_time=datetime.now(),
+                            group_id=graph_id,
+                        )
+                        succeeded += 1
+                        break
+                    except Exception as e:
+                        if attempt < 2:
+                            logger.warning(f"Chunk {i} attempt {attempt + 1} failed: {e}, retrying...")
+                            await asyncio.sleep(2 ** attempt)
+                        else:
+                            logger.error(f"Chunk {i} failed after 3 attempts: {e}, skipping")
+                            failed += 1
+
+            logger.info(f"Episode ingestion complete: {succeeded} succeeded, {failed} failed out of {total_chunks}")
         finally:
             await graphiti.close()
 
