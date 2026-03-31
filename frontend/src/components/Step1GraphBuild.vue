@@ -122,9 +122,17 @@
         <div class="card-content">
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
-            Based on the generated ontology, automatically chunks documents and calls Zep to build a knowledge graph, extracting entities and relationships, and forming temporal memory and community summaries
+            Based on the generated ontology, automatically chunks documents and builds a knowledge graph using Graphiti + Neo4j, extracting entities and relationships, and forming temporal memory and community summaries
           </p>
-          
+
+          <!-- Error + Retry -->
+          <div v-if="buildFailed" class="build-error">
+            <p class="error-text">Graph build failed. Check logs below for details.</p>
+            <button class="retry-btn" @click="$emit('retry-build')">
+              Retry Build
+            </button>
+          </div>
+
           <!-- Stats Cards -->
           <div class="stats-grid">
             <div class="stat-card">
@@ -198,11 +206,12 @@ const props = defineProps({
   projectData: Object,
   ontologyProgress: Object,
   buildProgress: Object,
+  buildFailed: { type: Boolean, default: false },
   graphData: Object,
   systemLogs: { type: Array, default: () => [] }
 })
 
-defineEmits(['next-step'])
+defineEmits(['next-step', 'retry-build'])
 
 const selectedOntologyItem = ref(null)
 const logContent = ref(null)
@@ -619,6 +628,41 @@ watch(() => props.systemLogs.length, () => {
 .action-btn:disabled {
   background: #CCC;
   cursor: not-allowed;
+}
+
+.build-error {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 0;
+}
+
+.retry-btn {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover {
+  background: #b91c1c;
 }
 
 .progress-section {

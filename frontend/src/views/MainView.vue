@@ -49,15 +49,17 @@
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <!-- Step 1: Graph Building -->
-        <Step1GraphBuild 
+        <Step1GraphBuild
           v-if="currentStep === 1"
           :currentPhase="currentPhase"
           :projectData="projectData"
           :ontologyProgress="ontologyProgress"
           :buildProgress="buildProgress"
+          :buildFailed="buildFailed"
           :graphData="graphData"
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
+          @retry-build="retryBuild"
         />
         <!-- Step 2: Environment Setup -->
         <Step2EnvSetup
@@ -103,6 +105,7 @@ const graphData = ref(null)
 const currentPhase = ref(-1) // -1: Upload, 0: Ontology, 1: Build, 2: Complete
 const ontologyProgress = ref(null)
 const buildProgress = ref(null)
+const buildFailed = ref(false)
 const systemLogs = ref([])
 
 // Polling timers
@@ -329,8 +332,16 @@ const startBuildGraph = async () => {
     }
   } catch (err) {
     error.value = err.message
+    buildFailed.value = true
     addLog(`Exception in startBuildGraph: ${err.message}`)
   }
+}
+
+const retryBuild = () => {
+  buildFailed.value = false
+  error.value = null
+  addLog('Retrying graph build...')
+  startBuildGraph()
 }
 
 const startGraphPolling = () => {
@@ -389,6 +400,8 @@ const pollTaskStatus = async (taskId) => {
         }
       } else if (task.status === 'failed') {
         stopPolling()
+        stopGraphPolling()
+        buildFailed.value = true
         error.value = task.error
         addLog(`Graph build task failed: ${task.error}`)
       }

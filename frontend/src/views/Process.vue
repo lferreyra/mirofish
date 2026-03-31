@@ -317,7 +317,7 @@
               <div class="detail-section">
                 <div class="detail-label">API Description</div>
                 <div class="detail-content">
-                  Based on the generated ontology, the documents are chunked and the Zep API is called to build the knowledge graph, extracting entities and relationships.
+                  Based on the generated ontology, the documents are chunked and Graphiti + Neo4j is used to build the knowledge graph, extracting entities and relationships.
                 </div>
               </div>
               
