@@ -121,14 +121,30 @@
         <!-- 右栏：交互控制台 -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
-            <div class="console-section">
+            <!-- 模式切换标签 -->
+            <div class="console-section" style="padding-bottom: 0;">
+              <div class="input-mode-tabs">
+                <button
+                  :class="['mode-tab', { active: inputMode === 'file' }]"
+                  @click="inputMode = 'file'">
+                  文件上传
+                </button>
+                <button
+                  :class="['mode-tab', { active: inputMode === 'research' }]"
+                  @click="inputMode = 'research'">
+                  研究课题
+                </button>
+              </div>
+            </div>
+
+            <!-- 文件上传模式 -->
+            <div v-if="inputMode === 'file'" class="console-section">
               <div class="console-header">
                 <span class="console-label">01 / 现实种子</span>
                 <span class="console-meta">支持格式: PDF, MD, TXT</span>
               </div>
-              
-              <div 
+
+              <div
                 class="upload-zone"
                 :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
                 @dragover.prevent="handleDragOver"
@@ -145,18 +161,50 @@
                   style="display: none"
                   :disabled="loading"
                 />
-                
+
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
                   <div class="upload-title">拖拽文件上传</div>
                   <div class="upload-hint">或点击浏览文件系统</div>
                 </div>
-                
+
                 <div v-else class="file-list">
                   <div v-for="(file, index) in files" :key="index" class="file-item">
                     <span class="file-icon">📄</span>
                     <span class="file-name">{{ file.name }}</span>
                     <button @click.stop="removeFile(index)" class="remove-btn">×</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 研究课题模式 -->
+            <div v-if="inputMode === 'research'" class="console-section">
+              <div class="console-header">
+                <span class="console-label">01 / 研究课题</span>
+                <span class="console-meta">OSINT Research Mode</span>
+              </div>
+              <div class="research-input-zone">
+                <div class="research-topic-input">
+                  <label class="input-label">> Research Topic</label>
+                  <textarea
+                    v-model="researchTopic"
+                    placeholder="Enter a topic to research, e.g. 'US chip tariff impact on global semiconductor supply chain'"
+                    rows="3"
+                    class="research-textarea"
+                    :disabled="loading"
+                  ></textarea>
+                </div>
+                <div class="depth-selector">
+                  <label class="input-label">> Research Depth</label>
+                  <div class="depth-options">
+                    <button
+                      v-for="d in depthOptions"
+                      :key="d.value"
+                      :class="['depth-btn', { active: researchDepth === d.value }]"
+                      @click="researchDepth = d.value">
+                      {{ d.label }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -221,6 +269,16 @@ const formData = ref({
 // 文件列表
 const files = ref([])
 
+// 模式切换
+const inputMode = ref('file')  // 'file' or 'research'
+const researchTopic = ref('')
+const researchDepth = ref('shallow')
+const depthOptions = [
+  { value: 'shallow', label: 'Quick (~15s)' },
+  { value: 'deep', label: 'Deep (~60s)' },
+  { value: 'research', label: 'Full Research (~5min)' },
+]
+
 // 状态
 const loading = ref(false)
 const error = ref('')
@@ -231,7 +289,11 @@ const fileInput = ref(null)
 
 // 计算属性:是否可以提交
 const canSubmit = computed(() => {
-  return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
+  const hasRequirement = formData.value.simulationRequirement.trim() !== ''
+  if (inputMode.value === 'research') {
+    return hasRequirement && researchTopic.value.trim() !== ''
+  }
+  return hasRequirement && files.value.length > 0
 })
 
 // 触发文件选择
@@ -291,11 +353,15 @@ const scrollToBottom = () => {
 // 开始模拟 - 立即跳转，API调用在Process页面进行
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
-  
+
   // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
-    
+    setPendingUpload(files.value, formData.value.simulationRequirement, {
+      mode: inputMode.value,
+      researchTopic: researchTopic.value,
+      researchDepth: researchDepth.value,
+    })
+
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
       name: 'Process',
@@ -764,6 +830,90 @@ const startSimulation = () => {
   cursor: pointer;
   font-size: 1.2rem;
   color: #999;
+}
+
+/* 模式切换标签 */
+.input-mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid #DDD;
+}
+.mode-tab {
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+.mode-tab:hover {
+  color: #666;
+}
+.mode-tab.active {
+  color: var(--black);
+  border-bottom-color: var(--orange);
+}
+
+/* 研究课题输入 */
+.research-input-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.input-label {
+  color: #999;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+  display: block;
+}
+.research-textarea {
+  width: 100%;
+  background: #FAFAFA;
+  border: 1px solid #DDD;
+  border-radius: 4px;
+  color: var(--black);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+.research-textarea:focus {
+  border-color: #999;
+}
+.research-textarea::placeholder {
+  color: #BBB;
+}
+.depth-options {
+  display: flex;
+  gap: 8px;
+}
+.depth-btn {
+  padding: 6px 14px;
+  background: #FAFAFA;
+  border: 1px solid #DDD;
+  border-radius: 4px;
+  color: #999;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.depth-btn:hover {
+  background: #F0F0F0;
+  color: #666;
+}
+.depth-btn.active {
+  background: var(--black);
+  border-color: var(--black);
+  color: var(--white);
 }
 
 .console-divider {

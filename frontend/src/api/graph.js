@@ -68,3 +68,18 @@ export function getProject(projectId) {
     method: 'get'
   })
 }
+
+/**
+ * 从研究课题生成本体（OSINT研究模式）
+ * @param {Object} data - 包含topic, simulation_requirement, depth, project_name
+ * @returns {Promise}
+ */
+export function generateOntologyFromResearch(data) {
+  return requestWithRetry(() =>
+    service({
+      url: '/api/graph/ontology/generate-from-research',
+      method: 'post',
+      data
+    })
+  )
+}

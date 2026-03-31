@@ -80,7 +80,7 @@ import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
-import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
+import { generateOntology, generateOntologyFromResearch, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
@@ -188,41 +188,85 @@ const initProject = async () => {
 
 const handleNewProject = async () => {
   const pending = getPendingUpload()
-  if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No pending files found.'
-    addLog('Error: No pending files found for new project.')
-    return
-  }
-  
-  try {
-    loading.value = true
-    currentPhase.value = 0
-    ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog('Starting ontology generation: Uploading files...')
-    
-    const formData = new FormData()
-    pending.files.forEach(f => formData.append('files', f))
-    formData.append('simulation_requirement', pending.simulationRequirement)
-    
-    const res = await generateOntology(formData)
-    if (res.success) {
-      clearPendingUpload()
-      currentProjectId.value = res.data.project_id
-      projectData.value = res.data
-      
-      router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
-      ontologyProgress.value = null
-      addLog(`Ontology generated successfully for project ${res.data.project_id}`)
-      await startBuildGraph()
-    } else {
-      error.value = res.error || 'Ontology generation failed'
-      addLog(`Error generating ontology: ${error.value}`)
+
+  if (pending.mode === 'research') {
+    // Research mode - call OSINT endpoint with JSON
+    if (!pending.isPending || !pending.researchTopic) {
+      error.value = 'No research topic found.'
+      addLog('Error: No research topic found for new project.')
+      return
     }
-  } catch (err) {
-    error.value = err.message
-    addLog(`Exception in handleNewProject: ${err.message}`)
-  } finally {
-    loading.value = false
+
+    try {
+      loading.value = true
+      currentPhase.value = 0
+      ontologyProgress.value = { message: 'Researching topic and generating ontology...' }
+      addLog(`Starting OSINT research: "${pending.researchTopic}" (depth: ${pending.researchDepth})`)
+
+      const res = await generateOntologyFromResearch({
+        topic: pending.researchTopic,
+        simulation_requirement: pending.simulationRequirement,
+        depth: pending.researchDepth,
+        project_name: `Research: ${pending.researchTopic.substring(0, 50)}`,
+      })
+
+      if (res.success) {
+        clearPendingUpload()
+        currentProjectId.value = res.data.project_id
+        projectData.value = res.data
+
+        router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
+        ontologyProgress.value = null
+        addLog(`Ontology generated successfully for project ${res.data.project_id}`)
+        await startBuildGraph()
+      } else {
+        error.value = res.error || 'Research ontology generation failed'
+        addLog(`Error generating ontology from research: ${error.value}`)
+      }
+    } catch (err) {
+      error.value = err.message
+      addLog(`Exception in handleNewProject (research): ${err.message}`)
+    } finally {
+      loading.value = false
+    }
+  } else {
+    // File upload mode - existing behavior
+    if (!pending.isPending || pending.files.length === 0) {
+      error.value = 'No pending files found.'
+      addLog('Error: No pending files found for new project.')
+      return
+    }
+
+    try {
+      loading.value = true
+      currentPhase.value = 0
+      ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
+      addLog('Starting ontology generation: Uploading files...')
+
+      const formData = new FormData()
+      pending.files.forEach(f => formData.append('files', f))
+      formData.append('simulation_requirement', pending.simulationRequirement)
+
+      const res = await generateOntology(formData)
+      if (res.success) {
+        clearPendingUpload()
+        currentProjectId.value = res.data.project_id
+        projectData.value = res.data
+
+        router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
+        ontologyProgress.value = null
+        addLog(`Ontology generated successfully for project ${res.data.project_id}`)
+        await startBuildGraph()
+      } else {
+        error.value = res.error || 'Ontology generation failed'
+        addLog(`Error generating ontology: ${error.value}`)
+      }
+    } catch (err) {
+      error.value = err.message
+      addLog(`Exception in handleNewProject: ${err.message}`)
+    } finally {
+      loading.value = false
+    }
   }
 }
 
