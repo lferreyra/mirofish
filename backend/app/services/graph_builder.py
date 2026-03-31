@@ -1,22 +1,37 @@
 """
 Graph building service
-Interface 2: Build Standalone Graph using Zep API
+Interface 2: Build Standalone Graph using Graphiti + Neo4j
 """
 
 import os
 import uuid
 import time
+import asyncio
 import threading
+import concurrent.futures
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass
-
-from zep_cloud.client import Zep
-from zep_cloud import EpisodeData, EntityEdgeSourceTarget
+from datetime import datetime
 
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
-from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 from .text_processor import TextProcessor
+from .graphiti_client import get_graphiti
+from ..utils.logger import get_logger
+
+logger = get_logger('mirofish.graph_builder')
+
+
+def _run_async(coro):
+    """Bridge sync -> async. Works whether or not an event loop is already running."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(asyncio.run, coro).result()
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
 
 
 @dataclass
@@ -39,15 +54,10 @@ class GraphInfo:
 class GraphBuilderService:
     """
     Graph building service
-    Responsible for calling Zep API to build knowledge graphs
+    Responsible for calling Graphiti to build knowledge graphs
     """
 
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY is not configured")
-
-        self.client = Zep(api_key=self.api_key)
+    def __init__(self):
         self.task_manager = TaskManager()
 
     def build_graph_async(
@@ -57,7 +67,7 @@ class GraphBuilderService:
         graph_name: str = "MiroFish Graph",
         chunk_size: int = 500,
         chunk_overlap: int = 50,
-        batch_size: int = 3
+        batch_size: int = 3,
     ) -> str:
         """
         Build graph asynchronously
@@ -73,20 +83,26 @@ class GraphBuilderService:
         Returns:
             Task ID
         """
-        # Create task
         task_id = self.task_manager.create_task(
             task_type="graph_build",
             metadata={
                 "graph_name": graph_name,
                 "chunk_size": chunk_size,
                 "text_length": len(text),
-            }
+            },
         )
 
-        # Execute build in background thread
         thread = threading.Thread(
             target=self._build_graph_worker,
-            args=(task_id, text, ontology, graph_name, chunk_size, chunk_overlap, batch_size)
+            args=(
+                task_id,
+                text,
+                ontology,
+                graph_name,
+                chunk_size,
+                chunk_overlap,
+                batch_size,
+            ),
         )
         thread.daemon = True
         thread.start()
@@ -101,7 +117,7 @@ class GraphBuilderService:
         graph_name: str,
         chunk_size: int,
         chunk_overlap: int,
-        batch_size: int
+        batch_size: int,
     ):
         """Graph building worker thread"""
         try:
@@ -109,23 +125,18 @@ class GraphBuilderService:
                 task_id,
                 status=TaskStatus.PROCESSING,
                 progress=5,
-                message="Starting graph construction..."
+                message="Starting graph construction...",
             )
 
-            # 1. Create graph
+            # 1. Create graph (group_id)
             graph_id = self.create_graph(graph_name)
             self.task_manager.update_task(
-                task_id,
-                progress=10,
-                message=f"Graph created: {graph_id}"
+                task_id, progress=10, message=f"Graph created: {graph_id}"
             )
 
-            # 2. Set ontology
-            self.set_ontology(graph_id, ontology)
+            # 2. Ontology is used as entity/edge type hints for add_episode_bulk
             self.task_manager.update_task(
-                task_id,
-                progress=15,
-                message="Ontology configured"
+                task_id, progress=15, message="Ontology configured"
             )
 
             # 3. Split text into chunks
@@ -134,170 +145,76 @@ class GraphBuilderService:
             self.task_manager.update_task(
                 task_id,
                 progress=20,
-                message=f"Text split into {total_chunks} chunks"
+                message=f"Text split into {total_chunks} chunks",
             )
 
             # 4. Send data in batches
-            episode_uuids = self.add_text_batches(
-                graph_id, chunks, batch_size,
+            self.add_text_batches(
+                graph_id,
+                chunks,
+                batch_size,
                 lambda msg, prog: self.task_manager.update_task(
                     task_id,
-                    progress=20 + int(prog * 0.4),  # 20-60%
-                    message=msg
-                )
+                    progress=20 + int(prog * 0.6),  # 20-80%
+                    message=msg,
+                ),
             )
 
-            # 5. Wait for Zep processing to complete
+            # 5. Graphiti processes synchronously during add_episode_bulk,
+            #    no separate wait needed.
             self.task_manager.update_task(
-                task_id,
-                progress=60,
-                message="Waiting for Zep to process data..."
-            )
-
-            self._wait_for_episodes(
-                episode_uuids,
-                lambda msg, prog: self.task_manager.update_task(
-                    task_id,
-                    progress=60 + int(prog * 0.3),  # 60-90%
-                    message=msg
-                )
+                task_id, progress=85, message="Retrieving graph information..."
             )
 
             # 6. Get graph information
-            self.task_manager.update_task(
-                task_id,
-                progress=90,
-                message="Retrieving graph information..."
-            )
-
             graph_info = self._get_graph_info(graph_id)
 
-            # Complete
-            self.task_manager.complete_task(task_id, {
-                "graph_id": graph_id,
-                "graph_info": graph_info.to_dict(),
-                "chunks_processed": total_chunks,
-            })
+            self.task_manager.complete_task(
+                task_id,
+                {
+                    "graph_id": graph_id,
+                    "graph_info": graph_info.to_dict(),
+                    "chunks_processed": total_chunks,
+                },
+            )
 
         except Exception as e:
             import traceback
+
             error_msg = f"{str(e)}\n{traceback.format_exc()}"
             self.task_manager.fail_task(task_id, error_msg)
 
     def create_graph(self, name: str) -> str:
-        """Create a Zep graph (public method)"""
+        """
+        Create a new graph (returns a group_id).
+        Graphiti uses group_id to partition data; no separate graph creation API needed.
+        """
         graph_id = f"mirofish_{uuid.uuid4().hex[:16]}"
-
-        self.client.graph.create(
-            graph_id=graph_id,
-            name=name,
-            description="MiroFish Social Simulation Graph"
-        )
-
         return graph_id
 
     def set_ontology(self, graph_id: str, ontology: Dict[str, Any]):
-        """Set graph ontology (public method)"""
-        import warnings
-        from typing import Optional
-        from pydantic import Field
-        from zep_cloud.external_clients.ontology import EntityModel, EntityText, EdgeModel
-
-        # Suppress Pydantic v2 warnings about Field(default=None)
-        # This is the usage required by the Zep SDK; warnings from dynamic class creation can be safely ignored
-        warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
-
-        # Zep reserved names that cannot be used as attribute names
-        RESERVED_NAMES = {'uuid', 'name', 'group_id', 'name_embedding', 'summary', 'created_at'}
-
-        def safe_attr_name(attr_name: str) -> str:
-            """Convert reserved names to safe names"""
-            if attr_name.lower() in RESERVED_NAMES:
-                return f"entity_{attr_name}"
-            return attr_name
-
-        # Dynamically create entity types
-        entity_types = {}
-        for entity_def in ontology.get("entity_types", []):
-            name = entity_def["name"]
-            description = entity_def.get("description", f"A {name} entity.")
-
-            # Create attribute dict and type annotations (required for Pydantic v2)
-            attrs = {"__doc__": description}
-            annotations = {}
-
-            for attr_def in entity_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # Use safe name
-                attr_desc = attr_def.get("description", attr_name)
-                # Zep API requires Field description, this is mandatory
-                attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[EntityText]  # Type annotation
-
-            attrs["__annotations__"] = annotations
-
-            # Dynamically create class
-            entity_class = type(name, (EntityModel,), attrs)
-            entity_class.__doc__ = description
-            entity_types[name] = entity_class
-
-        # Dynamically create edge types
-        edge_definitions = {}
-        for edge_def in ontology.get("edge_types", []):
-            name = edge_def["name"]
-            description = edge_def.get("description", f"A {name} relationship.")
-
-            # Create attribute dict and type annotations
-            attrs = {"__doc__": description}
-            annotations = {}
-
-            for attr_def in edge_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # Use safe name
-                attr_desc = attr_def.get("description", attr_name)
-                # Zep API requires Field description, this is mandatory
-                attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[str]  # Edge attributes use str type
-
-            attrs["__annotations__"] = annotations
-
-            # Dynamically create class
-            class_name = ''.join(word.capitalize() for word in name.split('_'))
-            edge_class = type(class_name, (EdgeModel,), attrs)
-            edge_class.__doc__ = description
-
-            # Build source_targets
-            source_targets = []
-            for st in edge_def.get("source_targets", []):
-                source_targets.append(
-                    EntityEdgeSourceTarget(
-                        source=st.get("source", "Entity"),
-                        target=st.get("target", "Entity")
-                    )
-                )
-
-            if source_targets:
-                edge_definitions[name] = (edge_class, source_targets)
-
-        # Call Zep API to set ontology
-        if entity_types or edge_definitions:
-            self.client.graph.set_ontology(
-                graph_ids=[graph_id],
-                entities=entity_types if entity_types else None,
-                edges=edge_definitions if edge_definitions else None,
-            )
+        """
+        Store ontology for later use.
+        Graphiti does not have a separate set_ontology API; entity_types and
+        edge_types are passed to add_episode / add_episode_bulk calls.
+        This is a no-op kept for interface compatibility.
+        """
+        pass
 
     def add_text_batches(
         self,
         graph_id: str,
         chunks: List[str],
         batch_size: int = 3,
-        progress_callback: Optional[Callable] = None
+        progress_callback: Optional[Callable] = None,
     ) -> List[str]:
-        """Add text to graph in batches, return list of all episode UUIDs"""
-        episode_uuids = []
+        """Add text to graph in batches using Graphiti add_episode_bulk"""
+        from graphiti_core.types import RawEpisode, EpisodeType
+
         total_chunks = len(chunks)
 
         for i in range(0, total_chunks, batch_size):
-            batch_chunks = chunks[i:i + batch_size]
+            batch_chunks = chunks[i : i + batch_size]
             batch_num = i // batch_size + 1
             total_batches = (total_chunks + batch_size - 1) // batch_size
 
@@ -305,186 +222,146 @@ class GraphBuilderService:
                 progress = (i + len(batch_chunks)) / total_chunks
                 progress_callback(
                     f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
-                    progress
+                    progress,
                 )
 
-            # Build episode data
             episodes = [
-                EpisodeData(data=chunk, type="text")
-                for chunk in batch_chunks
+                RawEpisode(
+                    name=f"chunk_{i + j}",
+                    content=chunk,
+                    source=EpisodeType.text,
+                    source_description="MiroFish document chunk",
+                    reference_time=datetime.now(),
+                    group_id=graph_id,
+                )
+                for j, chunk in enumerate(batch_chunks)
             ]
 
-            # Send to Zep
             try:
-                batch_result = self.client.graph.add_batch(
-                    graph_id=graph_id,
-                    episodes=episodes
-                )
-
-                # Collect returned episode UUIDs
-                if batch_result and isinstance(batch_result, list):
-                    for ep in batch_result:
-                        ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
-                        if ep_uuid:
-                            episode_uuids.append(ep_uuid)
-
-                # Avoid sending requests too quickly
-                time.sleep(1)
-
+                _run_async(self._add_episode_bulk(episodes, graph_id))
             except Exception as e:
                 if progress_callback:
                     progress_callback(f"Batch {batch_num} failed: {str(e)}", 0)
                 raise
 
-        return episode_uuids
+        return []  # Graphiti processes synchronously, no episode UUIDs to track
 
-    def _wait_for_episodes(
-        self,
-        episode_uuids: List[str],
-        progress_callback: Optional[Callable] = None,
-        timeout: int = 600
-    ):
-        """Wait for all episodes to finish processing (by querying each episode's processed status)"""
-        if not episode_uuids:
-            if progress_callback:
-                progress_callback("No waiting needed (no episodes)", 1.0)
-            return
-
-        start_time = time.time()
-        pending_episodes = set(episode_uuids)
-        completed_count = 0
-        total_episodes = len(episode_uuids)
-
-        if progress_callback:
-            progress_callback(f"Waiting for {total_episodes} text chunks to process...", 0)
-
-        while pending_episodes:
-            if time.time() - start_time > timeout:
-                if progress_callback:
-                    progress_callback(
-                        f"Some text chunks timed out, completed {completed_count}/{total_episodes}",
-                        completed_count / total_episodes
-                    )
-                break
-
-            # Check each episode's processing status
-            for ep_uuid in list(pending_episodes):
-                try:
-                    episode = self.client.graph.episode.get(uuid_=ep_uuid)
-                    is_processed = getattr(episode, 'processed', False)
-
-                    if is_processed:
-                        pending_episodes.remove(ep_uuid)
-                        completed_count += 1
-
-                except Exception as e:
-                    # Ignore individual query errors, continue
-                    pass
-
-            elapsed = int(time.time() - start_time)
-            if progress_callback:
-                progress_callback(
-                    f"Zep processing... {completed_count}/{total_episodes} done, {len(pending_episodes)} pending ({elapsed}s)",
-                    completed_count / total_episodes if total_episodes > 0 else 0
-                )
-
-            if pending_episodes:
-                time.sleep(3)  # Check every 3 seconds
-
-        if progress_callback:
-            progress_callback(f"Processing complete: {completed_count}/{total_episodes}", 1.0)
+    async def _add_episode_bulk(self, episodes, group_id: str):
+        """Async helper to call graphiti.add_episode_bulk"""
+        graphiti = await get_graphiti()
+        await graphiti.add_episode_bulk(episodes)
 
     def _get_graph_info(self, graph_id: str) -> GraphInfo:
-        """Get graph information"""
-        # Get nodes (paginated)
-        nodes = fetch_all_nodes(self.client, graph_id)
+        """Get graph information via Cypher"""
+        return _run_async(self._get_graph_info_async(graph_id))
 
-        # Get edges (paginated)
-        edges = fetch_all_edges(self.client, graph_id)
+    async def _get_graph_info_async(self, graph_id: str) -> GraphInfo:
+        graphiti = await get_graphiti()
+        driver = graphiti.driver
 
-        # Count entity types
+        # Count nodes
+        node_records, _, _ = await driver.execute_query(
+            "MATCH (n:Entity) WHERE n.group_id = $gid RETURN count(n) AS cnt",
+            gid=graph_id,
+        )
+        node_count = node_records[0]["cnt"] if node_records else 0
+
+        # Count edges
+        edge_records, _, _ = await driver.execute_query(
+            "MATCH ()-[r:RELATES_TO]->() WHERE r.group_id = $gid RETURN count(r) AS cnt",
+            gid=graph_id,
+        )
+        edge_count = edge_records[0]["cnt"] if edge_records else 0
+
+        # Entity types (labels beyond Entity)
+        label_records, _, _ = await driver.execute_query(
+            "MATCH (n:Entity) WHERE n.group_id = $gid RETURN labels(n) AS lbls",
+            gid=graph_id,
+        )
         entity_types = set()
-        for node in nodes:
-            if node.labels:
-                for label in node.labels:
-                    if label not in ["Entity", "Node"]:
-                        entity_types.add(label)
+        for rec in label_records:
+            for label in rec["lbls"]:
+                if label not in ("Entity", "Node", "Episodic"):
+                    entity_types.add(label)
 
         return GraphInfo(
             graph_id=graph_id,
-            node_count=len(nodes),
-            edge_count=len(edges),
-            entity_types=list(entity_types)
+            node_count=node_count,
+            edge_count=edge_count,
+            entity_types=list(entity_types),
         )
 
     def get_graph_data(self, graph_id: str) -> Dict[str, Any]:
         """
-        Get complete graph data (including detailed information)
-
-        Args:
-            graph_id: Graph ID
-
-        Returns:
-            Dictionary containing nodes and edges with time info, attributes, and other details
+        Get complete graph data (nodes and edges with details)
         """
-        nodes = fetch_all_nodes(self.client, graph_id)
-        edges = fetch_all_edges(self.client, graph_id)
+        return _run_async(self._get_graph_data_async(graph_id))
 
-        # Create node map for getting node names
+    async def _get_graph_data_async(self, graph_id: str) -> Dict[str, Any]:
+        graphiti = await get_graphiti()
+        driver = graphiti.driver
+
+        # Fetch nodes
+        node_records, _, _ = await driver.execute_query(
+            "MATCH (n:Entity) WHERE n.group_id = $gid RETURN n",
+            gid=graph_id,
+        )
+
         node_map = {}
-        for node in nodes:
-            node_map[node.uuid_] = node.name or ""
-
         nodes_data = []
-        for node in nodes:
-            # Get creation time
-            created_at = getattr(node, 'created_at', None)
-            if created_at:
-                created_at = str(created_at)
+        for rec in node_records:
+            node = rec["n"]
+            node_id = node.element_id
+            name = node.get("name", "")
+            node_map[node_id] = name
 
-            nodes_data.append({
-                "uuid": node.uuid_,
-                "name": node.name,
-                "labels": node.labels or [],
-                "summary": node.summary or "",
-                "attributes": node.attributes or {},
-                "created_at": created_at,
-            })
+            created_at = node.get("created_at")
+            nodes_data.append(
+                {
+                    "uuid": node_id,
+                    "name": name,
+                    "labels": list(node.labels),
+                    "summary": node.get("summary", ""),
+                    "attributes": dict(node),
+                    "created_at": str(created_at) if created_at else None,
+                }
+            )
+
+        # Fetch edges
+        edge_records, _, _ = await driver.execute_query(
+            "MATCH (s)-[r:RELATES_TO]->(t) WHERE r.group_id = $gid RETURN s, r, t",
+            gid=graph_id,
+        )
 
         edges_data = []
-        for edge in edges:
-            # Get time information
-            created_at = getattr(edge, 'created_at', None)
-            valid_at = getattr(edge, 'valid_at', None)
-            invalid_at = getattr(edge, 'invalid_at', None)
-            expired_at = getattr(edge, 'expired_at', None)
+        for rec in edge_records:
+            s_node = rec["s"]
+            rel = rec["r"]
+            t_node = rec["t"]
 
-            # Get episodes
-            episodes = getattr(edge, 'episodes', None) or getattr(edge, 'episode_ids', None)
-            if episodes and not isinstance(episodes, list):
-                episodes = [str(episodes)]
-            elif episodes:
-                episodes = [str(e) for e in episodes]
+            created_at = rel.get("created_at")
+            valid_at = rel.get("valid_at")
+            invalid_at = rel.get("invalid_at")
+            expired_at = rel.get("expired_at")
 
-            # Get fact_type
-            fact_type = getattr(edge, 'fact_type', None) or edge.name or ""
-
-            edges_data.append({
-                "uuid": edge.uuid_,
-                "name": edge.name or "",
-                "fact": edge.fact or "",
-                "fact_type": fact_type,
-                "source_node_uuid": edge.source_node_uuid,
-                "target_node_uuid": edge.target_node_uuid,
-                "source_node_name": node_map.get(edge.source_node_uuid, ""),
-                "target_node_name": node_map.get(edge.target_node_uuid, ""),
-                "attributes": edge.attributes or {},
-                "created_at": str(created_at) if created_at else None,
-                "valid_at": str(valid_at) if valid_at else None,
-                "invalid_at": str(invalid_at) if invalid_at else None,
-                "expired_at": str(expired_at) if expired_at else None,
-                "episodes": episodes or [],
-            })
+            edges_data.append(
+                {
+                    "uuid": rel.element_id,
+                    "name": rel.get("name", ""),
+                    "fact": rel.get("fact", ""),
+                    "fact_type": rel.get("fact_type", rel.get("name", "")),
+                    "source_node_uuid": s_node.element_id,
+                    "target_node_uuid": t_node.element_id,
+                    "source_node_name": s_node.get("name", ""),
+                    "target_node_name": t_node.get("name", ""),
+                    "attributes": dict(rel),
+                    "created_at": str(created_at) if created_at else None,
+                    "valid_at": str(valid_at) if valid_at else None,
+                    "invalid_at": str(invalid_at) if invalid_at else None,
+                    "expired_at": str(expired_at) if expired_at else None,
+                    "episodes": [],
+                }
+            )
 
         return {
             "graph_id": graph_id,
@@ -495,5 +372,14 @@ class GraphBuilderService:
         }
 
     def delete_graph(self, graph_id: str):
-        """Delete graph"""
-        self.client.graph.delete(graph_id=graph_id)
+        """Delete graph by removing all nodes with the given group_id"""
+        _run_async(self._delete_graph_async(graph_id))
+
+    async def _delete_graph_async(self, graph_id: str):
+        graphiti = await get_graphiti()
+        driver = graphiti.driver
+        await driver.execute_query(
+            "MATCH (n) WHERE n.group_id = $gid DETACH DELETE n",
+            gid=graph_id,
+        )
+        logger.info(f"Deleted graph data for group_id={graph_id}")

@@ -9,7 +9,7 @@ from flask import request, jsonify, send_file
 
 from . import simulation_bp
 from ..config import Config
-from ..services.zep_entity_reader import ZepEntityReader
+from ..services.graphiti_entity_reader import GraphitiEntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
@@ -56,10 +56,10 @@ def get_graph_entities(graph_id: str):
         enrich: Whether to include related edge info (default true)
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if not Config.NEO4J_URI:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY not configured"
+                "error": "NEO4J_URI not configured"
             }), 500
 
         entity_types_str = request.args.get('entity_types', '')
@@ -68,7 +68,7 @@ def get_graph_entities(graph_id: str):
 
         logger.info(f"Getting graph entities: graph_id={graph_id}, entity_types={entity_types}, enrich={enrich}")
 
-        reader = ZepEntityReader()
+        reader = GraphitiEntityReader()
         result = reader.filter_defined_entities(
             graph_id=graph_id,
             defined_entity_types=entity_types,
@@ -93,13 +93,13 @@ def get_graph_entities(graph_id: str):
 def get_entity_detail(graph_id: str, entity_uuid: str):
     """Get detailed info for a single entity"""
     try:
-        if not Config.ZEP_API_KEY:
+        if not Config.NEO4J_URI:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY not configured"
+                "error": "NEO4J_URI not configured"
             }), 500
 
-        reader = ZepEntityReader()
+        reader = GraphitiEntityReader()
         entity = reader.get_entity_with_context(graph_id, entity_uuid)
 
         if not entity:
@@ -126,15 +126,15 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
 def get_entities_by_type(graph_id: str, entity_type: str):
     """Get all entities of a specified type"""
     try:
-        if not Config.ZEP_API_KEY:
+        if not Config.NEO4J_URI:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY not configured"
+                "error": "NEO4J_URI not configured"
             }), 500
 
         enrich = request.args.get('enrich', 'true').lower() == 'true'
 
-        reader = ZepEntityReader()
+        reader = GraphitiEntityReader()
         entities = reader.get_entities_by_type(
             graph_id=graph_id,
             entity_type=entity_type,
@@ -471,7 +471,7 @@ def prepare_simulation():
         # This way the frontend can immediately get the expected total Agent count after calling prepare
         try:
             logger.info(f"Synchronously getting entity count: graph_id={state.graph_id}")
-            reader = ZepEntityReader()
+            reader = GraphitiEntityReader()
             # Quick entity read (no edge info needed, just count)
             filtered_preview = reader.filter_defined_entities(
                 graph_id=state.graph_id,
@@ -1397,7 +1397,7 @@ def generate_profiles():
         use_llm = data.get('use_llm', True)
         platform = data.get('platform', 'reddit')
 
-        reader = ZepEntityReader()
+        reader = GraphitiEntityReader()
         filtered = reader.filter_defined_entities(
             graph_id=graph_id,
             defined_entity_types=entity_types,

@@ -393,8 +393,8 @@ def build_graph():
 
         # Check configuration
         errors = []
-        if not Config.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY not configured")
+        if not Config.NEO4J_URI:
+            errors.append("NEO4J_URI not configured")
         if errors:
             logger.error(f"Configuration error: {errors}")
             return jsonify({
@@ -491,7 +491,7 @@ def build_graph():
                 )
 
                 # Create graph builder service
-                builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+                builder = GraphBuilderService()
 
                 # Chunking
                 task_manager.update_task(
@@ -509,7 +509,7 @@ def build_graph():
                 # Create graph
                 task_manager.update_task(
                     task_id,
-                    message="Creating Zep graph...",
+                    message="Creating graph...",
                     progress=10
                 )
                 graph_id = builder.create_graph(name=graph_name)
@@ -541,29 +541,14 @@ def build_graph():
                     progress=15
                 )
 
-                episode_uuids = builder.add_text_batches(
+                builder.add_text_batches(
                     graph_id,
                     chunks,
                     batch_size=3,
                     progress_callback=add_progress_callback
                 )
 
-                # Wait for Zep to finish processing (query processed status of each episode)
-                task_manager.update_task(
-                    task_id,
-                    message="Waiting for Zep to process data...",
-                    progress=55
-                )
-
-                def wait_progress_callback(msg, progress_ratio):
-                    progress = 55 + int(progress_ratio * 35)  # 55% - 90%
-                    task_manager.update_task(
-                        task_id,
-                        message=msg,
-                        progress=progress
-                    )
-
-                builder._wait_for_episodes(episode_uuids, wait_progress_callback)
+                # Graphiti processes synchronously, no separate wait needed
 
                 # Get graph data
                 task_manager.update_task(
@@ -676,13 +661,13 @@ def get_graph_data(graph_id: str):
     Get graph data (nodes and edges)
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if not Config.NEO4J_URI:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY not configured"
+                "error": "NEO4J_URI not configured"
             }), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         graph_data = builder.get_graph_data(graph_id)
 
         return jsonify({
@@ -704,13 +689,13 @@ def delete_graph(graph_id: str):
     Delete a Zep graph
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if not Config.NEO4J_URI:
             return jsonify({
                 "success": False,
-                "error": "ZEP_API_KEY not configured"
+                "error": "NEO4J_URI not configured"
             }), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         builder.delete_graph(graph_id)
 
         return jsonify({
