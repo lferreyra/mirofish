@@ -1,31 +1,20 @@
 import axios from 'axios'
 
-// 创建axios实例
+// Create axios instance
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001',
-  timeout: 300000, // 5分钟超时（本体生成可能需要较长时间）
+  timeout: 300000, // 5 min timeout (ontology generation takes time)
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// 请求拦截器
-service.interceptors.request.use(
-  config => {
-    return config
-  },
-  error => {
-    console.error('Request error:', error)
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器（容错重试机制）
+// Response interceptor (error retry mechanism)
 service.interceptors.response.use(
   response => {
     const res = response.data
     
-    // 如果返回的状态码不是success，则抛出错误
+    // If return status is not success, throw error
     if (!res.success && res.success !== undefined) {
       console.error('API Error:', res.error || res.message || 'Unknown error')
       return Promise.reject(new Error(res.error || res.message || 'Error'))

@@ -78,7 +78,9 @@
     "fact": "事实",
     "type": "类型",
     "episodes": "片段",
-    "valid_from": "生效时间"
+    "valid_from": "生效时间",
+    "invalid_at": "失效时间",
+    "expired_at": "过期时间"
   },
   "common": {
     "completed": "已完成",
@@ -251,7 +253,8 @@
       "initial_posts_stat": "初始帖子: {count}条",
       "hot_topics_stat": "热点话题: {count}个",
       "platform_config_stat": "平台配置: Twitter {twitter}, Reddit {reddit}",
-      "time_config_summary": "时间配置: 每轮{mins}分钟, 共{rounds}轮",
+      "time_config_detail": "时间配置: 每轮{mins}分钟, 共{rounds}轮",
+      "time_config_summary": "时间配置摘要: 每轮{mins}分钟, 共{rounds}轮",
       "narrative_direction": "叙事方向: {text}",
       "env_setup_done": "✓ 环境搭建完成，可以开始模拟",
       "loading_existing_config": "正在加载已有配置数据...",
@@ -259,18 +262,22 @@
       "sim_config_loaded": "✓ 模拟配置加载成功",
       "config_gen_polling": "配置生成中，开始轮询等待...",
       "load_config_failed": "加载配置失败: {error}",
-      "step2_init": "Step2 环境搭建初始化"
+      "step2_init": "Step2 环境搭建初始化",
+      "poll_status_failed": "轮询状态失败",
+      "fetch_profiles_failed": "获取 Profiles 失败",
+      "config_gen_done": "✓ 模拟配置生成完成",
+      "config_fetch_failed": "获取 Config 失败"
     }
   },
   "step3": {
     "control": {
-      "plaza_name": "广场信息流",
-      "community_name": "话题社区",
+      "plaza_name": "广场",
+      "community_name": "社区",
       "round": "轮次",
-      "elapsed": "模拟用时",
-      "acts": "动作数",
+      "elapsed": "耗时",
+      "acts": "动作",
       "available_actions": "可用动作",
-      "start_report": "开始生成结果报告",
+      "start_report": "生成报告",
       "starting": "启动中..."
     },
     "timeline": {
@@ -282,7 +289,17 @@
       "liked_post": "点赞了 @{author} 的帖子",
       "reposted_from": "转发自 @{author}",
       "search_query": "搜索关键词：",
-      "followed_user": "关注了 @{user}"
+      "followed_user": "关注了 @{user}",
+      "act_post": "发帖",
+      "act_like": "点赞",
+      "act_repost": "转发",
+      "act_quote": "引用",
+      "act_follow": "关注",
+      "act_comment": "评论",
+      "act_idle": "休眠",
+      "act_search": "搜索",
+      "act_upvote": "赞成",
+      "act_downvote": "反对"
     },
     "logs": {
       "err_no_sim_id": "错误：缺少 simulationId",
@@ -303,7 +320,9 @@
       "report_task_started": "✓ 报告生成任务已启动: {id}",
       "report_failed": "✗ 启动报告生成失败: {error}",
       "report_exception": "✗ 启动报告生成异常: {error}",
-      "step3_init": "Step3 模拟运行初始化"
+      "step3_init": "Step3 模拟运行初始化",
+      "poll_status_failed": "获取运行状态失败",
+      "fetch_detail_failed": "获取详细状态失败"
     }
   },
   "step4": {
@@ -523,6 +542,43 @@
       "id": "项目 ID",
       "graph_id": "图谱 ID",
       "requirement": "模拟需求"
+    },
+    "status_msg": {
+      "processing": "处理中...",
+      "load_failed": "项目启动失败",
+      "build_failed": "图谱构建失败",
+      "simulation_created": "模拟项目已创建",
+      "preparing": "环境准备中...",
+      "prepared": "准备完成",
+      "running": "正在运行模拟",
+      "completed": "模拟已完成",
+      "error": "模拟发生错误",
+      "unnamed": "未命名",
+      "unknown": "未知",
+      "waiting_data": "等待数据...",
+      "loading_graph": "加载图谱..."
+    },
+    "logs": {
+      "loading_full_graph": "加载完整图谱...",
+      "graph_loaded": "图谱加载完成"
+    },
+    "timeline": {
+      "act_post": "发帖",
+      "act_like": "点赞",
+      "act_repost": "转发",
+      "act_quote": "引用",
+      "act_follow": "关注",
+      "act_comment": "评论",
+      "act_idle": "休眠",
+      "act_search": "搜索",
+      "act_upvote": "赞成",
+      "act_downvote": "反对"
+    },
+    "interaction": {
+      "report_agent": "报告智能体",
+      "agent": "智能体",
+      "user": "您",
+      "unknown_agent": "匿名智能体"
     }
   }
 }

@@ -173,8 +173,8 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
-        <span class="log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
+        <span class="log-title">{{ $t('home.system_status') }}</span>
+        <span class="log-id">{{ projectData?.project_id || $t('process.status_msg.unknown') }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
@@ -213,7 +213,7 @@ const creatingSimulation = ref(false)
 // 进入环境搭建 - 创建 simulation 并跳转
 const handleEnterEnvSetup = async () => {
   if (!props.projectData?.project_id || !props.projectData?.graph_id) {
-    console.error('缺少项目或图谱信息')
+    console.error(t('process.status_msg.load_failed'))
     return
   }
   
@@ -234,12 +234,12 @@ const handleEnterEnvSetup = async () => {
         params: { simulationId: res.data.simulation_id }
       })
     } else {
-      console.error('创建模拟失败:', res.error)
-      alert('创建模拟失败: ' + (res.error || '未知错误'))
+      console.error(t('process.status_msg.load_failed') + ':', res.error)
+      alert(t('process.status_msg.load_failed') + ': ' + (res.error || t('common.unknown_error')))
     }
   } catch (err) {
-    console.error('创建模拟异常:', err)
-    alert('创建模拟异常: ' + err.message)
+    console.error(t('process.status_msg.load_failed') + ':', err)
+    alert(t('process.status_msg.load_failed') + ': ' + err.message)
   } finally {
     creatingSimulation.value = false
   }

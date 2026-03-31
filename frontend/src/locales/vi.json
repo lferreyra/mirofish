@@ -131,7 +131,9 @@
     "fact": "Sự kiện",
     "type": "Loại",
     "episodes": "Tập",
-    "valid_from": "Có hiệu lực từ"
+    "valid_from": "Có hiệu lực từ",
+    "invalid_at": "Hết hiệu lực lúc",
+    "expired_at": "Hết hạn lúc"
   },
   "common": {
     "completed": "Đã hoàn thành",
@@ -292,7 +294,8 @@
       "initial_posts_stat": "Số bài đăng ban đầu: {count} bài",
       "hot_topics_stat": "Chủ đề nóng: {count} chủ đề",
       "platform_config_stat": "Cấu hình nền tảng: Twitter {twitter}, Reddit {reddit}",
-      "time_config_summary": "Cấu hình thời gian: Mỗi hiệp {mins} phút, tổng cộng {rounds} hiệp",
+      "time_config_detail": "Cấu hình thời gian: {mins} phút/hiệp, tổng {rounds} hiệp",
+      "time_config_summary": "Tóm tắt cấu hình thời gian: Mỗi hiệp {mins} phút, tổng cộng {rounds} hiệp",
       "narrative_direction": "Hướng dẫn câu chuyện: {text}",
       "env_setup_done": "✓ Thiết lập môi trường hoàn tất, có thể bắt đầu mô phỏng",
       "loading_existing_config": "Đang tải dữ liệu cấu hình hiện có...",
@@ -300,19 +303,24 @@
       "sim_config_loaded": "✓ Tải cấu hình mô phỏng thành công",
       "config_gen_polling": "Đang tạo cấu hình, bắt đầu vòng lặp chờ đợi...",
       "load_config_failed": "Tải cấu hình thất bại: {error}",
-      "step2_init": "Khởi tạo thiết lập môi trường Bước 2"
+      "step2_init": "Khởi tạo thiết lập môi trường Bước 2",
+      "poll_status_failed": "Lỗi lấy trạng thái",
+      "fetch_profiles_failed": "Lỗi lấy hồ sơ Agent",
+      "config_gen_done": "✓ Cấu hình mô phỏng đã được tạo",
+      "config_fetch_failed": "Lỗi lấy cấu hình"
     }
   },
   "step3": {
     "control": {
-      "plaza_name": "Quảng trường Thông tin",
-      "community_name": "Cộng đồng Chủ đề",
-      "round": "HIỆP",
-      "elapsed": "Thời gian trôi qua",
-      "acts": "HÀNH ĐỘNG",
-      "available_actions": "Hành động có sẵn",
-      "start_report": "Bắt đầu tạo báo cáo kết quả",
-      "starting": "Đang khởi động..."
+      "plaza_name": "Quảng trường",
+      "community_name": "Diễn đàn",
+      "round": "Hiệp",
+      "elapsed": "Thời gian",
+      "acts": "Hành động",
+      "available_actions": "Hành động khả dụng",
+      "starting": "Đang xử lý...",
+      "start_report": "Xuất báo cáo",
+      "stop_simulation": "Dừng mô phỏng"
     },
     "timeline": {
       "total_events": "TỔNG SỰ KIỆN",
@@ -323,7 +331,17 @@
       "liked_post": "Đã thích bài đăng của @{author}",
       "reposted_from": "Đã đăng lại từ @{author}",
       "search_query": "Truy vấn tìm kiếm:",
-      "followed_user": "Đã theo dõi @{user}"
+      "followed_user": "Đã theo dõi @{user}",
+      "act_post": "ĐĂNG BÀI",
+      "act_like": "THÍCH",
+      "act_repost": "ĐĂNG LẠI",
+      "act_quote": "TRÍCH DẪN",
+      "act_follow": "THEO DÕI",
+      "act_comment": "BÌNH LUẬN",
+      "act_idle": "NGHỈ",
+      "act_search": "TÌM KIẾM",
+      "act_upvote": "TÁN THÀNH",
+      "act_downvote": "PHẢN ĐỐI"
     },
     "logs": {
       "err_no_sim_id": "Lỗi: Thiếu simulationId",
@@ -344,7 +362,9 @@
       "report_task_started": "✓ Nhiệm vụ tạo báo cáo đã khởi động: {id}",
       "report_failed": "✗ Khởi động tạo báo cáo thất bại: {error}",
       "report_exception": "✗ Khởi động tạo báo cáo ngoại lệ: {error}",
-      "step3_init": "Khởi tạo chạy mô phỏng Bước 3"
+      "step3_init": "Khởi tạo chạy mô phỏng Bước 3",
+      "poll_status_failed": "Lỗi lấy trạng thái chạy",
+      "fetch_detail_failed": "Lỗi lấy chi tiết trạng thái"
     }
   },
   "step4": {
@@ -564,6 +584,43 @@
       "id": "ID dự án",
       "graph_id": "ID đồ thị",
       "requirement": "Yêu cầu mô phỏng"
+    },
+    "status_msg": {
+      "processing": "Đang xử lý...",
+      "load_failed": "Khởi chạy dự án thất bại",
+      "build_failed": "Xây dựng đồ thị thất bại",
+      "simulation_created": "Mô phỏng đã được tạo",
+      "preparing": "Đang chuẩn bị môi trường...",
+      "prepared": "Chuẩn bị hoàn tất",
+      "running": "Mô phỏng đang chạy",
+      "completed": "Mô phỏng hoàn tất",
+      "error": "Lỗi mô phỏng",
+      "unnamed": "Chưa đặt tên",
+      "unknown": "Không xác định",
+      "waiting_data": "Đang chờ dữ liệu...",
+      "loading_graph": "Đang tải đồ thị..."
+    },
+    "logs": {
+      "loading_full_graph": "Đang tải toàn bộ đồ thị...",
+      "graph_loaded": "Tải đồ thị thành công"
+    },
+    "timeline": {
+      "act_post": "ĐĂNG BÀI",
+      "act_like": "THÍCH",
+      "act_repost": "ĐĂNG LẠI",
+      "act_quote": "TRÍCH DẪN",
+      "act_follow": "THEO DÕI",
+      "act_comment": "BÌNH LUẬN",
+      "act_idle": "NGHỈ",
+      "act_search": "TÌM KIẾM",
+      "act_upvote": "TÁN THÀNH",
+      "act_downvote": "PHẢN ĐỐI"
+    },
+    "interaction": {
+      "report_agent": "Report Agent",
+      "agent": "Agent",
+      "user": "Bạn",
+      "unknown_agent": "Agent ẩn danh"
     }
   }
 }

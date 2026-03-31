@@ -21,11 +21,7 @@
       </div>
 
       <div class="header-right">
-        <select v-model="$i18n.locale" class="lang-switcher">
-          <option value="vi">Tiếng Việt</option>
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-        </select>
+        <LanguageSwitcher />
         <div class="workflow-step">
           <span class="step-num">{{ $t('main.step') }} 3/5</span>
           <span class="step-name">{{ $t('main.steps.step3') }}</span>
@@ -75,6 +71,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step3Simulation from '../components/Step3Simulation.vue'
 import { getProject, getGraphData } from '../api/graph'
@@ -451,14 +448,5 @@ onUnmounted(() => {
   border-right: 1px solid #EAEAEA;
 }
 
-.lang-switcher {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
 </style>
 

@@ -4,11 +4,7 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
-        <select v-model="$i18n.locale" class="lang-switcher">
-          <option value="vi">Tiếng Việt</option>
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-        </select>
+        <LanguageSwitcher />
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           {{ $t('home.github_link') }} <span class="arrow">↗</span>
         </a>
@@ -215,6 +211,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const router = useRouter()
 
@@ -434,6 +431,7 @@ const startSimulation = () => {
 .gradient-text {
   background: linear-gradient(90deg, #000000 0%, #444444 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
 }

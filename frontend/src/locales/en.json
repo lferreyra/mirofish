@@ -78,7 +78,9 @@
     "fact": "Fact",
     "type": "Type",
     "episodes": "Episodes",
-    "valid_from": "Valid From"
+    "valid_from": "Valid From",
+    "invalid_at": "Invalid At",
+    "expired_at": "Expired At"
   },
   "common": {
     "completed": "Completed",
@@ -239,7 +241,8 @@
       "initial_posts_stat": "Initial posts: {count}",
       "hot_topics_stat": "Hot topics: {count}",
       "platform_config_stat": "Platform config: Twitter {twitter}, Reddit {reddit}",
-      "time_config_summary": "Time config: {mins} mins/round, total {rounds} rounds",
+      "time_config_detail": "Time config: {mins} mins/round, total {rounds} rounds",
+      "time_config_summary": "Time config summary: {mins} mins/round, total {rounds} rounds",
       "narrative_direction": "Narrative direction: {text}",
       "env_setup_done": "✓ Environment setup complete, simulation can start",
       "loading_existing_config": "Loading existing configuration data...",
@@ -247,18 +250,22 @@
       "sim_config_loaded": "✓ Simulation config loaded successfully",
       "config_gen_polling": "Config generation in progress, starting polling...",
       "load_config_failed": "Failed to load configuration: {error}",
-      "step2_init": "Step 2 environment setup initialized"
+      "step2_init": "Step 2 environment setup initialized",
+      "poll_status_failed": "Poll status failed",
+      "fetch_profiles_failed": "Fetch profiles failed",
+      "config_gen_done": "✓ Simulation configuration generated",
+      "config_fetch_failed": "Failed to fetch config"
     }
   },
   "step3": {
     "control": {
-      "plaza_name": "Info Plaza",
-      "community_name": "Topic Community",
+      "plaza_name": "Plaza",
+      "community_name": "Community",
       "round": "ROUND",
-      "elapsed": "Elapsed Time",
+      "elapsed": "Elapsed",
       "acts": "ACTS",
       "available_actions": "Available Actions",
-      "start_report": "Start Generating Report",
+      "start_report": "Generate Report",
       "starting": "Starting..."
     },
     "timeline": {
@@ -270,7 +277,17 @@
       "liked_post": "Liked @{author}'s post",
       "reposted_from": "Reposted from @{author}",
       "search_query": "Search Query:",
-      "followed_user": "Followed @{user}"
+      "followed_user": "Followed @{user}",
+      "act_post": "POST",
+      "act_like": "LIKE",
+      "act_repost": "REPOST",
+      "act_quote": "QUOTE",
+      "act_follow": "FOLLOW",
+      "act_comment": "COMMENT",
+      "act_idle": "IDLE",
+      "act_search": "SEARCH",
+      "act_upvote": "UPVOTE",
+      "act_downvote": "DOWNVOTE"
     },
     "logs": {
       "err_no_sim_id": "Error: Missing simulationId",
@@ -291,7 +308,9 @@
       "report_task_started": "✓ Report generation task started: {id}",
       "report_failed": "✗ Failed to start report generation: {error}",
       "report_exception": "✗ Exception starting report generation: {error}",
-      "step3_init": "Step 3 simulation run initialized"
+      "step3_init": "Step 3 simulation run initialized",
+      "poll_status_failed": "Failed to get run status",
+      "fetch_detail_failed": "Failed to get detailed status"
     }
   },
   "simulation_view": {
@@ -564,6 +583,43 @@
       "id": "Project ID",
       "graph_id": "Graph ID",
       "requirement": "Sim Requirement"
+    },
+    "status_msg": {
+      "processing": "Processing...",
+      "load_failed": "Failed to launch project",
+      "build_failed": "Graph building failed",
+      "simulation_created": "Simulation created",
+      "preparing": "Preparing environment...",
+      "prepared": "Preparation complete",
+      "running": "Simulation running",
+      "completed": "Simulation completed",
+      "error": "Simulation error",
+      "unnamed": "Unnamed",
+      "unknown": "Unknown",
+      "waiting_data": "Waiting for data...",
+      "loading_graph": "Loading graph..."
+    },
+    "logs": {
+      "loading_full_graph": "Loading full graph...",
+      "graph_loaded": "Graph loaded successfully"
+    },
+    "timeline": {
+      "act_post": "POST",
+      "act_like": "LIKE",
+      "act_repost": "REPOST",
+      "act_quote": "QUOTE",
+      "act_follow": "FOLLOW",
+      "act_comment": "COMMENT",
+      "act_idle": "IDLE",
+      "act_search": "SEARCH",
+      "act_upvote": "UPVOTE",
+      "act_downvote": "DOWNVOTE"
+    },
+    "interaction": {
+      "report_agent": "Report Agent",
+      "agent": "Agent",
+      "user": "You",
+      "unknown_agent": "Anonymous Agent"
     }
   }
 }

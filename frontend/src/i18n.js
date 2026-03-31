@@ -5,7 +5,7 @@ import vi from './locales/vi.json'
 
 const i18n = createI18n({
   legacy: false, // use Composition API
-  locale: 'vi', // default locale
+  locale: 'zh', // default locale
   fallbackLocale: 'en',
   messages: {
     en,

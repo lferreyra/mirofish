@@ -11,11 +11,7 @@
       </div>
 
       <div class="nav-status">
-        <select v-model="$i18n.locale" class="lang-switcher">
-          <option value="vi">Tiếng Việt</option>
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-        </select>
+        <LanguageSwitcher />
         <span class="status-dot" :class="statusClass"></span>
         <span class="status-text">{{ statusText }}</span>
       </div>
@@ -102,7 +98,7 @@
                 
                 <!-- Labels -->
                 <div class="detail-row" v-if="selectedItem.data.labels?.length">
-                  <span class="detail-label">Labels:</span>
+                  <span class="detail-label">{{ $t('graph.labels') }}:</span>
                   <div class="detail-labels">
                     <span v-for="label in selectedItem.data.labels" :key="label" class="label-tag">{{ label }}</span>
                   </div>
@@ -143,7 +139,7 @@
                 
                 <!-- Episodes -->
                 <div class="detail-section" v-if="selectedItem.data.episodes?.length">
-                  <span class="detail-label">Episodes:</span>
+                  <span class="detail-label">{{ $t('graph.episodes') }}:</span>
                   <div class="episodes-list">
                     <span v-for="ep in selectedItem.data.episodes" :key="ep" class="episode-tag">{{ ep }}</span>
                   </div>
@@ -154,15 +150,15 @@
                   <span class="detail-value">{{ formatDate(selectedItem.data.created_at) }}</span>
                 </div>
                 <div class="detail-row" v-if="selectedItem.data.valid_at">
-                  <span class="detail-label">Valid From:</span>
+                  <span class="detail-label">{{ $t('graph.valid_from') }}:</span>
                   <span class="detail-value">{{ formatDate(selectedItem.data.valid_at) }}</span>
                 </div>
                 <div class="detail-row" v-if="selectedItem.data.invalid_at">
-                  <span class="detail-label">Invalid At:</span>
+                  <span class="detail-label">{{ $t('graph.invalid_at') }}:</span>
                   <span class="detail-value">{{ formatDate(selectedItem.data.invalid_at) }}</span>
                 </div>
                 <div class="detail-row" v-if="selectedItem.data.expired_at">
-                  <span class="detail-label">Expired At:</span>
+                  <span class="detail-label">{{ $t('graph.expired_at') }}:</span>
                   <span class="detail-value">{{ formatDate(selectedItem.data.expired_at) }}</span>
                 </div>
               </div>
@@ -420,6 +416,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 import * as d3 from 'd3'
@@ -510,7 +507,7 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(t('common.locale_code') || 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -584,7 +581,7 @@ const handleNewProject = async () => {
   try {
     loading.value = true
     currentPhase.value = 0 // Ontology generation phase
-    ontologyProgress.value = { message: t('process.right_panel.phase1.desc') + '...' }
+    ontologyProgress.value = { message: t('process.status_msg.processing') }
     
     // 构建 FormData
     const formDataObj = new FormData()
@@ -615,11 +612,11 @@ const handleNewProject = async () => {
       // 自动开始图谱构建
       await startBuildGraph()
     } else {
-      error.value = response.error || 'Ontology generation failed'
+      error.value = response.error || t('process.status_msg.load_failed')
     }
   } catch (err) {
     console.error('Handle new project error:', err)
-    error.value = 'Project initialization failed: ' + (err.message || 'Unknown error')
+    error.value = t('process.status_msg.unknown_error') + ': ' + (err.message || t('common.unknown_error'))
   } finally {
     loading.value = false
   }
@@ -652,11 +649,11 @@ const loadProject = async () => {
         await loadGraph(response.data.graph_id)
       }
     } else {
-      error.value = response.error || 'Failed to load project'
+      error.value = response.error || t('simulation_view.report_fail')
     }
   } catch (err) {
     console.error('Load project error:', err)
-    error.value = 'Failed to load project: ' + (err.message || 'Unknown error')
+    error.value = t('simulation_view.report_fail') + ': ' + (err.message || t('common.unknown_error'))
   } finally {
     loading.value = false
   }
@@ -675,7 +672,7 @@ const updatePhaseByStatus = (status) => {
       currentPhase.value = 2
       break
     case 'failed':
-      error.value = projectData.value?.error || '处理失败'
+      error.value = projectData.value?.error || t('common.failed')
       break
   }
 }
@@ -687,13 +684,13 @@ const startBuildGraph = async () => {
     // 设置初始进度
     buildProgress.value = {
       progress: 0,
-      message: 'Starting graph build...'
+      message: t('main.logs.init_build')
     }
     
     const response = await buildGraph({ project_id: currentProjectId.value })
     
     if (response.success) {
-      buildProgress.value.message = 'Graph build task started...'
+      buildProgress.value.message = t('main.logs.task_started', { id: '' }).replace(': ', '')
       
       // 保存 task_id 用于轮询
       const taskId = response.data.task_id
@@ -704,12 +701,12 @@ const startBuildGraph = async () => {
       // 启动任务状态轮询
       startPollingTask(taskId)
     } else {
-      error.value = response.error || '启动图谱构建失败'
+      error.value = response.error || t('process.status_msg.load_failed')
       buildProgress.value = null
     }
   } catch (err) {
     console.error('Build graph error:', err)
-    error.value = '启动图谱构建失败: ' + (err.message || '未知错误')
+    error.value = t('process.status_msg.load_failed') + ': ' + (err.message || t('common.unknown_error'))
     buildProgress.value = null
   }
 }
@@ -798,13 +795,13 @@ const pollTaskStatus = async (taskId) => {
       // 更新进度显示
       buildProgress.value = {
         progress: task.progress || 0,
-        message: task.message || '处理中...'
+        message: task.message || t('process.status_msg.processing')
       }
       
       console.log('Task status:', task.status, 'Progress:', task.progress)
       
       if (task.status === 'completed') {
-        console.log('✅ 图谱构建完成，正在加载完整数据...')
+        console.log('✅ ' + t('process.status_msg.loading_graph'))
         
         stopPolling()
         stopGraphPolling()
@@ -813,7 +810,7 @@ const pollTaskStatus = async (taskId) => {
         // 更新进度显示为完成状态
         buildProgress.value = {
           progress: 100,
-          message: '构建完成，正在加载图谱...'
+          message: t('process.status_msg.loading_graph')
         }
         
         // 重新加载项目数据获取 graph_id
@@ -823,9 +820,9 @@ const pollTaskStatus = async (taskId) => {
           
           // 最终加载完整图谱数据
           if (projectResponse.data.graph_id) {
-            console.log('📊 加载完整图谱:', projectResponse.data.graph_id)
+            console.log(`📊 ${t('process.logs.loading_full_graph')}`, projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
-            console.log('✅ 图谱加载完成')
+            console.log(`✅ ${t('process.logs.graph_loaded')}`)
           }
         }
         
@@ -834,7 +831,7 @@ const pollTaskStatus = async (taskId) => {
       } else if (task.status === 'failed') {
         stopPolling()
         stopGraphPolling()
-        error.value = '图谱构建失败: ' + (task.error || '未知错误')
+        error.value = t('process.status_msg.build_failed') + ': ' + (task.error || t('common.unknown_error'))
         buildProgress.value = null
       }
     }
@@ -871,7 +868,7 @@ const loadGraph = async (graphId) => {
 // 渲染图谱 (D3.js)
 const renderGraph = () => {
   if (!graphSvg.value || !graphData.value) {
-    console.log('Cannot render: svg or data missing')
+    console.log(t('process.left_panel.loading'))
     return
   }
   
@@ -912,7 +909,7 @@ const renderGraph = () => {
       .attr('y', height / 2)
       .attr('text-anchor', 'middle')
       .attr('fill', '#999')
-      .text('等待图谱数据...')
+      .text(t('process.status_msg.waiting_data'))
     return
   }
   
@@ -924,7 +921,7 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || '未命名',
+    name: n.name || t('process.status_msg.unnamed'),
     type: n.labels?.find(l => l !== 'Entity' && l !== 'Node') || 'Entity',
     rawData: n // 保存原始数据
   }))
@@ -940,8 +937,7 @@ const renderGraph = () => {
       type: e.fact_type || e.name || 'RELATED_TO',
       rawData: {
         ...e,
-        source_name: nodeMap[e.source_node_uuid]?.name || '未知',
-        target_name: nodeMap[e.target_node_uuid]?.name || '未知'
+        target_name: nodeMap[e.target_node_uuid]?.name || t('process.status_msg.unknown')
       }
     }))
   
@@ -1168,6 +1164,7 @@ onUnmounted(() => {
 .nav-status {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .status-dot {

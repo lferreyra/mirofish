@@ -34,12 +34,12 @@
           <div class="actions-tooltip">
             <div class="tooltip-title">{{ $t('step3.control.available_actions') }}</div>
             <div class="tooltip-actions">
-              <span class="tooltip-action">POST</span>
-              <span class="tooltip-action">LIKE</span>
-              <span class="tooltip-action">REPOST</span>
-              <span class="tooltip-action">QUOTE</span>
-              <span class="tooltip-action">FOLLOW</span>
-              <span class="tooltip-action">IDLE</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_post') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_like') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_repost') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_quote') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_follow') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_idle') }}</span>
             </div>
           </div>
         </div>
@@ -75,16 +75,13 @@
           <div class="actions-tooltip">
             <div class="tooltip-title">{{ $t('step3.control.available_actions') }}</div>
             <div class="tooltip-actions">
-              <span class="tooltip-action">POST</span>
-              <span class="tooltip-action">COMMENT</span>
-              <span class="tooltip-action">LIKE</span>
-              <span class="tooltip-action">DISLIKE</span>
-              <span class="tooltip-action">SEARCH</span>
-              <span class="tooltip-action">TREND</span>
-              <span class="tooltip-action">FOLLOW</span>
-              <span class="tooltip-action">MUTE</span>
-              <span class="tooltip-action">REFRESH</span>
-              <span class="tooltip-action">IDLE</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_post') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_comment') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_like') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_downvote') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_search') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_follow') }}</span>
+              <span class="tooltip-action">{{ $t('step3.timeline.act_idle') }}</span>
             </div>
           </div>
         </div>
@@ -233,7 +230,7 @@
                   <div class="vote-info">
                     <svg v-if="action.action_type === 'UPVOTE_POST'" class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
                     <svg v-else class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    <span class="vote-label">{{ action.action_type === 'UPVOTE_POST' ? 'Upvoted' : 'Downvoted' }} Post</span>
+                    <span class="vote-label">{{ action.action_type === 'UPVOTE_POST' ? $t('step3.timeline.act_upvote') : $t('step3.timeline.act_downvote') }}</span>
                   </div>
                   <div v-if="action.action_args?.post_content" class="voted-content">
                     "{{ truncateContent(action.action_args.post_content, 120) }}"
@@ -273,7 +270,7 @@
     <div class="system-logs">
       <div class="log-header">
         <span class="log-title">{{ $t('step3.timeline.monitor') }}</span>
-        <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
+        <span class="log-id">{{ simulationId || $t('process.status_msg.unknown') }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
@@ -502,12 +499,12 @@ const fetchRunStatus = async () => {
       
       // 分别检测各平台的轮次变化并输出日志
       if (data.twitter_current_round > prevTwitterRound.value) {
-        addLog(`[Plaza] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
+        addLog(`[${t('step3.control.plaza_name')}] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
         prevTwitterRound.value = data.twitter_current_round
       }
       
       if (data.reddit_current_round > prevRedditRound.value) {
-        addLog(`[Community] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
+        addLog(`[${t('step3.control.community_name')}] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
         prevRedditRound.value = data.reddit_current_round
       }
       
@@ -529,7 +526,7 @@ const fetchRunStatus = async () => {
       }
     }
   } catch (err) {
-    console.warn('获取运行状态失败:', err)
+    console.warn(t('step3.logs.poll_status_failed'), err)
   }
 }
 
@@ -587,26 +584,26 @@ const fetchRunStatusDetail = async () => {
       // 新动作会在底部追加
     }
   } catch (err) {
-    console.warn('获取详细状态失败:', err)
+    console.warn(t('step3.logs.fetch_detail_failed'), err)
   }
 }
 
 // Helpers
 const getActionTypeLabel = (type) => {
   const labels = {
-    'CREATE_POST': 'POST',
-    'REPOST': 'REPOST',
-    'LIKE_POST': 'LIKE',
-    'CREATE_COMMENT': 'COMMENT',
-    'LIKE_COMMENT': 'LIKE',
-    'DO_NOTHING': 'IDLE',
-    'FOLLOW': 'FOLLOW',
-    'SEARCH_POSTS': 'SEARCH',
-    'QUOTE_POST': 'QUOTE',
-    'UPVOTE_POST': 'UPVOTE',
-    'DOWNVOTE_POST': 'DOWNVOTE'
+    'CREATE_POST': t('step3.timeline.act_post'),
+    'REPOST': t('step3.timeline.act_repost'),
+    'LIKE_POST': t('step3.timeline.act_like'),
+    'CREATE_COMMENT': t('step3.timeline.act_comment'),
+    'LIKE_COMMENT': t('step3.timeline.act_like'),
+    'DO_NOTHING': t('step3.timeline.act_idle'),
+    'FOLLOW': t('step3.timeline.act_follow'),
+    'SEARCH_POSTS': t('step3.timeline.act_search'),
+    'QUOTE_POST': t('step3.timeline.act_quote'),
+    'UPVOTE_POST': t('step3.timeline.act_upvote'),
+    'DOWNVOTE_POST': t('step3.timeline.act_downvote')
   }
-  return labels[type] || type || 'UNKNOWN'
+  return labels[type] || type || t('process.status_msg.unknown')
 }
 
 const getActionTypeClass = (type) => {

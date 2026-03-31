@@ -306,7 +306,7 @@ const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('en-US', { 
+    return date.toLocaleString(t('common.locale_code') || 'en-US', { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric',

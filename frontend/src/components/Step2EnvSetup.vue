@@ -22,11 +22,11 @@
 
           <div v-if="simulationId" class="info-card">
             <div class="info-row">
-              <span class="info-label">Project ID</span>
+              <span class="info-label">{{ $t('process.project_info.id') }}</span>
               <span class="info-value mono">{{ projectData?.project_id }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Graph ID</span>
+              <span class="info-label">{{ $t('process.project_info.graph_id') }}</span>
               <span class="info-value mono">{{ projectData?.graph_id }}</span>
             </div>
             <div class="info-row">
@@ -35,7 +35,7 @@
             </div>
             <div class="info-row">
               <span class="info-label">Task ID</span>
-              <span class="info-value mono">{{ taskId || '异步任务已完成' }}</span>
+              <span class="info-value mono">{{ taskId || $t('common.completed') }}</span>
             </div>
           </div>
         </div>
@@ -380,7 +380,7 @@
                     </linearGradient>
                   </defs>
                 </svg>
-                叙事引导方向
+                {{ $t('step2.activation.narrative') }}
               </span>
               <p class="narrative-text">{{ simulationConfig.event_config.narrative_direction }}</p>
             </div>
@@ -618,8 +618,8 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
-        <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
+        <span class="log-title">{{ $t('home.system_status') }}</span>
+        <span class="log-id">{{ simulationId || $t('process.status_msg.unknown') }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
@@ -686,8 +686,12 @@ watch(currentStage, (newStage) => {
       addLog(t('step2.logs.start_gen_config'))
       startConfigPolling()
     }
-  } else if (newStage === '准备模拟脚本' || newStage === 'copying_scripts') {
-    phase.value = 2 // 仍属于配置阶段
+  } else if (newStage === '准备模拟脚本' || newStage === 'copying_scripts' || newStage === '准备完成' || newStage === 'ready') {
+    if (newStage === '准备完成' || newStage === 'ready') {
+      phase.value = 4
+    } else {
+      phase.value = 2
+    }
   }
 })
 
@@ -904,7 +908,7 @@ const pollPrepareStatus = async () => {
       }
     }
   } catch (err) {
-    console.warn('轮询状态失败:', err)
+    console.warn(t('step2.logs.poll_status_failed'), err)
   }
 }
 
@@ -948,7 +952,7 @@ const fetchProfilesRealtime = async () => {
       }
     }
   } catch (err) {
-    console.warn('获取 Profiles 失败:', err)
+    console.warn(t('step2.logs.fetch_profiles_failed'), err)
   }
 }
 
@@ -986,21 +990,21 @@ const fetchConfigRealtime = async () => {
       // 如果配置已生成
       if (data.config_generated && data.config) {
         simulationConfig.value = data.config
-        addLog('✓ 模拟配置生成完成')
+        addLog(t('step2.logs.config_gen_done'))
         
         // 显示详细配置摘要
         if (data.summary) {
-          addLog(`  ├─ Agent数量: ${data.summary.total_agents}个`)
-          addLog(`  ├─ 模拟时长: ${data.summary.simulation_hours}小时`)
-          addLog(`  ├─ 初始帖子: ${data.summary.initial_posts_count}条`)
-          addLog(`  ├─ 热点话题: ${data.summary.hot_topics_count}个`)
-          addLog(`  └─ 平台配置: Twitter ${data.summary.has_twitter_config ? '✓' : '✗'}, Reddit ${data.summary.has_reddit_config ? '✓' : '✗'}`)
+          addLog(`  ├─ ${t('step2.logs.agent_count_stat', { count: data.summary.total_agents })}`)
+          addLog(`  ├─ ${t('step2.logs.sim_duration_stat', { hours: data.summary.simulation_hours })}`)
+          addLog(`  ├─ ${t('step2.logs.initial_posts_stat', { count: data.summary.initial_posts_count })}`)
+          addLog(`  ├─ ${t('step2.logs.hot_topics_stat', { count: data.summary.hot_topics_count })}`)
+          addLog(`  └─ ${t('step2.logs.platform_config_stat', { twitter: data.summary.has_twitter_config ? '✓' : '✗', reddit: data.summary.has_reddit_config ? '✓' : '✗' })}`)
         }
         
         // 显示时间配置详情
         if (data.config.time_config) {
           const tc = data.config.time_config
-          addLog(`时间配置: 每轮${tc.minutes_per_round}分钟, 共${Math.floor((tc.total_simulation_hours * 60) / tc.minutes_per_round)}轮`)
+          addLog(t('step2.logs.time_config_detail', { mins: tc.minutes_per_round, rounds: Math.floor((tc.total_simulation_hours * 60) / tc.minutes_per_round) }))
         }
         
         // 显示事件配置
@@ -1016,7 +1020,7 @@ const fetchConfigRealtime = async () => {
       }
     }
   } catch (err) {
-    console.warn('获取 Config 失败:', err)
+    console.warn(t('step2.logs.config_fetch_failed'), err)
   }
 }
 
@@ -1053,7 +1057,7 @@ const loadPreparedData = async () => {
       }
     }
   } catch (err) {
-    addLog(`加载配置失败: ${err.message}`)
+    addLog(t('step2.logs.load_config_failed', { error: err.message }))
     emit('update-status', 'error')
   }
 }
