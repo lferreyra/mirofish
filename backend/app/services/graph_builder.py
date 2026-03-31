@@ -209,7 +209,7 @@ class GraphBuilderService:
         progress_callback: Optional[Callable] = None,
     ) -> List[str]:
         """Add text to graph in batches using Graphiti add_episode_bulk"""
-        from graphiti_core.types import RawEpisode, EpisodeType
+        from graphiti_core.graphiti import RawEpisode, EpisodeType
 
         total_chunks = len(chunks)
 

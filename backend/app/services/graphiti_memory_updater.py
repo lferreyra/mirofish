@@ -304,7 +304,7 @@ class GraphitiMemoryUpdater:
                     self._failed_count += 1
 
     async def _add_episode(self, text: str, platform: str, round_num: int):
-        from graphiti_core.types import EpisodeType
+        from graphiti_core.graphiti import EpisodeType
 
         graphiti = await get_graphiti()
         await graphiti.add_episode(
