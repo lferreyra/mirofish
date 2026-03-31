@@ -1,7 +1,8 @@
 /**
- * 临时存储待上传的文件和需求
- * 用于首页点击启动引擎后立即跳转，在Process页面再进行API调用
- * 支持两种模式：file（文件上传）和 research（研究课题）
+ * Temporary storage for pending upload files and requirements
+ * Used for immediate navigation after clicking start engine on the homepage,
+ * then making API calls on the Process page
+ * Supports two modes: file (file upload) and research (research topic)
  */
 import { reactive } from 'vue'
 
