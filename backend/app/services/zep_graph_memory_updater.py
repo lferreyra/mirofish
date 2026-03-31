@@ -63,7 +63,7 @@ class AgentActivity:
     def _describe_create_post(self) -> str:
         content = self.action_args.get("content", "")
         if content:
-            return f"published a post: "{content}""
+            return f"published a post: \"{content}\""
         return "published a post"
     
     def _describe_like_post(self) -> str:
@@ -178,12 +178,12 @@ class AgentActivity:
     def _describe_search(self) -> str:
         """Search posts - includes search keywords"""
         query = self.action_args.get("query", "") or self.action_args.get("keyword", "")
-        return f"searched for \"{query}\"" if query else
-    
+        return f"searched for \"{query}\"" if query else "searched for posts"
+
     def _describe_search_user(self) -> str:
         """Search users - includes search keywords"""
         query = self.action_args.get("query", "") or self.action_args.get("username", "")
-        return f"searched for user \"{query}\"" if query else
+        return f"searched for user \"{query}\"" if query else "searched for users"
     
     def _describe_mute(self) -> str:
         """Mute user - includes muted user name"""
