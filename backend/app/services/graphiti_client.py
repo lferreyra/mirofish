@@ -43,7 +43,7 @@ async def get_graphiti() -> Graphiti:
             ),
             embedder=GeminiEmbedder(
                 config=GeminiEmbedderConfig(
-                    api_key=api_key, embedding_model='gemini-embedding-001'
+                    api_key=api_key, embedding_model='gemini-embedding-2-preview'
                 )
             ),
             cross_encoder=OpenAIRerankerClient(
