@@ -15,6 +15,17 @@ from .graphiti_client import get_graphiti
 logger = get_logger('mirofish.graphiti_entity_reader')
 
 
+def _safe(obj):
+    """Convert Neo4j types (DateTime etc.) to JSON-safe values."""
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, (list, tuple)):
+        return [_safe(v) for v in obj]
+    if isinstance(obj, dict):
+        return {k: _safe(v) for k, v in obj.items()}
+    return str(obj)
+
+
 def _run_async(coro):
     """Bridge sync -> async."""
     try:
@@ -108,7 +119,7 @@ class GraphitiEntityReader:
                 "name": node.get("name", ""),
                 "labels": list(node.labels),
                 "summary": node.get("summary", ""),
-                "attributes": dict(node),
+                "attributes": _safe(dict(node)),
             })
 
         logger.info(f"Fetched {len(nodes_data)} nodes from graph {graph_id}")
@@ -138,7 +149,7 @@ class GraphitiEntityReader:
                 "fact": rel.get("fact", ""),
                 "source_node_uuid": s_node.element_id,
                 "target_node_uuid": t_node.element_id,
-                "attributes": dict(rel),
+                "attributes": _safe(dict(rel)),
             })
 
         logger.info(f"Fetched {len(edges_data)} edges from graph {graph_id}")
@@ -172,7 +183,7 @@ class GraphitiEntityReader:
                     "fact": rel.get("fact", ""),
                     "source_node_uuid": rel.start_node.element_id if hasattr(rel, 'start_node') else "",
                     "target_node_uuid": rel.end_node.element_id if hasattr(rel, 'end_node') else "",
-                    "attributes": dict(rel),
+                    "attributes": _safe(dict(rel)),
                 })
             return edges_data
         except Exception as e:
