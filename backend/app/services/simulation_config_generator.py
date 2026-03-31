@@ -40,7 +40,7 @@ CHINA_TIMEZONE_CONFIG = {
     "activity_multipliers": {
         "dead": 0.05,      # Almost no one in early morning
         "morning": 0.4,    # Gradually active in morning
-        "work": 0.7,       # Work period中等
+        "work": 0.7,       # Work period moderate
         "peak": 1.5,       # Evening peak
         "night": 0.5       # Declining at night
     }
@@ -154,7 +154,7 @@ class SimulationParameters:
     # Time config
     time_config: TimeSimulationConfig = field(default_factory=TimeSimulationConfig)
     
-    # Agent配置列表
+    # Agent configuration list
     agent_configs: List[AgentActivityConfig] = field(default_factory=list)
     
     # Event config
@@ -232,7 +232,7 @@ class SimulationConfigGenerator:
         self.model_name = model_name or Config.LLM_MODEL_NAME
         
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY is not configured")
         
         self.client = OpenAI(
             api_key=self.api_key,
@@ -252,12 +252,12 @@ class SimulationConfigGenerator:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
     ) -> SimulationParameters:
         """
-        智能生成完整的模拟配置（分步生成）
-        
+        Intelligently generate complete simulation configuration (step-by-step generation)
+
         Args:
-            simulation_id: 模拟ID
-            project_id: 项目ID
-            graph_id: 图谱ID
+            simulation_id: Simulation ID
+            project_id: Project ID
+            graph_id: Graph ID
             simulation_requirement: Simulation requirement description
             document_text: Original document content
             entities: Filtered entity list
@@ -272,7 +272,7 @@ class SimulationConfigGenerator:
         
         # Calculate total steps
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
-        total_steps = 3 + num_batches  # Time config + 事件配置 + N批Agent + 平台配置
+        total_steps = 3 + num_batches  # Time config + event config + N batches of Agents + platform config
         current_step = 0
         
         def report_progress(step: int, message: str):
@@ -446,8 +446,8 @@ class SimulationConfigGenerator:
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
-                    # 不设置max_tokens，让LLM自由发挥
+                    temperature=0.7 - (attempt * 0.1)  # Lower temperature on each retry
+                    # Do not set max_tokens, let LLM generate freely
                 )
                 
                 content = response.choices[0].message.content
@@ -458,13 +458,13 @@ class SimulationConfigGenerator:
                     logger.warning(f"LLM output truncated (attempt {attempt+1})")
                     content = self._fix_truncated_json(content)
                 
-                # 尝试解析JSON
+                # Try to parse JSON
                 try:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     logger.warning(f"JSON parse failed (attempt {attempt+1}): {str(e)[:80]}")
                     
-                    # 尝试修复JSON
+                    # Try to fix JSON
                     fixed = self._try_fix_config_json(content)
                     if fixed:
                         return fixed
@@ -483,7 +483,7 @@ class SimulationConfigGenerator:
         """Fix truncated JSON"""
         content = content.strip()
         
-        # 计算未闭合的括号
+        # Count unclosed brackets
         open_braces = content.count('{') - content.count('}')
         open_brackets = content.count('[') - content.count(']')
         
@@ -491,7 +491,7 @@ class SimulationConfigGenerator:
         if content and content[-1] not in '",}]':
             content += '"'
         
-        # 闭合括号
+        # Close brackets
         content += ']' * open_brackets
         content += '}' * open_braces
         
@@ -671,7 +671,7 @@ Field descriptions:
         # Use configured context truncation length
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
         
-        prompt = f"""基于以下模拟需求，生成事件配置。
+        prompt = f"""Based on the following simulation requirements, generate event configuration.
 
 Simulation requirement: {simulation_requirement}
 
@@ -691,7 +691,7 @@ For example: official statements should be posted by Official/University types, 
 
 Return JSON format (no markdown):
 {{
-    "hot_topics": ["关键词1", "关键词2", ...],
+    "hot_topics": ["keyword1", "keyword2", ...],
     "narrative_direction": "<public opinion development direction description>",
     "initial_posts": [
         {{"content": "post content", "poster_type": "entity type (must choose from available types)"}},
@@ -848,16 +848,16 @@ Return JSON format (no markdown):
 {{
     "agent_configs": [
         {{
-            "agent_id": <必须与输入一致>,
+            "agent_id": <must match input>,
             "activity_level": <0.0-1.0>,
-            "posts_per_hour": <发帖频率>,
-            "comments_per_hour": <评论频率>,
-            "active_hours": [<活跃小时列表，考虑China人作息>],
-            "response_delay_min": <最小响应延迟分钟>,
-            "response_delay_max": <最大响应延迟分钟>,
-            "sentiment_bias": <-1.0到1.0>,
+            "posts_per_hour": <posting frequency>,
+            "comments_per_hour": <commenting frequency>,
+            "active_hours": [<active hours list, considering daily schedule>],
+            "response_delay_min": <minimum response delay in minutes>,
+            "response_delay_max": <maximum response delay in minutes>,
+            "sentiment_bias": <-1.0 to 1.0>,
             "stance": "<supportive/opposing/neutral/observer>",
-            "influence_weight": <影响力权重>
+            "influence_weight": <influence weight>
         }},
         ...
     ]
