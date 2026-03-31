@@ -6,7 +6,7 @@ Interface 2: Build Standalone Graph using Graphiti + Neo4j
 import uuid
 import asyncio
 import threading
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -327,6 +327,20 @@ class GraphBuilderService:
         """
         return _run_async(self._get_graph_data_async(graph_id))
 
+    @staticmethod
+    def _safe_serialize(obj) -> Any:
+        """Convert Neo4j types to JSON-safe values."""
+        if obj is None:
+            return None
+        if isinstance(obj, (str, int, float, bool)):
+            return obj
+        if isinstance(obj, (list, tuple)):
+            return [GraphBuilderService._safe_serialize(v) for v in obj]
+        if isinstance(obj, dict):
+            return {k: GraphBuilderService._safe_serialize(v) for k, v in obj.items()}
+        # Neo4j DateTime, Date, Time, Duration etc.
+        return str(obj)
+
     async def _get_graph_data_async(self, graph_id: str) -> Dict[str, Any]:
         graphiti = await create_graphiti()
         driver = graphiti.driver
@@ -352,7 +366,7 @@ class GraphBuilderService:
                     "name": name,
                     "labels": list(node.labels),
                     "summary": node.get("summary", ""),
-                    "attributes": dict(node),
+                    "attributes": self._safe_serialize(dict(node)),
                     "created_at": str(created_at) if created_at else None,
                 }
             )
@@ -384,7 +398,7 @@ class GraphBuilderService:
                     "target_node_uuid": t_node.element_id,
                     "source_node_name": s_node.get("name", ""),
                     "target_node_name": t_node.get("name", ""),
-                    "attributes": dict(rel),
+                    "attributes": self._safe_serialize(dict(rel)),
                     "created_at": str(created_at) if created_at else None,
                     "valid_at": str(valid_at) if valid_at else None,
                     "invalid_at": str(invalid_at) if invalid_at else None,
