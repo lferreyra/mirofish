@@ -10,9 +10,9 @@ test.describe('Research Topic Mode', () => {
     const dashboard = page.locator('.dashboard-section');
     await dashboard.scrollIntoViewIfNeeded();
 
-    // The tab buttons use class .mode-tab and contain Chinese text
-    const fileTab = page.locator('.mode-tab', { hasText: '文件上传' });
-    const researchTab = page.locator('.mode-tab', { hasText: '研究课题' });
+    // The tab buttons use class .mode-tab
+    const fileTab = page.locator('.mode-tab', { hasText: 'File Upload' });
+    const researchTab = page.locator('.mode-tab', { hasText: 'Research Topic' });
 
     await expect(fileTab).toBeVisible({ timeout: 15000 });
     await expect(researchTab).toBeVisible();
@@ -26,7 +26,7 @@ test.describe('Research Topic Mode', () => {
     await dashboard.scrollIntoViewIfNeeded();
 
     // Click the research tab
-    const researchTab = page.locator('.mode-tab', { hasText: '研究课题' });
+    const researchTab = page.locator('.mode-tab', { hasText: 'Research Topic' });
     await researchTab.waitFor({ state: 'visible', timeout: 15000 });
     await researchTab.click();
 
@@ -52,7 +52,7 @@ test.describe('Research Topic Mode', () => {
     await dashboard.scrollIntoViewIfNeeded();
 
     // Switch to research tab
-    const researchTab = page.locator('.mode-tab', { hasText: '研究课题' });
+    const researchTab = page.locator('.mode-tab', { hasText: 'Research Topic' });
     await researchTab.waitFor({ state: 'visible', timeout: 15000 });
     await researchTab.click();
 
@@ -83,14 +83,14 @@ test.describe('Research Topic Mode', () => {
     await dashboard.scrollIntoViewIfNeeded();
 
     // File upload tab should be active by default - upload zone visible
-    const fileTab = page.locator('.mode-tab', { hasText: '文件上传' });
+    const fileTab = page.locator('.mode-tab', { hasText: 'File Upload' });
     await fileTab.waitFor({ state: 'visible', timeout: 15000 });
 
     const uploadZone = page.locator('.upload-zone');
     await expect(uploadZone).toBeVisible({ timeout: 5000 });
 
     // Switch to research and back to file upload
-    const researchTab = page.locator('.mode-tab', { hasText: '研究课题' });
+    const researchTab = page.locator('.mode-tab', { hasText: 'Research Topic' });
     await researchTab.click();
 
     // Upload zone should be hidden now
