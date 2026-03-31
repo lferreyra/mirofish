@@ -218,6 +218,50 @@ class GraphBuilderService:
         graph_id = f"mirofish_{uuid.uuid4().hex[:16]}"
         return graph_id
 
+    def add_text_batches(
+        self,
+        graph_id: str,
+        chunks: List[str],
+        batch_size: int = 3,
+        progress_callback=None,
+    ) -> List[str]:
+        """Add text to graph in batches. Called from graph.py build_task thread."""
+        _run_async(self._add_text_batches_async(graph_id, chunks, batch_size, progress_callback))
+        return []
+
+    async def _add_text_batches_async(self, graph_id, chunks, batch_size, progress_callback):
+        from graphiti_core.graphiti import RawEpisode, EpisodeType
+
+        graphiti = await create_graphiti()
+        try:
+            total_chunks = len(chunks)
+            for i in range(0, total_chunks, batch_size):
+                batch_chunks = chunks[i : i + batch_size]
+                batch_num = i // batch_size + 1
+                total_batches = (total_chunks + batch_size - 1) // batch_size
+
+                if progress_callback:
+                    progress = (i + len(batch_chunks)) / total_chunks
+                    progress_callback(
+                        f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
+                        progress,
+                    )
+
+                episodes = [
+                    RawEpisode(
+                        name=f"chunk_{i + j}",
+                        content=chunk,
+                        source=EpisodeType.text,
+                        source_description="MiroFish document chunk",
+                        reference_time=datetime.now(),
+                        group_id=graph_id,
+                    )
+                    for j, chunk in enumerate(batch_chunks)
+                ]
+                await graphiti.add_episode_bulk(episodes)
+        finally:
+            await graphiti.close()
+
     def set_ontology(self, graph_id: str, ontology: Dict[str, Any]):
         """
         Store ontology for later use.
