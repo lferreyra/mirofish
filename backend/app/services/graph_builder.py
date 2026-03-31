@@ -3,35 +3,25 @@ Graph building service
 Interface 2: Build Standalone Graph using Graphiti + Neo4j
 """
 
-import os
 import uuid
-import time
 import asyncio
 import threading
-import concurrent.futures
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
 from .text_processor import TextProcessor
-from .graphiti_client import get_graphiti
+from .graphiti_client import create_graphiti
 from ..utils.logger import get_logger
 
 logger = get_logger('mirofish.graph_builder')
 
 
 def _run_async(coro):
-    """Bridge sync -> async. Works whether or not an event loop is already running."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                return pool.submit(asyncio.run, coro).result()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
+    """Bridge sync -> async. Always creates a fresh event loop (safe for threads)."""
+    return asyncio.run(coro)
 
 
 @dataclass
@@ -119,7 +109,25 @@ class GraphBuilderService:
         chunk_overlap: int,
         batch_size: int,
     ):
-        """Graph building worker thread"""
+        """Graph building worker thread — runs entire flow in one asyncio.run()"""
+        asyncio.run(self._build_graph_async(
+            task_id, text, ontology, graph_name, chunk_size, chunk_overlap, batch_size
+        ))
+
+    async def _build_graph_async(
+        self,
+        task_id: str,
+        text: str,
+        ontology: Dict[str, Any],
+        graph_name: str,
+        chunk_size: int,
+        chunk_overlap: int,
+        batch_size: int,
+    ):
+        """Async graph building — single event loop, single Graphiti client."""
+        from graphiti_core.graphiti import RawEpisode, EpisodeType
+
+        graphiti = None
         try:
             self.task_manager.update_task(
                 task_id,
@@ -134,9 +142,10 @@ class GraphBuilderService:
                 task_id, progress=10, message=f"Graph created: {graph_id}"
             )
 
-            # 2. Ontology is used as entity/edge type hints for add_episode_bulk
+            # 2. Create Graphiti client (fresh, bound to this thread's loop)
+            graphiti = await create_graphiti()
             self.task_manager.update_task(
-                task_id, progress=15, message="Ontology configured"
+                task_id, progress=15, message="Graphiti client connected"
             )
 
             # 3. Split text into chunks
@@ -149,25 +158,37 @@ class GraphBuilderService:
             )
 
             # 4. Send data in batches
-            self.add_text_batches(
-                graph_id,
-                chunks,
-                batch_size,
-                lambda msg, prog: self.task_manager.update_task(
-                    task_id,
-                    progress=20 + int(prog * 0.6),  # 20-80%
-                    message=msg,
-                ),
-            )
+            for i in range(0, total_chunks, batch_size):
+                batch_chunks = chunks[i : i + batch_size]
+                batch_num = i // batch_size + 1
+                total_batches = (total_chunks + batch_size - 1) // batch_size
 
-            # 5. Graphiti processes synchronously during add_episode_bulk,
-            #    no separate wait needed.
+                progress = 20 + int(((i + len(batch_chunks)) / total_chunks) * 60)
+                self.task_manager.update_task(
+                    task_id,
+                    progress=progress,
+                    message=f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
+                )
+
+                episodes = [
+                    RawEpisode(
+                        name=f"chunk_{i + j}",
+                        content=chunk,
+                        source=EpisodeType.text,
+                        source_description="MiroFish document chunk",
+                        reference_time=datetime.now(),
+                        group_id=graph_id,
+                    )
+                    for j, chunk in enumerate(batch_chunks)
+                ]
+
+                await graphiti.add_episode_bulk(episodes)
+
+            # 5. Get graph information
             self.task_manager.update_task(
                 task_id, progress=85, message="Retrieving graph information..."
             )
-
-            # 6. Get graph information
-            graph_info = self._get_graph_info(graph_id)
+            graph_info = await self._get_graph_info_async(graph_id)
 
             self.task_manager.complete_task(
                 task_id,
@@ -180,9 +201,14 @@ class GraphBuilderService:
 
         except Exception as e:
             import traceback
-
             error_msg = f"{str(e)}\n{traceback.format_exc()}"
             self.task_manager.fail_task(task_id, error_msg)
+        finally:
+            if graphiti:
+                try:
+                    await graphiti.close()
+                except Exception:
+                    pass
 
     def create_graph(self, name: str) -> str:
         """
@@ -201,62 +227,12 @@ class GraphBuilderService:
         """
         pass
 
-    def add_text_batches(
-        self,
-        graph_id: str,
-        chunks: List[str],
-        batch_size: int = 3,
-        progress_callback: Optional[Callable] = None,
-    ) -> List[str]:
-        """Add text to graph in batches using Graphiti add_episode_bulk"""
-        from graphiti_core.graphiti import RawEpisode, EpisodeType
-
-        total_chunks = len(chunks)
-
-        for i in range(0, total_chunks, batch_size):
-            batch_chunks = chunks[i : i + batch_size]
-            batch_num = i // batch_size + 1
-            total_batches = (total_chunks + batch_size - 1) // batch_size
-
-            if progress_callback:
-                progress = (i + len(batch_chunks)) / total_chunks
-                progress_callback(
-                    f"Sending batch {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
-                    progress,
-                )
-
-            episodes = [
-                RawEpisode(
-                    name=f"chunk_{i + j}",
-                    content=chunk,
-                    source=EpisodeType.text,
-                    source_description="MiroFish document chunk",
-                    reference_time=datetime.now(),
-                    group_id=graph_id,
-                )
-                for j, chunk in enumerate(batch_chunks)
-            ]
-
-            try:
-                _run_async(self._add_episode_bulk(episodes, graph_id))
-            except Exception as e:
-                if progress_callback:
-                    progress_callback(f"Batch {batch_num} failed: {str(e)}", 0)
-                raise
-
-        return []  # Graphiti processes synchronously, no episode UUIDs to track
-
-    async def _add_episode_bulk(self, episodes, group_id: str):
-        """Async helper to call graphiti.add_episode_bulk"""
-        graphiti = await get_graphiti()
-        await graphiti.add_episode_bulk(episodes)
-
     def _get_graph_info(self, graph_id: str) -> GraphInfo:
         """Get graph information via Cypher"""
         return _run_async(self._get_graph_info_async(graph_id))
 
     async def _get_graph_info_async(self, graph_id: str) -> GraphInfo:
-        graphiti = await get_graphiti()
+        graphiti = await create_graphiti()
         driver = graphiti.driver
 
         # Count nodes
@@ -298,7 +274,7 @@ class GraphBuilderService:
         return _run_async(self._get_graph_data_async(graph_id))
 
     async def _get_graph_data_async(self, graph_id: str) -> Dict[str, Any]:
-        graphiti = await get_graphiti()
+        graphiti = await create_graphiti()
         driver = graphiti.driver
 
         # Fetch nodes
@@ -376,10 +352,13 @@ class GraphBuilderService:
         _run_async(self._delete_graph_async(graph_id))
 
     async def _delete_graph_async(self, graph_id: str):
-        graphiti = await get_graphiti()
-        driver = graphiti.driver
-        await driver.execute_query(
-            "MATCH (n) WHERE n.group_id = $gid DETACH DELETE n",
-            gid=graph_id,
-        )
-        logger.info(f"Deleted graph data for group_id={graph_id}")
+        graphiti = await create_graphiti()
+        try:
+            driver = graphiti.driver
+            await driver.execute_query(
+                "MATCH (n) WHERE n.group_id = $gid DETACH DELETE n",
+                gid=graph_id,
+            )
+            logger.info(f"Deleted graph data for group_id={graph_id}")
+        finally:
+            await graphiti.close()
