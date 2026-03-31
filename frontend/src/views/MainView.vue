@@ -352,15 +352,27 @@ const startGraphPolling = () => {
 
 const fetchGraphData = async () => {
   try {
-    // Refresh project info to check for graph_id
+    // Refresh project info to check for graph_id and status
     const projRes = await getProject(currentProjectId.value)
-    if (projRes.success && projRes.data.graph_id) {
-      const gRes = await getGraphData(projRes.data.graph_id)
-      if (gRes.success) {
-        graphData.value = gRes.data
-        const nodeCount = gRes.data.node_count || gRes.data.nodes?.length || 0
-        const edgeCount = gRes.data.edge_count || gRes.data.edges?.length || 0
-        addLog(`Graph data refreshed. Nodes: ${nodeCount}, Edges: ${edgeCount}`)
+    if (projRes.success) {
+      projectData.value = projRes.data
+
+      // Detect if graph build completed while we were polling
+      if (projRes.data.status === 'graph_completed' && currentPhase.value < 2) {
+        currentPhase.value = 2
+        stopPolling()
+        stopGraphPolling()
+        addLog('Graph build completed (detected via project status)')
+      }
+
+      if (projRes.data.graph_id) {
+        const gRes = await getGraphData(projRes.data.graph_id)
+        if (gRes.success) {
+          graphData.value = gRes.data
+          const nodeCount = gRes.data.node_count || gRes.data.nodes?.length || 0
+          const edgeCount = gRes.data.edge_count || gRes.data.edges?.length || 0
+          addLog(`Graph data refreshed. Nodes: ${nodeCount}, Edges: ${edgeCount}`)
+        }
       }
     }
   } catch (err) {
@@ -451,13 +463,22 @@ const stopGraphPolling = () => {
   }
 }
 
+// Refresh project state when tab becomes visible (catches missed task completions)
+const handleVisibilityChange = () => {
+  if (!document.hidden && currentProjectId.value && currentPhase.value === 1) {
+    fetchGraphData()
+  }
+}
+
 onMounted(() => {
   initProject()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   stopPolling()
   stopGraphPolling()
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
