@@ -81,7 +81,7 @@ class AgentActivityConfig:
 
 @dataclass  
 class TimeSimulationConfig:
-    """Time simulation config (based on Chinese daily schedule habits)"""
+    """Time simulation config (based on general daily schedule patterns)"""
     # Total simulation duration (simulated hours)
     total_simulation_hours: int = 72  # Default 72 hours (3 days)
     
@@ -92,7 +92,7 @@ class TimeSimulationConfig:
     agents_per_hour_min: int = 5
     agents_per_hour_max: int = 20
     
-    # Peak hours (19-22, most active time for Chinese users)
+    # Peak hours (19-22, typical peak activity hours)
     peak_hours: List[int] = field(default_factory=lambda: [19, 20, 21, 22])
     peak_activity_multiplier: float = 1.5
     
@@ -547,7 +547,7 @@ class SimulationConfigGenerator:
 Please generate time config JSON.
 
 ### Basic principles (for reference only, should be flexibly adjusted based on specific events and participant groups):
-- User base is Chinese, must follow Beijing time daily schedule habits
+- Time config should follow realistic daily activity patterns
 - Almost no activity at 0-5 AM (activity coefficient 0.05)
 - Gradually active at 6-8 AM (activity coefficient 0.4)
 - Medium activity during work hours 9-18 (activity coefficient 0.7)
@@ -584,7 +584,7 @@ Field descriptions:
 - work_hours (int array): Work hours
 - reasoning (string): Brief explanation of why this config was chosen"""
 
-        system_prompt = "You are a social media simulation expert. Return pure JSON format, time config should follow Chinese daily schedule habits."
+        system_prompt = "You are a social media simulation expert. Return pure JSON format, time config should follow general daily schedule patterns."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -593,7 +593,7 @@ Field descriptions:
             return self._get_default_time_config(num_entities)
     
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """Get default time config (Chinese daily schedule)"""
+        """Get default time config (standard daily schedule)"""
         return {
             "total_simulation_hours": 72,
             "minutes_per_round": 60,  # 1 hour per round, accelerated time flow
@@ -603,7 +603,7 @@ Field descriptions:
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
             "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "Using default Chinese daily schedule config (1 hour per round)"
+            "reasoning": "Using default standard daily schedule config (1 hour per round)"
         }
     
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
@@ -838,7 +838,7 @@ Simulation requirement: {simulation_requirement}
 
 ## Task
 Generate activity config for each entity, note:
-- **Time follows Chinese daily schedule**: almost no activity at 0-5 AM, most active at 19-22
+- **Time follows standard daily schedule**: almost no activity at 0-5 AM, most active at 19-22
 - **Official institutions** (University/GovernmentAgency): low activity(0.1-0.3), work hours(9-17), slow response(60-240min), high influence(2.5-3.0)
 - **Media** (MediaOutlet): medium activity(0.4-0.6), all day(8-23), fast response(5-30min), high influence(2.0-2.5)
 - **Individuals** (Student/Person/Alumni): high activity(0.6-0.9), mainly evening(18-23), fast response(1-15min), low influence(0.8-1.2)
@@ -863,7 +863,7 @@ Return JSON format (no markdown):
     ]
 }}"""
 
-        system_prompt = "You are a social media behavior analysis expert. Return pure JSON, config should follow Chinese daily schedule habits."
+        system_prompt = "You are a social media behavior analysis expert. Return pure JSON, config should follow general daily schedule patterns."
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)
@@ -902,7 +902,7 @@ Return JSON format (no markdown):
         return configs
     
     def _generate_agent_config_by_rule(self, entity: EntityNode) -> Dict[str, Any]:
-        """Generate single Agent config by rule (Chinese daily schedule)"""
+        """Generate single Agent config by rule (standard daily schedule)"""
         entity_type = (entity.get_entity_type() or "Unknown").lower()
         
         if entity_type in ["university", "governmentagency", "ngo"]:
