@@ -254,6 +254,115 @@ def generate_ontology():
         }), 500
 
 
+
+# ============== 接口1.5：研究模式生成本体 ==============
+
+@graph_bp.route('/ontology/generate-from-research', methods=['POST'])
+def generate_ontology_from_research():
+    """
+    Research mode: Accept topic string, research via OSINT, generate ontology.
+
+    Request JSON:
+        topic: string (required) - the research subject
+        simulation_requirement: string (required) - what to simulate
+        depth: string (optional) - "shallow" | "deep" | "research", default "shallow"
+        project_name: string (optional)
+        additional_context: string (optional)
+    """
+    try:
+        logger.info("=== Starting research-based ontology generation ===")
+
+        data = request.get_json() or {}
+        topic = data.get('topic', '').strip()
+        simulation_requirement = data.get('simulation_requirement', '').strip()
+        depth = data.get('depth', 'shallow')
+        project_name = data.get('project_name', f'Research: {topic[:50]}')
+        additional_context = data.get('additional_context')
+
+        if not topic:
+            return jsonify({"success": False, "error": "请提供研究主题 (topic)"}), 400
+        if not simulation_requirement:
+            return jsonify({"success": False, "error": "请提供模拟需求 (simulation_requirement)"}), 400
+
+        # Step 1: Research via OSINT MCP
+        logger.info(f"Step 1: Researching topic '{topic}' at depth '{depth}'")
+        from ..services.research_service import ResearchService
+
+        research_svc = ResearchService(mcp_url=Config.OSINT_MCP_URL)
+        research_result = research_svc.research(topic=topic, depth=depth, output_format="mirofish")
+
+        if not research_result.get('success'):
+            return jsonify({
+                "success": False,
+                "error": f"Research failed: {research_result.get('error', 'Unknown error')}"
+            }), 400
+
+        research_text = research_result.get('report', '')
+        if not research_text.strip():
+            return jsonify({"success": False, "error": "Research returned empty report"}), 400
+
+        # Step 2: Create project
+        logger.info(f"Step 2: Creating project '{project_name}'")
+        project = ProjectManager.create_project(name=project_name)
+        project.simulation_requirement = simulation_requirement
+
+        # Step 3: Save research text as extracted text
+        logger.info("Step 3: Saving research results")
+        all_text = f"=== Research Topic: {topic} ===\n\n{research_text}"
+        project.total_text_length = len(all_text)
+        ProjectManager.save_extracted_text(project.project_id, all_text)
+
+        project.files.append({
+            "filename": f"osint_research_{topic.replace(' ', '_')[:30]}.md",
+            "size": len(research_text),
+            "source": "osint_research",
+            "topic": topic,
+            "depth": depth
+        })
+
+        # Step 4: Generate ontology (reuse existing service)
+        logger.info("Step 4: Generating ontology from research")
+        generator = OntologyGenerator()
+        ontology = generator.generate(
+            document_texts=[research_text],
+            simulation_requirement=simulation_requirement,
+            additional_context=additional_context
+        )
+
+        # Step 5: Save project
+        project.ontology = {
+            "entity_types": ontology.get("entity_types", []),
+            "edge_types": ontology.get("edge_types", [])
+        }
+        project.analysis_summary = ontology.get("analysis_summary", "")
+        project.status = ProjectStatus.ONTOLOGY_GENERATED
+        ProjectManager.save_project(project)
+
+        logger.info(f"=== Research ontology complete === project_id: {project.project_id}")
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": project.project_id,
+                "project_name": project.name,
+                "ontology": project.ontology,
+                "analysis_summary": project.analysis_summary,
+                "research_topic": topic,
+                "research_depth": depth,
+                "total_text_length": project.total_text_length,
+                "files": project.files
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Research mode failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 接口2：构建图谱 ==============
 
 @graph_bp.route('/build', methods=['POST'])
