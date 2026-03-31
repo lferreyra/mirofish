@@ -1,21 +1,50 @@
+import os
+from typing import Literal
+from dotenv import load_dotenv
 from fastmcp import FastMCP
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 mcp = FastMCP("MiroFish OSINT")
 
 
 @mcp.tool
+async def research_raw(
+    topic: str,
+    depth: Literal["shallow", "deep", "research"] = "shallow",
+) -> dict:
+    """Gather OSINT data on any topic from multiple sources. Returns structured JSON with all collected data.
+
+    Args:
+        topic: The research subject (e.g., "US chip tariff impact on TSMC")
+        depth: shallow (latest, fast), deep (all sources + grounding), research (everything + Gemini Deep Research)
+    """
+    from src.tools.research_raw import research_raw as _research_raw
+    return await _research_raw(topic, depth)
+
+
+@mcp.tool
+async def research_and_synthesize(
+    topic: str,
+    depth: Literal["shallow", "deep", "research"] = "shallow",
+    output_format: Literal["mirofish", "general"] = "mirofish",
+) -> str:
+    """Research any topic and synthesize a structured OSINT report via Gemini.
+
+    Args:
+        topic: The research subject (e.g., "US chip tariff impact on TSMC")
+        depth: shallow (latest, fast), deep (all sources + grounding), research (everything + Gemini Deep Research)
+        output_format: mirofish (entity-dense, for MiroFish ingestion) or general (narrative, for human reading)
+    """
+    from src.tools.research_synthesize import research_and_synthesize as _synthesize
+    return await _synthesize(topic, depth, output_format)
+
+
+@mcp.tool
 def list_sources() -> list[dict]:
     """List available OSINT data sources and their current status."""
-    return [
-        {"name": "serper", "status": "active", "description": "Web search via Serper API"},
-        {"name": "gdelt", "status": "active", "description": "GDELT DOC 2.0 global news events"},
-        {"name": "google_news_trends", "status": "active", "description": "Google News + Trends"},
-        {"name": "reddit", "status": "active", "description": "Reddit posts, zero auth"},
-        {"name": "wikipedia", "status": "active", "description": "Wikipedia summaries"},
-        {"name": "newspaper4k", "status": "active", "description": "Full article text extraction"},
-        {"name": "gemini_grounding", "status": "active", "description": "Gemini Search Grounding"},
-        {"name": "gemini_deep_research", "status": "active", "description": "Gemini Deep Research Agent"},
-    ]
+    from src.tools.list_sources import get_sources
+    return get_sources()
 
 
 if __name__ == "__main__":
