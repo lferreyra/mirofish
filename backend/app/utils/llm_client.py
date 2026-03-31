@@ -71,7 +71,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 16384
     ) -> Dict[str, Any]:
         """
         Send a chat request and return JSON
@@ -99,4 +99,24 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON format returned by LLM: {cleaned_response}")
+            # Attempt to repair truncated JSON by closing open brackets
+            repaired = self._repair_truncated_json(cleaned_response)
+            if repaired:
+                return repaired
+            raise ValueError(f"Invalid JSON format returned by LLM: {cleaned_response[:500]}...")
+
+    @staticmethod
+    def _repair_truncated_json(text: str) -> Dict[str, Any] | None:
+        """Try to repair truncated JSON by closing open brackets/braces."""
+        # Find where JSON parsing fails and try to close it
+        for end_pos in range(len(text), max(0, len(text) - 200), -1):
+            chunk = text[:end_pos]
+            # Count open/close brackets
+            opens = chunk.count('{') - chunk.count('}')
+            open_arrays = chunk.count('[') - chunk.count(']')
+            suffix = ']' * open_arrays + '}' * opens
+            try:
+                return json.loads(chunk + suffix)
+            except json.JSONDecodeError:
+                continue
+        return None
