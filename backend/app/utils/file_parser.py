@@ -4,8 +4,59 @@
 """
 
 import os
+import imghdr
 from pathlib import Path
 from typing import List, Optional
+
+# PDF 文件魔数（%PDF）
+_PDF_MAGIC = b'%PDF'
+# 常见可执行文件/二进制魔数（拒绝上传）
+_BLOCKED_MAGIC_PREFIXES = (
+    b'MZ',                    # Windows PE 可执行
+    b'\x7fELF',               # Linux ELF 可执行
+    b'\xca\xfe\xba\xbe',      # Mach-O 可执行
+    b'PK\x03\x04',            # ZIP / docx / jar
+)
+# 最大允许文件大小（50MB，与 Flask MAX_CONTENT_LENGTH 一致）
+_MAX_FILE_SIZE = 50 * 1024 * 1024
+
+
+def _validate_file(file_path: str, expected_suffix: str) -> None:
+    """
+    根据文件内容验证上传文件的合法性，防止扩展名欺骗攻击。
+
+    Args:
+        file_path: 文件路径
+        expected_suffix: 期望的扩展名（如 '.pdf'）
+
+    Raises:
+        OSError: 文件超过大小限制
+        ValueError: 文件内容与扩展名不符，或包含被拒绝的内容类型
+    """
+    path = Path(file_path)
+    size = path.stat().st_size
+    if size > _MAX_FILE_SIZE:
+        raise OSError(
+            f"文件超过最大限制 {_MAX_FILE_SIZE // (1024 * 1024)}MB: {size} bytes"
+        )
+
+    header = path.read_bytes()[:8]
+
+    # 拒绝已知的可执行/压缩格式
+    for magic in _BLOCKED_MAGIC_PREFIXES:
+        if header.startswith(magic):
+            raise ValueError(f"不允许上传的文件类型（可执行/压缩格式）: {file_path}")
+
+    # 对 PDF 严格验证魔数
+    if expected_suffix == '.pdf':
+        if not header.startswith(_PDF_MAGIC):
+            raise ValueError(
+                f"文件内容与 .pdf 扩展名不符（缺少 %PDF 魔数）: {file_path}"
+            )
+
+    # 拒绝伪装成文本的图片
+    if imghdr.what(file_path) is not None:
+        raise ValueError(f"不允许上传图片文件: {file_path}")
 
 
 def _read_text_with_fallback(file_path: str) -> str:
@@ -78,12 +129,15 @@ class FileParser:
         
         if not path.exists():
             raise FileNotFoundError(f"文件不存在: {file_path}")
-        
+
         suffix = path.suffix.lower()
-        
+
         if suffix not in cls.SUPPORTED_EXTENSIONS:
             raise ValueError(f"不支持的文件格式: {suffix}")
-        
+
+        # 验证文件内容与扩展名一致，拒绝扩展名欺骗
+        _validate_file(file_path, suffix)
+
         if suffix == '.pdf':
             return cls._extract_from_pdf(file_path)
         elif suffix in {'.md', '.markdown'}:

@@ -22,7 +22,15 @@ class Config:
     
     # Flask配置
     SECRET_KEY = os.environ.get('SECRET_KEY', 'mirofish-secret-key')
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    # 生产环境默认关闭 DEBUG，避免暴露内部信息
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
+    # CORS配置 — 逗号分隔的允许来源，生产环境应设置为具体域名
+    CORS_ORIGINS = [
+        o.strip()
+        for o in os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5001').split(',')
+        if o.strip()
+    ]
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
