@@ -737,6 +737,15 @@ const addLog = (msg) => {
   emit('add-log', msg)
 }
 
+const handlePrepareFailure = (message) => {
+  const errorMessage = message || '模拟环境准备失败'
+  stopPolling()
+  stopProfilesPolling()
+  stopConfigPolling()
+  addLog(`✗ ${errorMessage}`)
+  emit('update-status', 'error')
+}
+
 // 处理开始模拟按钮点击
 const handleStartSimulation = () => {
   // 构建传递给父组件的参数
@@ -895,9 +904,7 @@ const pollPrepareStatus = async () => {
         stopProfilesPolling()
         await loadPreparedData()
       } else if (data.status === 'failed') {
-        addLog(`✗ 准备失败: ${data.error || '未知错误'}`)
-        stopPolling()
-        stopProfilesPolling()
+        handlePrepareFailure(`准备失败: ${data.error || '未知错误'}`)
       }
     }
   } catch (err) {
@@ -969,6 +976,11 @@ const fetchConfigRealtime = async () => {
     
     if (res.success && res.data) {
       const data = res.data
+
+      if (data.status === 'failed' || data.error) {
+        handlePrepareFailure(data.error || '配置生成失败')
+        return
+      }
       
       // 输出配置生成阶段日志（避免重复）
       if (data.generation_stage && data.generation_stage !== lastLoggedConfigStage) {
@@ -1029,29 +1041,36 @@ const loadPreparedData = async () => {
   try {
     const res = await getSimulationConfigRealtime(props.simulationId)
     if (res.success && res.data) {
-      if (res.data.config_generated && res.data.config) {
-        simulationConfig.value = res.data.config
+      const configState = res.data
+
+      if (configState.status === 'failed' || configState.error) {
+        handlePrepareFailure(configState.error || '配置生成失败')
+        return
+      }
+
+      if (configState.config_generated && configState.config) {
+        simulationConfig.value = configState.config
         addLog('✓ 模拟配置加载成功')
         
         // 显示详细配置摘要
-        if (res.data.summary) {
-          addLog(`  ├─ Agent数量: ${res.data.summary.total_agents}个`)
-          addLog(`  ├─ 模拟时长: ${res.data.summary.simulation_hours}小时`)
-          addLog(`  └─ 初始帖子: ${res.data.summary.initial_posts_count}条`)
+        if (configState.summary) {
+          addLog(`  ├─ Agent数量: ${configState.summary.total_agents}个`)
+          addLog(`  ├─ 模拟时长: ${configState.summary.simulation_hours}小时`)
+          addLog(`  └─ 初始帖子: ${configState.summary.initial_posts_count}条`)
         }
         
         addLog('✓ 环境搭建完成，可以开始模拟')
         phase.value = 4
         emit('update-status', 'completed')
-      } else {
-        // 配置尚未生成，开始轮询
+      } else if (configState.is_generating) {
         addLog('配置生成中，开始轮询等待...')
         startConfigPolling()
+      } else {
+        handlePrepareFailure('配置尚未生成，且后端未处于生成中状态')
       }
     }
   } catch (err) {
-    addLog(`加载配置失败: ${err.message}`)
-    emit('update-status', 'error')
+    handlePrepareFailure(`加载配置失败: ${err.message}`)
   }
 }
 
