@@ -49,6 +49,9 @@ htmlcov/
 mydoc/
 mytest/
 
+# 외부 참조 레포
+openclaw/
+
 # 日志文件
 backend/logs/
 *.log
