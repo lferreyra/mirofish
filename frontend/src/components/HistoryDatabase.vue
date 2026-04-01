@@ -10,10 +10,10 @@
       <div class="gradient-overlay"></div>
     </div>
 
-    <!-- 标题区域 -->
+    <!-- Title Section -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">推演记录</span>
+      <span class="section-title">{{ t('components.history.title') }}</span>
       <div class="section-line"></div>
     </div>
 
@@ -33,20 +33,20 @@
         <div class="card-header">
           <span class="card-id">{{ formatSimulationId(project.simulation_id) }}</span>
           <div class="card-status-icons">
-            <span 
-              class="status-icon" 
-              :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="图谱构建"
-            >◇</span>
-            <span 
-              class="status-icon available" 
-              title="环境搭建"
-            >◈</span>
-            <span 
-              class="status-icon" 
-              :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="分析报告"
-            >◆</span>
+             <span
+               class="status-icon"
+               :class="{ available: project.project_id, unavailable: !project.project_id }"
+               :title="t('components.step1.title')"
+             >◇</span>
+             <span
+               class="status-icon available"
+               :title="t('components.step2.title')"
+             >◈</span>
+             <span
+               class="status-icon"
+               :class="{ available: project.report_id, unavailable: !project.report_id }"
+               :title="t('components.step4.title')"
+             >◆</span>
           </div>
         </div>
 
@@ -99,10 +99,10 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">加载中...</span>
+      <span class="loading-text">{{ t('common.loading') }}</span>
     </div>
 
     <!-- 历史回放详情弹窗 -->
@@ -193,10 +193,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getSimulationHistory } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // 状态
 const projects = ref([])
