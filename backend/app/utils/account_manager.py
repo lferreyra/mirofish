@@ -29,6 +29,8 @@ THINK_LEVEL_ORDER: Dict[str, int] = {
 # xhigh thinking을 지원하는 모델 패턴
 XHIGH_CAPABLE_MODELS = {
     "o3", "o3-mini", "o4-mini",
+    "gpt-5.4", "gpt-5.4-pro", "gpt-5.4-mini", "gpt-5.4-nano",
+    "gpt-5.2",
     "claude-opus-4-6", "claude-sonnet-4-6",
     "gemini-2.5-pro", "gemini-2.5-flash",
 }
@@ -84,6 +86,7 @@ def supports_thinking(model: Optional[str]) -> bool:
     model_lower = _strip_provider_prefix(model).lower()
     thinking_patterns = (
         "o1", "o3", "o4",
+        "gpt-5",  # gpt-5.x series (5.2, 5.4 등)
         "claude-opus", "claude-sonnet",
         "gemini-2.5",
         "deepseek-r1", "qwq",
@@ -92,12 +95,17 @@ def supports_thinking(model: Optional[str]) -> bool:
 
 
 def is_openai_reasoning_model(model: Optional[str]) -> bool:
-    """OpenAI o-series reasoning 모델인지 확인합니다 (o1, o3, o4 등)."""
+    """OpenAI reasoning 모델인지 확인합니다 (o-series, gpt-5.x 등)."""
     if not model:
         return False
     model_lower = _strip_provider_prefix(model).lower()
-    # o1, o1-mini, o1-preview, o3, o3-mini, o4-mini, o4-mini-2025-04-16 등
-    return bool(model_lower) and model_lower[0] == 'o' and len(model_lower) > 1 and model_lower[1].isdigit()
+    # o1, o3, o4-mini 등
+    if model_lower and model_lower[0] == 'o' and len(model_lower) > 1 and model_lower[1].isdigit():
+        return True
+    # gpt-5.x series (gpt-5.2, gpt-5.4, gpt-5.4-pro 등)
+    if model_lower.startswith("gpt-5"):
+        return True
+    return False
 
 
 def _strip_provider_prefix(model: str) -> str:

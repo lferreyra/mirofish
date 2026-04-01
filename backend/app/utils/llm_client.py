@@ -75,23 +75,35 @@ class LLMClient:
         if not self._account_manager:
             return call_fn(self.client, model_override or self.model, None)
 
-        max_attempts = self._account_manager.account_count * 3
+        # 장기 실행 task 지원: rate limit 대기 후 재시도는 attempt로 세지 않음
+        # max_rotation은 "연속 실패" 카운트 (대기 없이 바로 실패하는 경우만)
+        max_consecutive_failures = self._account_manager.account_count * 3
+        consecutive_failures = 0
         last_error = None
 
-        for attempt in range(max_attempts):
+        while consecutive_failures < max_consecutive_failures:
             account = self._account_manager.get_available_account()
             if account is None:
                 wait_time = self._account_manager.get_soonest_available_time()
                 if wait_time is not None and wait_time > 0:
-                    # 대기 시간이 너무 길면 (5분 초과) 에러 반환
-                    if wait_time > 300:
-                        raise RuntimeError(
-                            f"모든 계정 cooldown 중. 가장 빠른 복구까지 {wait_time:.0f}초 "
-                            f"({wait_time / 60:.0f}분). 수동 대기 필요."
-                        )
-                    capped_wait = min(wait_time + 1, 300)
-                    logger.info(f"모든 계정 cooldown, {capped_wait:.0f}초 대기...")
-                    time.sleep(capped_wait)
+                    # 장기 실행 task 지원: cooldown이 길어도 기다림
+                    # Codex 5h/1week limit에 걸리면 수 시간 대기 가능
+                    logger.info(
+                        f"모든 계정 cooldown, {wait_time:.0f}초 "
+                        f"({wait_time / 60:.1f}분 / {wait_time / 3600:.1f}시간) 대기..."
+                    )
+                    # 긴 대기는 60초 단위로 쪼개서 대기 (중간에 다른 계정이 풀릴 수 있음)
+                    waited = 0
+                    while waited < wait_time:
+                        chunk = min(60, wait_time - waited)
+                        time.sleep(chunk)
+                        waited += chunk
+                        # 대기 중 다른 계정이 사용 가능해졌는지 확인
+                        check = self._account_manager.get_available_account()
+                        if check is not None:
+                            break
+                    # 대기 후에는 consecutive_failures 리셋 (새로운 시도 시작)
+                    consecutive_failures = 0
                     continue
                 else:
                     raise RuntimeError("사용 가능한 LLM 계정이 없습니다 (모든 계정 비활성화)")
@@ -108,9 +120,10 @@ class LLMClient:
                 self._account_manager.on_failure(account, FailureReason.RATE_LIMIT, retry_after)
                 logger.warning(
                     f"계정 '{account.config.name}' rate limited → 다음 계정 전환 "
-                    f"(attempt {attempt + 1}/{max_attempts})"
+                    f"(consecutive_failures={consecutive_failures + 1})"
                 )
                 last_error = e
+                consecutive_failures += 1
                 continue
 
             except APIStatusError as e:
@@ -127,17 +140,20 @@ class LLMClient:
                         f"계정 '{account.config.name}' {reason.value} → 다음 계정 전환"
                     )
                     last_error = e
+                    consecutive_failures += 1
                     continue
                 raise
 
             except APITimeoutError as e:
                 self._account_manager.on_failure(account, FailureReason.TIMEOUT)
                 last_error = e
+                consecutive_failures += 1
                 continue
 
             except APIConnectionError as e:
                 self._account_manager.on_failure(account, FailureReason.UNKNOWN, 15.0)
                 last_error = e
+                consecutive_failures += 1
                 continue
 
             except Exception as e:
