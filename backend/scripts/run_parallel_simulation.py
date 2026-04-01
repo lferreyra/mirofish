@@ -1098,6 +1098,60 @@ class PlatformSimulation:
         self.total_actions = 0
 
 
+def _fetch_and_inject_external_events(env, config, round_num, agent_names, log_fn):
+    """
+    외부 실시간 뉴스를 가져와서 시뮬레이션에 주입할 ManualAction dict를 반환합니다.
+    첫 번째 에이전트(agent_id=0)를 "뉴스봇"으로 사용하여 CREATE_POST합니다.
+    """
+    try:
+        # external_data 모듈 로드 (backend 패키지 경로 추가)
+        import sys
+        backend_path = os.path.join(os.path.dirname(__file__), '..')
+        if backend_path not in sys.path:
+            sys.path.insert(0, backend_path)
+
+        from app.services.external_data import get_external_data_service
+
+        # 시뮬레이션 주제 추출
+        topic = config.get("simulation_requirement", "")
+        if not topic:
+            event_config = config.get("event_config", {})
+            initial_posts = event_config.get("initial_posts", [])
+            if initial_posts:
+                topic = initial_posts[0].get("content", "")[:100]
+
+        if not topic:
+            return {}
+
+        svc = get_external_data_service()
+        news = svc.news_search(topic[:100], hours=6, limit=3)
+
+        if not news:
+            return {}
+
+        # 첫 번째 뉴스를 게시물로 변환
+        news_item = news[0]
+        content = f"📰 속보: {news_item.title}\n\n{news_item.summary}\n\n출처: {news_item.source}"
+
+        # 첫 번째 에이전트를 뉴스봇으로 사용
+        try:
+            agent = env.agent_graph.get_agent(0)
+        except Exception:
+            return {}
+
+        log_fn(f"Round {round_num}: 외부 뉴스 이벤트 주입 - \"{news_item.title[:50]}...\"")
+
+        return {
+            agent: ManualAction(
+                action_type=ActionType.CREATE_POST,
+                action_args={"content": content}
+            )
+        }
+    except Exception as e:
+        log_fn(f"Round {round_num}: 외부 이벤트 fetch 실패: {e}")
+        return {}
+
+
 async def run_twitter_simulation(
     config: Dict[str, Any], 
     simulation_dir: str,
@@ -1249,7 +1303,20 @@ async def run_twitter_simulation(
             if action_logger:
                 action_logger.log_round_end(round_num + 1, 0)
             continue
-        
+
+        # ── 외부 실시간 이벤트 주입 ──
+        _inject_interval = int(os.environ.get("EXTERNAL_DATA_INJECT_INTERVAL", "10"))
+        if (round_num + 1) % _inject_interval == 0 and os.environ.get("EXTERNAL_DATA_ENABLED", "").lower() == "true":
+            try:
+                _ext_actions = _fetch_and_inject_external_events(
+                    result.env, config, round_num + 1, agent_names, log_info
+                )
+                if _ext_actions:
+                    await result.env.step(_ext_actions)
+                    total_actions += len(_ext_actions)
+            except Exception as _ext_err:
+                log_info(f"외부 이벤트 주입 실패 (무시): {_ext_err}")
+
         actions = {agent: LLMAction() for _, agent in active_agents}
         await result.env.step(actions)
         
@@ -1448,7 +1515,20 @@ async def run_reddit_simulation(
             if action_logger:
                 action_logger.log_round_end(round_num + 1, 0)
             continue
-        
+
+        # ── 외부 실시간 이벤트 주입 ──
+        _inject_interval = int(os.environ.get("EXTERNAL_DATA_INJECT_INTERVAL", "10"))
+        if (round_num + 1) % _inject_interval == 0 and os.environ.get("EXTERNAL_DATA_ENABLED", "").lower() == "true":
+            try:
+                _ext_actions = _fetch_and_inject_external_events(
+                    result.env, config, round_num + 1, agent_names, log_info
+                )
+                if _ext_actions:
+                    await result.env.step(_ext_actions)
+                    total_actions += len(_ext_actions)
+            except Exception as _ext_err:
+                log_info(f"외부 이벤트 주입 실패 (무시): {_ext_err}")
+
         actions = {agent: LLMAction() for _, agent in active_agents}
         await result.env.step(actions)
         

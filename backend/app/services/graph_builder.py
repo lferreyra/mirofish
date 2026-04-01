@@ -16,7 +16,10 @@ from zep_cloud import EpisodeData, EntityEdgeSourceTarget
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
+from ..utils.logger import get_logger
 from .text_processor import TextProcessor
+
+logger = get_logger('mirofish.graph_builder')
 
 
 @dataclass
@@ -130,11 +133,21 @@ class GraphBuilderService:
             
             # 3. 文本分块
             chunks = TextProcessor.split_text(text, chunk_size, chunk_overlap)
+
+            # 3.5 외부 실시간 데이터 수집 및 chunk에 추가
+            external_chunks = self._fetch_external_data_chunks(
+                text, ontology, chunk_size, chunk_overlap,
+                lambda msg: self.task_manager.update_task(task_id, progress=18, message=msg)
+            )
+            if external_chunks:
+                chunks.extend(external_chunks)
+                logger.info(f"외부 데이터 {len(external_chunks)}개 chunk 추가 (총 {len(chunks)}개)")
+
             total_chunks = len(chunks)
             self.task_manager.update_task(
                 task_id,
                 progress=20,
-                message=f"文本已分割为 {total_chunks} 个块"
+                message=f"文本已分割为 {total_chunks} 个块（含外部数据 {len(external_chunks) if external_chunks else 0} 块）"
             )
             
             # 4. 分批发送数据
@@ -184,6 +197,68 @@ class GraphBuilderService:
             error_msg = f"{str(e)}\n{traceback.format_exc()}"
             self.task_manager.fail_task(task_id, error_msg)
     
+    def _fetch_external_data_chunks(
+        self,
+        text: str,
+        ontology: Dict[str, Any],
+        chunk_size: int,
+        chunk_overlap: int,
+        progress_callback=None,
+    ) -> List[str]:
+        """
+        ontology에서 키워드를 추출하고 외부 데이터를 수집하여 chunk로 변환합니다.
+        실패해도 빈 리스트 반환 (그래프 빌드는 계속 진행).
+        """
+        if not Config.EXTERNAL_DATA_ENABLED:
+            return []
+
+        try:
+            from .external_data import get_external_data_service
+
+            if progress_callback:
+                progress_callback("외부 실시간 데이터 수집 중...")
+
+            # ontology에서 검색 키워드 추출
+            keywords = []
+            for entity_type in ontology.get("entity_types", []):
+                name = entity_type.get("name", "")
+                if name:
+                    keywords.append(name)
+            for relation in ontology.get("relation_types", []):
+                name = relation.get("name", "")
+                if name:
+                    keywords.append(name)
+
+            # 텍스트 처음 200자에서도 주제 추출
+            topic = text[:200].strip()
+
+            # 검색 쿼리 구성 (키워드 합치기)
+            search_query = " ".join(keywords[:5]) if keywords else topic[:100]
+
+            # 시장 심볼 추출 (텍스트에서 주요 심볼 찾기)
+            import re
+            symbol_pattern = r'\b(BTC|ETH|SOL|XRP|AAPL|TSLA|GOOGL|AMZN|MSFT|NVDA)\b'
+            symbols = list(set(re.findall(symbol_pattern, text.upper())))
+
+            # 외부 데이터 수집
+            svc = get_external_data_service()
+            batch = svc.fetch_all(search_query, symbols=symbols[:5] if symbols else None)
+
+            if batch.is_empty:
+                logger.info("외부 데이터 없음, 문서 데이터만 사용")
+                return []
+
+            # 텍스트로 변환 후 chunk 분할
+            external_text = batch.to_text()
+            external_chunks = TextProcessor.split_text(external_text, chunk_size, chunk_overlap)
+
+            logger.info(f"외부 데이터 수집 완료: {len(external_chunks)}개 chunk 생성")
+            return external_chunks
+
+        except Exception as e:
+            logger.warning(f"외부 데이터 수집 실패 (무시하고 계속): {e}")
+            return []
+
     def create_graph(self, name: str) -> str:
         """创建Zep图谱（公开方法）"""
         graph_id = f"mirofish_{uuid.uuid4().hex[:16]}"

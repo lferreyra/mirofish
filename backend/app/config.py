@@ -60,6 +60,15 @@ class Config:
         'TREND', 'REFRESH', 'DO_NOTHING', 'FOLLOW', 'MUTE'
     ]
     
+    # 외부 데이터 설정
+    EXTERNAL_DATA_ENABLED = os.environ.get('EXTERNAL_DATA_ENABLED', 'true').lower() == 'true'
+    BRAVE_SEARCH_API_KEY = os.environ.get('BRAVE_SEARCH_API_KEY')
+    TAVILY_API_KEY = os.environ.get('TAVILY_API_KEY')
+    SERP_API_KEY = os.environ.get('SERP_API_KEY')
+    NEWS_API_KEY = os.environ.get('NEWS_API_KEY')
+    ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY')
+    EXTERNAL_DATA_INJECT_INTERVAL = int(os.environ.get('EXTERNAL_DATA_INJECT_INTERVAL', '10'))
+
     # Report Agent配置
     REPORT_AGENT_MAX_TOOL_CALLS = int(os.environ.get('REPORT_AGENT_MAX_TOOL_CALLS', '5'))
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))

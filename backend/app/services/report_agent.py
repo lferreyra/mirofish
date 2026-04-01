@@ -546,6 +546,62 @@ TOOL_DESC_INTERVIEW_AGENTS = """\
 
 【重要】需要OASIS模拟环境正在运行才能使用此功能！"""
 
+TOOL_DESC_WEB_SEARCH = """\
+【实时网络搜索 - 获取最新外部信息】
+从互联网搜索实时信息，用于与模拟结果进行对比验证。
+搜索引擎自动选择（Brave → Tavily → SerpAPI fallback）。
+
+【使用场景】
+- 需要将模拟预测与真实世界的分析报告/预测进行对比
+- 需要补充模拟中未覆盖的背景信息
+- 需要验证模拟结论是否与现实趋势一致
+
+【返回内容】
+- 网页标题和摘要
+- 来源链接
+- 发布时间"""
+
+TOOL_DESC_NEWS_SEARCH = """\
+【实时新闻搜索 - 获取最新新闻报道】
+搜索最近的新闻报道（默认最近24小时），了解真实世界的最新动态。
+
+【使用场景】
+- 了解与模拟主题相关的最新真实新闻
+- 对比模拟预测与真实事件走向
+- 补充报告的现实背景信息
+
+【返回内容】
+- 新闻标题、来源、发布时间
+- 新闻摘要"""
+
+TOOL_DESC_MARKET_DATA = """\
+【市场数据 - 获取金融/加密货币数据】
+获取股票、加密货币等市场实时数据。
+支持：BTC, ETH, SOL等加密货币 + AAPL, TSLA等股票。
+
+【使用场景】
+- 获取当前价格作为模拟预测的基准点
+- 对比模拟中的价格趋势与真实市场走势
+- 为报告提供精确的市场数据引用
+
+【返回内容】
+- 当前价格、涨跌幅、成交量
+- 数据时间戳"""
+
+TOOL_DESC_SOCIAL_TRENDS = """\
+【社交媒体趋势 - 获取社交平台热点】
+搜索Reddit等社交平台上的真实讨论趋势和热点话题。
+
+【使用场景】
+- 将模拟中Agent的舆情与真实社交平台对比
+- 了解真实用户对相关话题的讨论热度
+- 验证模拟中的舆情走向是否贴近现实
+
+【返回内容】
+- 热门帖子/讨论主题
+- 互动数据（点赞、评论数）
+- 讨论摘要"""
+
 # ── 大纲规划 prompt ──
 
 PLAN_SYSTEM_PROMPT = """\
@@ -712,6 +768,10 @@ SECTION_SYSTEM_PROMPT_TEMPLATE = """\
 - panorama_search: 广角全景搜索，了解事件全貌、时间线和演变过程
 - quick_search: 快速验证某个具体信息点
 - interview_agents: 采访模拟Agent，获取不同角色的第一人称观点和真实反应
+- web_search: 实时网络搜索，将模拟预测与真实分析报告对比验证
+- news_search: 实时新闻搜索，了解相关领域的最新真实动态
+- market_data: 获取股票/加密货币等实时市场数据作为参考基准
+- social_trends: 搜索Reddit等社交平台的真实讨论趋势，与模拟舆情对比
 
 ═══════════════════════════════════════════════════════════════
 【工作流程】
@@ -949,6 +1009,37 @@ class ReportAgent:
                     "interview_topic": "采访主题或需求描述（如：'了解学生对宿舍甲醛事件的看法'）",
                     "max_agents": "最多采访的Agent数量（可选，默认5，最大10）"
                 }
+            },
+            "web_search": {
+                "name": "web_search",
+                "description": TOOL_DESC_WEB_SEARCH,
+                "parameters": {
+                    "query": "搜索查询字符串（如：'bitcoin price forecast 2026'）",
+                    "limit": "返回结果数量（可选，默认10）"
+                }
+            },
+            "news_search": {
+                "name": "news_search",
+                "description": TOOL_DESC_NEWS_SEARCH,
+                "parameters": {
+                    "topic": "新闻搜索主题（如：'bitcoin regulation'）",
+                    "hours": "搜索时间范围-小时数（可选，默认24）"
+                }
+            },
+            "market_data": {
+                "name": "market_data",
+                "description": TOOL_DESC_MARKET_DATA,
+                "parameters": {
+                    "symbol": "资产代号（如：'BTC', 'AAPL', 'ETH'）"
+                }
+            },
+            "social_trends": {
+                "name": "social_trends",
+                "description": TOOL_DESC_SOCIAL_TRENDS,
+                "parameters": {
+                    "topic": "搜索主题（如：'bitcoin', 'AI regulation'）",
+                    "limit": "返回结果数量（可选，默认20）"
+                }
             }
         }
     
@@ -1053,15 +1144,64 @@ class ReportAgent:
                 result = [n.to_dict() for n in nodes]
                 return json.dumps(result, ensure_ascii=False, indent=2)
             
+            # ========== 外부 실시간 데이터 도구 ==========
+
+            elif tool_name == "web_search":
+                from .external_data import get_external_data_service
+                query = parameters.get("query", "")
+                limit = int(parameters.get("limit", 10))
+                results = get_external_data_service().web_search(query, limit)
+                if not results:
+                    return "웹 검색 결과 없음 (모든 검색 provider가 비활성 상태이거나 결과가 없습니다)"
+                text_parts = [f"웹 검색 결과 ({len(results)}건, query: {query}):\n"]
+                for i, r in enumerate(results, 1):
+                    text_parts.append(f"{i}. {r.to_text()}\n")
+                return "\n".join(text_parts)
+
+            elif tool_name == "news_search":
+                from .external_data import get_external_data_service
+                topic = parameters.get("topic", "")
+                hours = int(parameters.get("hours", 24))
+                results = get_external_data_service().news_search(topic, hours)
+                if not results:
+                    return "뉴스 검색 결과 없음"
+                text_parts = [f"최근 뉴스 ({len(results)}건, topic: {topic}, 최근 {hours}시간):\n"]
+                for i, n in enumerate(results, 1):
+                    text_parts.append(f"{i}. {n.to_text()}\n")
+                return "\n".join(text_parts)
+
+            elif tool_name == "market_data":
+                from .external_data import get_external_data_service
+                symbol = parameters.get("symbol", "")
+                result = get_external_data_service().market_data(symbol)
+                if not result:
+                    return f"시장 데이터를 가져올 수 없습니다: {symbol}"
+                return f"시장 데이터:\n{result.to_text()}"
+
+            elif tool_name == "social_trends":
+                from .external_data import get_external_data_service
+                topic = parameters.get("topic", "")
+                limit = int(parameters.get("limit", 20))
+                results = get_external_data_service().social_trends(topic, limit)
+                if not results:
+                    return "소셜 트렌드 결과 없음"
+                text_parts = [f"소셜 트렌드 ({len(results)}건, topic: {topic}):\n"]
+                for i, t in enumerate(results, 1):
+                    text_parts.append(f"{i}. {t.to_text()}\n")
+                return "\n".join(text_parts)
+
             else:
-                return f"未知工具: {tool_name}。请使用以下工具之一: insight_forge, panorama_search, quick_search"
-                
+                return f"未知工具: {tool_name}。请使用以下工具之一: insight_forge, panorama_search, quick_search, web_search, news_search, market_data, social_trends"
+
         except Exception as e:
             logger.error(f"工具执行失败: {tool_name}, 错误: {str(e)}")
             return f"工具执行失败: {str(e)}"
-    
-    # 合法的工具名称集合，用于裸 JSON 兜底解析时校验
-    VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
+
+    # 合법的工具名称集合，用于裸 JSON 兜底解析时校验
+    VALID_TOOL_NAMES = {
+        "insight_forge", "panorama_search", "quick_search", "interview_agents",
+        "web_search", "news_search", "market_data", "social_trends",
+    }
 
     def _parse_tool_calls(self, response: str) -> List[Dict[str, Any]]:
         """
@@ -1286,7 +1426,10 @@ class ReportAgent:
         min_tool_calls = 3  # 最少工具调用次数
         conflict_retries = 0  # 工具调用与Final Answer同时出现的连续冲突次数
         used_tools = set()  # 记录已调用过的工具名
-        all_tools = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
+        all_tools = {
+            "insight_forge", "panorama_search", "quick_search", "interview_agents",
+            "web_search", "news_search", "market_data", "social_trends",
+        }
 
         # 报告上下文，用于InsightForge的子问题生成
         report_context = f"章节标题: {section.title}\n模拟需求: {self.simulation_requirement}"
