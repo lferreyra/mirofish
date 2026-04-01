@@ -60,6 +60,13 @@ class Config:
         'TREND', 'REFRESH', 'DO_NOTHING', 'FOLLOW', 'MUTE'
     ]
     
+    # Polymarket Prediction 설정
+    PREDICTION_DEFAULT_MODE = os.environ.get('PREDICTION_DEFAULT_MODE', 'mid')
+    PREDICTION_KELLY_FRACTION = float(os.environ.get('PREDICTION_KELLY_FRACTION', '0.5'))
+    PREDICTION_MAX_BET_FRACTION = float(os.environ.get('PREDICTION_MAX_BET_FRACTION', '0.15'))
+    PREDICTION_MIN_EDGE = float(os.environ.get('PREDICTION_MIN_EDGE', '0.02'))
+    PREDICTION_CALIBRATION_SHRINKAGE = float(os.environ.get('PREDICTION_CALIBRATION_SHRINKAGE', '0.15'))
+
     # 외부 데이터 설정
     EXTERNAL_DATA_ENABLED = os.environ.get('EXTERNAL_DATA_ENABLED', 'true').lower() == 'true'
     BRAVE_SEARCH_API_KEY = os.environ.get('BRAVE_SEARCH_API_KEY')
