@@ -116,6 +116,8 @@ class Config:
                         oauth_scope=item.get('oauth_scope'),
                         oauth_audience=item.get('oauth_audience'),
                         priority=item.get('priority', 0),
+                        default_thinking=item.get('default_thinking'),
+                        max_thinking_budget=item.get('max_thinking_budget'),
                     ))
                 return accounts if accounts else None
             except (json.JSONDecodeError, KeyError) as e:
@@ -123,7 +125,7 @@ class Config:
                 logging.getLogger('mirofish.config').warning(f"LLM_ACCOUNTS JSON 파싱 실패: {e}")
 
         # 방법 2: 번호 기반 환경변수 (LLM_ACCOUNT_1_*, LLM_ACCOUNT_2_*, ...)
-        for i in range(1, 11):  # 최대 10개 계정
+        for i in range(1, 21):  # 최대 20개 계정
             prefix = f'LLM_ACCOUNT_{i}_'
             name = os.environ.get(f'{prefix}NAME')
             if not name:
@@ -131,6 +133,9 @@ class Config:
 
             auth_type_str = os.environ.get(f'{prefix}AUTH_TYPE', 'api_key')
             auth_type = AuthType(auth_type_str)
+
+            thinking_budget_raw = os.environ.get(f'{prefix}MAX_THINKING_BUDGET')
+            thinking_budget = int(thinking_budget_raw) if thinking_budget_raw else None
 
             accounts.append(AccountConfig(
                 name=name,
@@ -144,6 +149,8 @@ class Config:
                 oauth_scope=os.environ.get(f'{prefix}OAUTH_SCOPE'),
                 oauth_audience=os.environ.get(f'{prefix}OAUTH_AUDIENCE'),
                 priority=int(os.environ.get(f'{prefix}PRIORITY', str(i - 1))),
+                default_thinking=os.environ.get(f'{prefix}DEFAULT_THINKING'),
+                max_thinking_budget=thinking_budget,
             ))
 
         return accounts if accounts else None
