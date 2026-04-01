@@ -250,9 +250,10 @@ class AccountConfig:
         if self.auth_type == AuthType.API_KEY and not self.api_key:
             raise ValueError(f"계정 '{self.name}': API key 인증에는 api_key가 필요합니다")
         if self.auth_type == AuthType.OAUTH:
-            if not self.client_id or not self.client_secret or not self.token_url:
+            # PKCE flow는 client_secret 불필요, client_id만 필수
+            if not self.client_id:
                 raise ValueError(
-                    f"계정 '{self.name}': OAuth 인증에는 client_id, client_secret, token_url이 필요합니다"
+                    f"계정 '{self.name}': OAuth 인증에는 client_id가 필요합니다"
                 )
 
 

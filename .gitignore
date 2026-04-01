@@ -59,5 +59,8 @@ backend/logs/
 # 上传文件
 backend/uploads/
 
+# OAuth 토큰 (민감 정보)
+backend/.oauth_tokens/
+
 # Docker 数据
 data/
