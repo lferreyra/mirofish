@@ -13,6 +13,7 @@ import random
 import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from ..utils.copilot_auth import is_copilot_provider, get_copilot_token_manager, COPILOT_REQUEST_HEADERS
 from datetime import datetime
 
 from openai import OpenAI
@@ -185,17 +186,29 @@ class OasisProfileGenerator:
         zep_api_key: Optional[str] = None,
         graph_id: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
+        # 支持 GitHub Copilot 作为 LLM 后端
+        if not api_key and is_copilot_provider():
+            mgr = get_copilot_token_manager()
+            self.api_key = mgr.get_api_key()
+            self.base_url = base_url or mgr.get_base_url()
+            self._copilot_mode = True
+        else:
+            self.api_key = api_key or Config.LLM_API_KEY
+            self.base_url = base_url or Config.LLM_BASE_URL
+            self._copilot_mode = False
         self.model_name = model_name or Config.LLM_MODEL_NAME
         
         if not self.api_key:
             raise ValueError("LLM_API_KEY 未配置")
         
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        client_kwargs = {"api_key": self.api_key, "base_url": self.base_url}
+        if self._copilot_mode:
+            client_kwargs["default_headers"] = {
+                "Editor-Version": COPILOT_REQUEST_HEADERS["Editor-Version"],
+                "User-Agent": COPILOT_REQUEST_HEADERS["User-Agent"],
+                "X-Github-Api-Version": COPILOT_REQUEST_HEADERS["X-Github-Api-Version"],
+            }
+        self.client = OpenAI(**client_kwargs)
         
         # Zep客户端用于检索丰富上下文
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY

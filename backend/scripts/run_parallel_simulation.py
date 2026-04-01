@@ -1023,8 +1023,29 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
     if llm_api_key:
         os.environ["OPENAI_API_KEY"] = llm_api_key
     
+    # 支持 GitHub Copilot 作为 LLM 后端
     if not os.environ.get("OPENAI_API_KEY"):
-        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY")
+        try:
+            from app.utils.copilot_auth import is_copilot_provider, get_copilot_token_manager
+            if is_copilot_provider():
+                from app.utils.copilot_auth import COPILOT_REQUEST_HEADERS
+                mgr = get_copilot_token_manager()
+                os.environ["OPENAI_API_KEY"] = mgr.get_api_key()
+                llm_base_url = mgr.get_base_url()
+                # camel-ai 使用 openai SDK，需要设置必需的 Copilot 请求头
+                import openai
+                openai.default_headers = {
+                    "Editor-Version": COPILOT_REQUEST_HEADERS["Editor-Version"],
+                    "User-Agent": COPILOT_REQUEST_HEADERS["User-Agent"],
+                    "X-Github-Api-Version": COPILOT_REQUEST_HEADERS["X-Github-Api-Version"],
+                }
+                config_label = "[Copilot LLM]"
+                print(f"  → 使用 GitHub Copilot 作为 LLM 后端")
+        except Exception as e:
+            print(f"  Copilot 初始化失败: {e}")
+    
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY 或 LLM_PROVIDER=github-copilot")
     
     if llm_base_url:
         os.environ["OPENAI_API_BASE_URL"] = llm_base_url
