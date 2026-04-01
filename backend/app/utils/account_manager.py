@@ -110,11 +110,13 @@ def _strip_provider_prefix(model: str) -> str:
 
 def clamp_think_level(level: ThinkLevel, model: Optional[str]) -> ThinkLevel:
     """모델이 지원하지 않는 thinking level을 하향 조정합니다."""
+    # 먼저 모델이 thinking 자체를 지원하는지 확인
+    if level != "off" and not supports_thinking(model):
+        return "off"
+    # xhigh를 지원하지 않는 thinking 모델이면 high로 하향
     if level == "xhigh" and not supports_xhigh_thinking(model):
         logger.info(f"모델 '{model}'이 xhigh를 지원하지 않아 high로 하향 조정")
         return "high"
-    if level != "off" and not supports_thinking(model):
-        return "off"
     return level
 
 
