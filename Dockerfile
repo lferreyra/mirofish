@@ -5,8 +5,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends nodejs npm \
   && rm -rf /var/lib/apt/lists/*
 
-# 从 uv 官方镜像复制 uv
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+# 安装 uv
+RUN pip install uv==0.9.26
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ COPY backend/pyproject.toml backend/uv.lock ./backend/
 # 安装依赖（Node + Python）
 RUN npm ci \
   && npm ci --prefix frontend \
-  && cd backend && uv sync --frozen
+  && cd backend && uv sync
 
 # 复制项目源码
 COPY . .
