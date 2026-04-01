@@ -4,6 +4,8 @@
 """
 
 import os
+import json
+from typing import Optional, List
 from dotenv import load_dotenv
 
 # 加载项目根目录的 .env 文件
@@ -64,11 +66,96 @@ class Config:
     REPORT_AGENT_TEMPERATURE = float(os.environ.get('REPORT_AGENT_TEMPERATURE', '0.5'))
     
     @classmethod
+    def get_llm_accounts(cls) -> Optional[List]:
+        """
+        환경 변수에서 멀티 LLM 계정 설정을 파싱합니다.
+
+        지원 형식:
+        1) JSON 배열 (LLM_ACCOUNTS 환경변수):
+           LLM_ACCOUNTS='[{"name":"acc1","auth_type":"api_key","api_key":"sk-...","base_url":"...","model":"..."}]'
+
+        2) 번호 기반 환경변수:
+           LLM_ACCOUNT_1_NAME=primary
+           LLM_ACCOUNT_1_AUTH_TYPE=api_key
+           LLM_ACCOUNT_1_API_KEY=sk-...
+           LLM_ACCOUNT_1_BASE_URL=https://api.openai.com/v1
+           LLM_ACCOUNT_1_MODEL=gpt-4o
+           LLM_ACCOUNT_1_PRIORITY=0
+
+           LLM_ACCOUNT_2_NAME=codex-oauth
+           LLM_ACCOUNT_2_AUTH_TYPE=oauth
+           LLM_ACCOUNT_2_CLIENT_ID=...
+           LLM_ACCOUNT_2_CLIENT_SECRET=...
+           LLM_ACCOUNT_2_TOKEN_URL=https://auth.openai.com/oauth/token
+           LLM_ACCOUNT_2_BASE_URL=https://api.openai.com/v1
+           LLM_ACCOUNT_2_MODEL=gpt-4o
+           LLM_ACCOUNT_2_PRIORITY=1
+
+        Returns:
+            AccountConfig 리스트 또는 None (설정이 없는 경우)
+        """
+        from .utils.account_manager import AccountConfig, AuthType
+
+        accounts = []
+
+        # 방법 1: JSON 환경변수
+        json_accounts = os.environ.get('LLM_ACCOUNTS')
+        if json_accounts:
+            try:
+                items = json.loads(json_accounts)
+                for item in items:
+                    accounts.append(AccountConfig(
+                        name=item['name'],
+                        auth_type=AuthType(item.get('auth_type', 'api_key')),
+                        base_url=item.get('base_url', cls.LLM_BASE_URL),
+                        model=item.get('model', cls.LLM_MODEL_NAME),
+                        api_key=item.get('api_key'),
+                        client_id=item.get('client_id'),
+                        client_secret=item.get('client_secret'),
+                        token_url=item.get('token_url'),
+                        oauth_scope=item.get('oauth_scope'),
+                        oauth_audience=item.get('oauth_audience'),
+                        priority=item.get('priority', 0),
+                    ))
+                return accounts if accounts else None
+            except (json.JSONDecodeError, KeyError) as e:
+                import logging
+                logging.getLogger('mirofish.config').warning(f"LLM_ACCOUNTS JSON 파싱 실패: {e}")
+
+        # 방법 2: 번호 기반 환경변수 (LLM_ACCOUNT_1_*, LLM_ACCOUNT_2_*, ...)
+        for i in range(1, 11):  # 최대 10개 계정
+            prefix = f'LLM_ACCOUNT_{i}_'
+            name = os.environ.get(f'{prefix}NAME')
+            if not name:
+                continue
+
+            auth_type_str = os.environ.get(f'{prefix}AUTH_TYPE', 'api_key')
+            auth_type = AuthType(auth_type_str)
+
+            accounts.append(AccountConfig(
+                name=name,
+                auth_type=auth_type,
+                base_url=os.environ.get(f'{prefix}BASE_URL', cls.LLM_BASE_URL),
+                model=os.environ.get(f'{prefix}MODEL', cls.LLM_MODEL_NAME),
+                api_key=os.environ.get(f'{prefix}API_KEY'),
+                client_id=os.environ.get(f'{prefix}CLIENT_ID'),
+                client_secret=os.environ.get(f'{prefix}CLIENT_SECRET'),
+                token_url=os.environ.get(f'{prefix}TOKEN_URL'),
+                oauth_scope=os.environ.get(f'{prefix}OAUTH_SCOPE'),
+                oauth_audience=os.environ.get(f'{prefix}OAUTH_AUDIENCE'),
+                priority=int(os.environ.get(f'{prefix}PRIORITY', str(i - 1))),
+            ))
+
+        return accounts if accounts else None
+
+    @classmethod
     def validate(cls):
         """验证必要配置"""
         errors = []
-        if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY 未配置")
+        # 멀티 계정이 설정되어 있으면 단일 API key는 필수가 아님
+        has_multi_accounts = cls.get_llm_accounts() is not None
+        if not cls.LLM_API_KEY and not has_multi_accounts:
+            errors.append("LLM_API_KEY 未配置 (단일 API key 또는 LLM_ACCOUNTS 필요)")
         if not cls.ZEP_API_KEY:
             errors.append("ZEP_API_KEY 未配置")
         return errors
