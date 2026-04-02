@@ -1196,7 +1196,8 @@ def get_simulation_config_realtime(simulation_id: str):
         is_generating = False
         generation_stage = None
         config_generated = False
-        
+        state_data = None
+
         state_file = os.path.join(sim_dir, "state.json")
         if os.path.exists(state_file):
             try:
@@ -1205,9 +1206,11 @@ def get_simulation_config_realtime(simulation_id: str):
                     status = state_data.get("status", "")
                     is_generating = status == "preparing"
                     config_generated = state_data.get("config_generated", False)
-                    
+
                     # 判断当前阶段
-                    if is_generating:
+                    if status == "failed":
+                        generation_stage = "failed"
+                    elif is_generating:
                         if state_data.get("profiles_generated", False):
                             generation_stage = "generating_config"
                         else:
@@ -1217,6 +1220,12 @@ def get_simulation_config_realtime(simulation_id: str):
             except Exception:
                 pass
         
+        # 如果状态为失败，提取错误信息
+        failed = generation_stage == "failed"
+        error_message = None
+        if failed and state_data:
+            error_message = state_data.get("error", None)
+
         # 构建返回数据
         response_data = {
             "simulation_id": simulation_id,
@@ -1225,7 +1234,9 @@ def get_simulation_config_realtime(simulation_id: str):
             "is_generating": is_generating,
             "generation_stage": generation_stage,
             "config_generated": config_generated,
-            "config": config
+            "config": config,
+            "failed": failed,
+            "error": error_message
         }
         
         # 如果配置存在，提取一些关键统计信息
