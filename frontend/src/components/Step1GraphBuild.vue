@@ -6,25 +6,25 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">オントロジー生成</span>
+            <span class="step-title">{{ $t('step1.ontologyGeneration') }}</span>
           </div>
           <div class="step-status">
-            <span v-if="currentPhase > 0" class="badge success">完了</span>
-            <span v-else-if="currentPhase === 0" class="badge processing">生成中</span>
-            <span v-else class="badge pending">待機中</span>
+            <span v-if="currentPhase > 0" class="badge success">{{ $t('step1.ontologyCompleted') }}</span>
+            <span v-else-if="currentPhase === 0" class="badge processing">{{ $t('step1.ontologyGenerating') }}</span>
+            <span v-else class="badge pending">{{ $t('step1.ontologyPending') }}</span>
           </div>
         </div>
         
         <div class="card-content">
           <p class="api-note">POST /api/graph/ontology/generate</p>
           <p class="description">
-            LLMがドキュメントとシミュレーション要件を分析し、現実シードを抽出して適切なオントロジー構造を自動生成します
+            {{ $t('step1.ontologyDesc') }}
           </p>
 
           <!-- Loading / Progress -->
           <div v-if="currentPhase === 0 && ontologyProgress" class="progress-section">
             <div class="spinner-sm"></div>
-            <span>{{ ontologyProgress.message || 'ドキュメントを分析中...' }}</span>
+            <span>{{ ontologyProgress.message || $t('step1.analyzingDocs') }}</span>
           </div>
 
           <!-- Detail Overlay -->
@@ -110,34 +110,34 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">GraphRAG構築</span>
+            <span class="step-title">{{ $t('step1.graphRagBuild') }}</span>
           </div>
           <div class="step-status">
-            <span v-if="currentPhase > 1" class="badge success">完了</span>
+            <span v-if="currentPhase > 1" class="badge success">{{ $t('step1.ontologyCompleted') }}</span>
             <span v-else-if="currentPhase === 1" class="badge processing">{{ buildProgress?.progress || 0 }}%</span>
-            <span v-else class="badge pending">待機中</span>
+            <span v-else class="badge pending">{{ $t('step1.ontologyPending') }}</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
-            生成されたオントロジーを基に、ドキュメントを自動分割してZepでナレッジグラフを構築し、エンティティと関係を抽出、時系列メモリとコミュニティサマリーを生成します
+            {{ $t('step1.graphRagDesc') }}
           </p>
           
           <!-- Stats Cards -->
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">{{ graphStats.nodes }}</span>
-              <span class="stat-label">エンティティノード</span>
+              <span class="stat-label">{{ $t('step1.entityNodes') }}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ graphStats.edges }}</span>
-              <span class="stat-label">リレーションエッジ</span>
+              <span class="stat-label">{{ $t('step1.relationEdges') }}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ graphStats.types }}</span>
-              <span class="stat-label">SCHEMAタイプ</span>
+              <span class="stat-label">{{ $t('step1.schemaTypes') }}</span>
             </div>
           </div>
         </div>
@@ -148,23 +148,23 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">03</span>
-            <span class="step-title">構築完了</span>
+            <span class="step-title">{{ $t('step1.buildComplete') }}</span>
           </div>
           <div class="step-status">
-            <span v-if="currentPhase >= 2" class="badge accent">進行中</span>
+            <span v-if="currentPhase >= 2" class="badge accent">{{ $t('step1.inProgress') }}</span>
           </div>
         </div>
         
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">グラフ構築が完了しました。次のステップで環境セットアップを行ってください</p>
-          <button
-            class="action-btn"
+          <p class="description">{{ $t('step1.buildCompleteDesc') }}</p>
+          <button 
+            class="action-btn" 
             :disabled="currentPhase < 2 || creatingSimulation"
             @click="handleEnterEnvSetup"
           >
             <span v-if="creatingSimulation" class="spinner-sm"></span>
-            {{ creatingSimulation ? '作成中...' : '環境セットアップへ ➝' }}
+            {{ creatingSimulation ? $t('step1.creating') : $t('step1.enterEnvSetup') + ' ➝' }}
           </button>
         </div>
       </div>
@@ -189,9 +189,11 @@
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { createSimulation } from '../api/simulation'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const props = defineProps({
   currentPhase: { type: Number, default: 0 },
@@ -233,11 +235,11 @@ const handleEnterEnvSetup = async () => {
       })
     } else {
       console.error('创建模拟失败:', res.error)
-      alert('シミュレーション作成失敗: ' + (res.error || '不明なエラー'))
+      alert(t('step1.createSimulationFailed', { error: res.error || t('common.unknownError') }))
     }
   } catch (err) {
     console.error('创建模拟异常:', err)
-    alert('シミュレーション作成エラー: ' + err.message)
+    alert(t('step1.createSimulationException', { error: err.message }))
   } finally {
     creatingSimulation.value = false
   }
