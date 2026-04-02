@@ -118,7 +118,7 @@ class SimulationIPCClient:
         self,
         command_type: CommandType,
         args: Dict[str, Any],
-        timeout: float = 60.0,
+        timeout: float = 300.0,
         poll_interval: float = 0.5
     ) -> IPCResponse:
         """

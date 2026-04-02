@@ -12,7 +12,7 @@ from ..config import Config
 
 
 class LLMClient:
-    """LLM客户端"""
+    #LLM客户端
     
     def __init__(
         self,
@@ -39,8 +39,9 @@ class LLMClient:
         max_tokens: int = 4096,
         response_format: Optional[Dict] = None
     ) -> str:
+        
         """
-        发送聊天请求
+        .....发送聊天请求
         
         Args:
             messages: 消息列表
@@ -49,7 +50,7 @@ class LLMClient:
             response_format: 响应格式（如JSON模式）
             
         Returns:
-            模型响应文本
+            模型响应文本......
         """
         kwargs = {
             "model": self.model,
@@ -66,14 +67,15 @@ class LLMClient:
         # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
-    
-    def chat_json(
+    """
+    ....def chat_json(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
         """
+    """
         发送聊天请求并返回JSON
         
         Args:
@@ -84,6 +86,7 @@ class LLMClient:
         Returns:
             解析后的JSON对象
         """
+    """
         response = self.chat(
             messages=messages,
             temperature=temperature,
@@ -99,5 +102,38 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")....."""
+    
+    def chat_json(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.3,
+        max_tokens: int = 4096
+    ) -> Dict[str, Any]:
+        # Try with json_object mode first, fall back if unsupported
+        try:
+            response = self.chat(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"}
+            )
+        except Exception:
+            # Model doesn't support response_format, call without it
+            response = self.chat(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+        # Clean markdown fences
+        cleaned_response = response.strip()
+        cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
+        cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
+        cleaned_response = cleaned_response.strip()
+
+        try:
+            return json.loads(cleaned_response)
+        except json.JSONDecodeError:
+            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response[:500]}")
 
