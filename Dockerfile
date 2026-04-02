@@ -30,4 +30,4 @@ RUN npm run build
 
 EXPOSE 5001
 
-CMD ["uv", "run", "--directory", "backend", "python", "run.py"]
+CMD ["sh", "-c", "cd /app/backend && uv run gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --threads 4 --timeout 600 wsgi:app"]
