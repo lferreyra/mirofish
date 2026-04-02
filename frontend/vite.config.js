@@ -14,6 +14,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    allowedHosts: ['mirofish-cpj2-production-1046.up.railway.app'],
     proxy: {
       '/api': {
         target: 'http://localhost:5001',
