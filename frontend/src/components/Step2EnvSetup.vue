@@ -953,7 +953,11 @@ const fetchProfilesRealtime = async () => {
 }
 
 // 配置轮询
+let configErrorCount = 0
+const MAX_CONFIG_ERRORS = 10
+
 const startConfigPolling = () => {
+  configErrorCount = 0
   configTimer = setInterval(fetchConfigRealtime, 2000)
 }
 
@@ -972,7 +976,17 @@ const fetchConfigRealtime = async () => {
     
     if (res.success && res.data) {
       const data = res.data
-      
+      configErrorCount = 0
+
+      // 检测是否失败
+      if (data.failed || data.generation_stage === 'failed') {
+        const errorMsg = data.error || t('common.unknownError')
+        addLog(`❌ ${t('log.configGenerationFailed') || '配置生成失败'}: ${errorMsg}`)
+        stopConfigPolling()
+        emit('update-status', 'failed')
+        return
+      }
+
       // 输出配置生成阶段日志（避免重复）
       if (data.generation_stage && data.generation_stage !== lastLoggedConfigStage) {
         lastLoggedConfigStage = data.generation_stage
@@ -982,7 +996,7 @@ const fetchConfigRealtime = async () => {
           addLog(t('log.generatingLLMConfig'))
         }
       }
-      
+
       // 如果配置已生成
       if (data.config_generated && data.config) {
         simulationConfig.value = data.config
@@ -1017,6 +1031,12 @@ const fetchConfigRealtime = async () => {
     }
   } catch (err) {
     console.warn('获取 Config 失败:', err)
+    configErrorCount++
+    if (configErrorCount >= MAX_CONFIG_ERRORS) {
+      addLog(`❌ ${t('log.configGenerationFailed') || '配置生成失败'}: ${t('log.pollErrorLimit') || '连续多次获取状态失败，已停止轮询'}`)
+      stopConfigPolling()
+      emit('update-status', 'failed')
+    }
   }
 }
 

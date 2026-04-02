@@ -465,8 +465,11 @@ const handleStopSimulation = async () => {
 // 轮询状态
 let statusTimer = null
 let detailTimer = null
+let statusErrorCount = 0
+const MAX_STATUS_ERRORS = 10
 
 const startStatusPolling = () => {
+  statusErrorCount = 0
   statusTimer = setInterval(fetchRunStatus, 2000)
 }
 
@@ -497,7 +500,7 @@ const fetchRunStatus = async () => {
     
     if (res.success && res.data) {
       const data = res.data
-      
+      statusErrorCount = 0
       runStatus.value = data
       
       // 分别检测各平台的轮次变化并输出日志
@@ -511,13 +514,22 @@ const fetchRunStatus = async () => {
         prevRedditRound.value = data.reddit_current_round
       }
       
+      // 检测模拟是否失败
+      if (data.runner_status === 'failed') {
+        const errorMsg = data.error || t('common.unknownError')
+        addLog(`❌ ${t('log.simFailed') || '模拟运行失败'}: ${errorMsg}`)
+        stopPolling()
+        emit('update-status', 'failed')
+        return
+      }
+
       // 检测模拟是否已完成（通过 runner_status 或平台完成状态判断）
       const isCompleted = data.runner_status === 'completed' || data.runner_status === 'stopped'
-      
+
       // 额外检查：如果后端还没来得及更新 runner_status，但平台已经报告完成
       // 通过检测 twitter_completed 和 reddit_completed 状态判断
       const platformsCompleted = checkPlatformsCompleted(data)
-      
+
       if (isCompleted || platformsCompleted) {
         if (platformsCompleted && !isCompleted) {
           addLog(t('log.allPlatformsCompleted'))
@@ -530,6 +542,12 @@ const fetchRunStatus = async () => {
     }
   } catch (err) {
     console.warn('获取运行状态失败:', err)
+    statusErrorCount++
+    if (statusErrorCount >= MAX_STATUS_ERRORS) {
+      addLog(`❌ ${t('log.simFailed') || '模拟运行失败'}: ${t('log.pollErrorLimit') || '连续多次获取状态失败，已停止轮询'}`)
+      stopPolling()
+      emit('update-status', 'failed')
+    }
   }
 }
 
