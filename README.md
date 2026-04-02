@@ -186,6 +186,17 @@ Reads `.env` from root directory by default, maps ports `3000 (frontend) / 5001 
 
 The MiroFish team is recruiting full-time/internship positions. If you're interested in multi-agent simulation and LLM applications, feel free to send your resume to: **mirofish@shanda.com**
 
+## 📚 How to Cite
+
+If you use MiroFish in academic research, theses, or software reports, please cite the repository using GitHub's **Cite this repository** feature.
+
+Suggested citation metadata:
+- Project: **MiroFish**
+- Repository: `https://github.com/666ghj/MiroFish`
+- Version: `v0.1.2`
+
+If your work depends on a specific release, please cite that release version explicitly.
+
 ## 📄 Acknowledgments
 
 **MiroFish has received strategic support and incubation from Shanda Group!**

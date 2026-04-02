@@ -186,6 +186,17 @@ docker compose up -d
 
 MiroFish团队长期招募全职/实习，如果你对多Agent应用感兴趣，欢迎投递简历至：**mirofish@shanda.com**
 
+## 📚 如何引用
+
+如果你在学术研究、学位论文或软件报告中使用了 MiroFish，建议通过 GitHub 的 **Cite this repository** 功能引用本仓库。
+
+建议保留以下引用信息：
+- 项目名称：**MiroFish**
+- 仓库地址：`https://github.com/666ghj/MiroFish`
+- 版本：`v0.1.2`
+
+如果你的工作依赖某个具体 release，建议在引用中明确写出对应版本号。
+
 ## 📄 致谢
 
 **MiroFish 得到了盛大集团的战略支持和孵化！**
