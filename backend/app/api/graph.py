@@ -529,6 +529,190 @@ def build_graph():
         }), 500
 
 
+@graph_bp.route('/enrich', methods=['POST'])
+def enrich_graph():
+    """
+    将新的 overlay 文本注入到已有 graph 中，并为后续 simulation prepare
+    创建一个复用 graph_id 的派生项目。
+
+    请求（JSON）：
+        {
+            "project_id": "proj_base_xxxx",          // 必填，world base 对应项目
+            "graph_id": "mirofish_xxxx",             // 可选，不传则使用项目已有 graph_id
+            "project_name": "Overlay Project Name",  // 可选，派生项目名称
+            "overlay_text": "# Event Overlay ...",   // 必填，新的上下文种子
+            "simulation_requirement": "...",         // 可选，覆盖派生项目的模拟要求
+            "chunk_size": 500,                       // 可选
+            "chunk_overlap": 50,                     // 可选
+            "batch_size": 3                          // 可选
+        }
+    """
+    try:
+        logger.info("=== 开始 enrich graph ===")
+
+        if not Config.ZEP_API_KEY:
+            return jsonify({
+                "success": False,
+                "error": t('api.zepApiKeyMissing')
+            }), 500
+
+        data = request.get_json() or {}
+        base_project_id = data.get('project_id')
+        overlay_text = (data.get('overlay_text') or data.get('text') or '').strip()
+
+        if not base_project_id:
+            return jsonify({
+                "success": False,
+                "error": t('api.requireProjectId')
+            }), 400
+
+        if not overlay_text:
+            return jsonify({
+                "success": False,
+                "error": "overlay_text is required"
+            }), 400
+
+        base_project = ProjectManager.get_project(base_project_id)
+        if not base_project:
+            return jsonify({
+                "success": False,
+                "error": t('api.projectNotFound', id=base_project_id)
+            }), 404
+
+        graph_id = data.get('graph_id') or base_project.graph_id
+        if not graph_id:
+            return jsonify({
+                "success": False,
+                "error": t('api.graphNotBuilt')
+            }), 400
+
+        overlay_project = ProjectManager.create_derived_project(
+            base_project_id=base_project.project_id,
+            name=data.get('project_name') or f"{base_project.name} Overlay",
+            extracted_text=overlay_text,
+            simulation_requirement=data.get('simulation_requirement'),
+            seed_filename="overlay_seed.md"
+        )
+        overlay_project.graph_id = graph_id
+        ProjectManager.save_project(overlay_project)
+
+        chunk_size = data.get('chunk_size', base_project.chunk_size or Config.DEFAULT_CHUNK_SIZE)
+        chunk_overlap = data.get('chunk_overlap', base_project.chunk_overlap or Config.DEFAULT_CHUNK_OVERLAP)
+        batch_size = data.get('batch_size', 3)
+
+        task_manager = TaskManager()
+        task_id = task_manager.create_task(
+            task_type="graph_enrich",
+            metadata={
+                "project_id": overlay_project.project_id,
+                "base_project_id": base_project.project_id,
+                "graph_id": graph_id,
+                "text_length": len(overlay_text)
+            }
+        )
+        current_locale = get_locale()
+
+        def enrich_task():
+            set_locale(current_locale)
+            enrich_logger = get_logger('mirofish.enrich')
+            try:
+                task_manager.update_task(
+                    task_id,
+                    status=TaskStatus.PROCESSING,
+                    progress=5,
+                    message="Initializing graph enrichment"
+                )
+
+                builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+                chunks = TextProcessor.split_text(
+                    overlay_text,
+                    chunk_size=chunk_size,
+                    overlap=chunk_overlap
+                )
+
+                task_manager.update_task(
+                    task_id,
+                    progress=15,
+                    message=f"Prepared {len(chunks)} overlay chunks"
+                )
+
+                def add_progress_callback(msg, progress_ratio):
+                    task_manager.update_task(
+                        task_id,
+                        progress=15 + int(progress_ratio * 50),
+                        message=msg
+                    )
+
+                episode_uuids = builder.add_text_batches(
+                    graph_id,
+                    chunks,
+                    batch_size=batch_size,
+                    progress_callback=add_progress_callback
+                )
+
+                task_manager.update_task(
+                    task_id,
+                    progress=70,
+                    message="Waiting for graph enrichment processing"
+                )
+
+                def wait_progress_callback(msg, progress_ratio):
+                    task_manager.update_task(
+                        task_id,
+                        progress=70 + int(progress_ratio * 25),
+                        message=msg
+                    )
+
+                builder._wait_for_episodes(episode_uuids, wait_progress_callback)
+
+                overlay_project.status = ProjectStatus.GRAPH_COMPLETED
+                overlay_project.graph_id = graph_id
+                ProjectManager.save_project(overlay_project)
+
+                enrich_logger.info(
+                    f"[{task_id}] Graph enrich completed: graph_id={graph_id}, project_id={overlay_project.project_id}"
+                )
+                task_manager.complete_task(task_id, {
+                    "project_id": overlay_project.project_id,
+                    "base_project_id": base_project.project_id,
+                    "graph_id": graph_id,
+                    "chunks_processed": len(chunks)
+                })
+            except Exception as e:
+                enrich_logger.error(f"[{task_id}] Graph enrich failed: {str(e)}")
+                enrich_logger.debug(traceback.format_exc())
+                overlay_project.status = ProjectStatus.FAILED
+                overlay_project.error = str(e)
+                ProjectManager.save_project(overlay_project)
+                task_manager.update_task(
+                    task_id,
+                    status=TaskStatus.FAILED,
+                    message=f"Graph enrich failed: {str(e)}",
+                    error=traceback.format_exc()
+                )
+
+        thread = threading.Thread(target=enrich_task, daemon=True)
+        thread.start()
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": overlay_project.project_id,
+                "base_project_id": base_project.project_id,
+                "graph_id": graph_id,
+                "task_id": task_id,
+                "message": "Graph enrichment task started"
+            }
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 任务查询接口 ==============
 
 @graph_bp.route('/task/<task_id>', methods=['GET'])

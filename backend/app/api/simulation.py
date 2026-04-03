@@ -356,6 +356,52 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
         return False, {"reason": f"读取状态文件失败: {str(e)}"}
 
 
+def _recover_prepare_status_from_state(simulation_id: str) -> dict | None:
+    """
+    当 task_id 因服务重启丢失时，尝试从持久化 state.json 恢复 prepare 状态。
+    """
+    manager = SimulationManager()
+    state = manager.get_simulation(simulation_id)
+    if not state:
+        return None
+
+    status_value = state.status.value if hasattr(state.status, 'value') else str(state.status)
+    already_prepared = bool(
+        state.config_generated or status_value in {"ready", "running", "completed", "stopped", "failed"}
+    )
+    progress_by_status = {
+        "created": 0,
+        "preparing": 50,
+        "ready": 100,
+        "running": 100,
+        "completed": 100,
+        "stopped": 100,
+        "failed": 100
+    }
+
+    return {
+        "simulation_id": simulation_id,
+        "status": "ready" if already_prepared else status_value,
+        "progress": progress_by_status.get(status_value, 0),
+        "message": (
+            t('api.taskCompletedPrepared')
+            if already_prepared
+            else "Prepare task metadata was lost after restart; returning persisted simulation state."
+        ),
+        "already_prepared": already_prepared,
+        "prepare_info": {
+            "status": status_value,
+            "entities_count": state.entities_count,
+            "profiles_count": state.profiles_count,
+            "entity_types": state.entity_types,
+            "config_generated": state.config_generated,
+            "created_at": state.created_at,
+            "updated_at": state.updated_at,
+            "error": state.error
+        }
+    }
+
+
 @simulation_bp.route('/prepare', methods=['POST'])
 def prepare_simulation():
     """
@@ -729,6 +775,13 @@ def get_prepare_status():
                             "already_prepared": True,
                             "prepare_info": prepare_info
                         }
+                    })
+
+                recovered = _recover_prepare_status_from_state(simulation_id)
+                if recovered:
+                    return jsonify({
+                        "success": True,
+                        "data": recovered
                     })
             
             return jsonify({

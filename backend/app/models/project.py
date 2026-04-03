@@ -277,6 +277,32 @@ class ProjectManager:
         text_path = cls._get_project_text_path(project_id)
         with open(text_path, 'w', encoding='utf-8') as f:
             f.write(text)
+
+    @classmethod
+    def save_text_file_to_project(
+        cls,
+        project_id: str,
+        filename: str,
+        text: str
+    ) -> Dict[str, str]:
+        """保存文本内容到项目文件目录"""
+        files_dir = cls._get_project_files_dir(project_id)
+        os.makedirs(files_dir, exist_ok=True)
+
+        safe_filename = filename or f"{uuid.uuid4().hex[:8]}.md"
+        file_path = os.path.join(files_dir, safe_filename)
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(text)
+
+        file_size = os.path.getsize(file_path)
+
+        return {
+            "original_filename": safe_filename,
+            "saved_filename": safe_filename,
+            "path": file_path,
+            "size": file_size
+        }
     
     @classmethod
     def get_extracted_text(cls, project_id: str) -> Optional[str]:
@@ -303,3 +329,55 @@ class ProjectManager:
             if os.path.isfile(os.path.join(files_dir, f))
         ]
 
+    @classmethod
+    def create_derived_project(
+        cls,
+        base_project_id: str,
+        name: str,
+        extracted_text: str,
+        simulation_requirement: Optional[str] = None,
+        seed_filename: str = "overlay_seed.md"
+    ) -> Project:
+        """
+        从已有项目派生一个轻量项目，复用同一个 graph_id 和 ontology。
+
+        该项目用于 event overlay / fast scenario 场景：
+        - 不重新生成 ontology
+        - 不重新构建 graph
+        - 保留独立的 extracted_text 和 simulation_requirement，供 prepare 阶段使用
+        """
+        base_project = cls.get_project(base_project_id)
+        if not base_project:
+            raise ValueError(f"Base project not found: {base_project_id}")
+
+        derived = cls.create_project(name=name or f"{base_project.name} Overlay")
+        derived.ontology = base_project.ontology
+        derived.analysis_summary = base_project.analysis_summary
+        derived.graph_id = base_project.graph_id
+        derived.chunk_size = base_project.chunk_size
+        derived.chunk_overlap = base_project.chunk_overlap
+        derived.simulation_requirement = (
+            simulation_requirement
+            if simulation_requirement is not None
+            else base_project.simulation_requirement
+        )
+        derived.status = (
+            ProjectStatus.GRAPH_COMPLETED
+            if base_project.graph_id
+            else ProjectStatus.ONTOLOGY_GENERATED
+        )
+
+        cls.save_extracted_text(derived.project_id, extracted_text)
+        file_info = cls.save_text_file_to_project(
+            derived.project_id,
+            filename=seed_filename,
+            text=extracted_text
+        )
+        derived.files.append({
+            "filename": file_info["original_filename"],
+            "size": file_info["size"]
+        })
+        derived.total_text_length = len(extracted_text)
+        cls.save_project(derived)
+
+        return derived
