@@ -45,6 +45,9 @@ htmlcov/
 .cursor/
 .claude/
 
+# Claude Code エージェント設定（API キーを含むため除外）
+.agents/settings.json
+
 # 文档与测试程序
 mydoc/
 mytest/
