@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step 4/5</span>
-          <span class="step-name">Generate Report</span>
+          <span class="step-name">{{ $tm('main.stepNames')[3] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +49,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step 4 Generate Report -->
+      <!-- Right Panel: Step4 报告生成 -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step4Report
           :reportId="currentReportId"
@@ -64,21 +66,24 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step4Report from '../components/Step4Report.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
 import { getReport } from '../api/report'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // Props
 const props = defineProps({
   reportId: String
 })
 
-// Layout state - default to workbench view.
+// Layout State - 默认切换到工作台视角
 const viewMode = ref('workbench')
 
 // Data State
@@ -139,28 +144,28 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`Loading report data: ${currentReportId.value}`)
-    
-    // Fetch report data to get the simulation_id.
+    addLog(t('log.loadReportData', { id: currentReportId.value }))
+
+    // 获取 report 信息以获取 simulation_id
     const reportRes = await getReport(currentReportId.value)
     if (reportRes.success && reportRes.data) {
       const reportData = reportRes.data
       simulationId.value = reportData.simulation_id
-      
+
       if (simulationId.value) {
-        // Fetch simulation data.
+        // 获取 simulation 信息
         const simRes = await getSimulation(simulationId.value)
         if (simRes.success && simRes.data) {
           const simData = simRes.data
-          
-          // Fetch project data.
+
+          // 获取 project 信息
           if (simData.project_id) {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`Project loaded: ${projRes.data.project_id}`)
-              
-              // Fetch graph data.
+              addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
+
+              // 获取 graph 数据
               if (projRes.data.graph_id) {
                 await loadGraph(projRes.data.graph_id)
               }
@@ -169,10 +174,10 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`Failed to load report data: ${reportRes.error || 'Unknown error'}`)
+      addLog(t('log.getReportInfoFailed', { error: reportRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Load error: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
@@ -183,10 +188,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded')
+      addLog(t('log.graphDataLoadSuccess'))
     }
   } catch (err) {
-    addLog(`Failed to load graph data: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -207,7 +212,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('ReportView initialized')
+  addLog(t('log.reportViewInit'))
   loadReportData()
 })
 </script>

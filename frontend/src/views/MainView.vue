@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step {{ currentStep }}/5</span>
-          <span class="step-name">{{ stepNames[currentStep - 1] }}</span>
+          <span class="step-name">{{ $tm('main.stepNames')[currentStep - 1] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -48,7 +50,7 @@
 
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
-        <!-- Step 1: Graph build -->
+        <!-- Step 1: 图谱构建 -->
         <Step1GraphBuild 
           v-if="currentStep === 1"
           :currentPhase="currentPhase"
@@ -59,7 +61,7 @@
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
         />
-        <!-- Step 2: Environment setup -->
+        <!-- Step 2: 环境搭建 -->
         <Step2EnvSetup
           v-else-if="currentStep === 2"
           :projectData="projectData"
@@ -77,21 +79,24 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t, tm } = useI18n()
 
 // Layout State
 const viewMode = ref('split') // graph | split | workbench
 
 // Step State
-const currentStep = ref(1) // 1: Graph build, 2: Environment setup, 3: Run simulation, 4: Generate report, 5: Deep interaction
-const stepNames = ['Graph Build', 'Environment Setup', 'Run Simulation', 'Generate Report', 'Deep Interaction']
+const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
+const stepNames = computed(() => tm('main.stepNames'))
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -159,11 +164,11 @@ const toggleMaximize = (target) => {
 const handleNextStep = (params = {}) => {
   if (currentStep.value < 5) {
     currentStep.value++
-    addLog(`Entered Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('log.enterStep', { step: currentStep.value, name: stepNames.value[currentStep.value - 1] }))
     
-    // Record the custom round setting when moving from Step 2 to Step 3.
+    // 如果是从 Step 2 进入 Step 3，记录模拟轮数配置
     if (currentStep.value === 3 && params.maxRounds) {
-      addLog(`Custom simulation rounds: ${params.maxRounds}`)
+      addLog(t('log.customSimRounds', { rounds: params.maxRounds }))
     }
   }
 }
@@ -171,7 +176,7 @@ const handleNextStep = (params = {}) => {
 const handleGoBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--
-    addLog(`Returned to Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('log.returnToStep', { step: currentStep.value, name: stepNames.value[currentStep.value - 1] }))
   }
 }
 

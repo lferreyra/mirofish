@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step 3/5</span>
-          <span class="step-name">Run Simulation</span>
+          <span class="step-name">{{ $tm('main.stepNames')[2] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +49,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step 3 Run Simulation -->
+      <!-- Right Panel: Step3 开始模拟 -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step3Simulation
           :simulationId="currentSimulationId"
@@ -73,7 +75,10 @@ import GraphPanel from '../components/GraphPanel.vue'
 import Step3Simulation from '../components/Step3Simulation.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation, getSimulationConfig, stopSimulation, closeSimulationEnv, getEnvStatus } from '../api/simulation'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -87,9 +92,9 @@ const viewMode = ref('split')
 
 // Data State
 const currentSimulationId = ref(route.params.simulationId)
-// Read maxRounds from the query on init so the child component gets it immediately.
+// 直接在初始化时从 query 参数获取 maxRounds，确保子组件能立即获取到值
 const maxRounds = ref(route.query.maxRounds ? parseInt(route.query.maxRounds) : null)
-const minutesPerRound = ref(30) // Default to 30 minutes per round.
+const minutesPerRound = ref(30) // 默认每轮30分钟
 const projectData = ref(null)
 const graphData = ref(null)
 const graphLoading = ref(false)
@@ -145,104 +150,104 @@ const toggleMaximize = (target) => {
 }
 
 const handleGoBack = async () => {
-  // Close any running simulation before returning to Step 2.
-  addLog('Preparing to return to Step 2. Closing the simulation...')
+  // 在返回 Step 2 之前，先关闭正在运行的模拟
+  addLog(t('log.preparingGoBack'))
   
-  // Stop polling.
+  // 停止轮询
   stopGraphRefresh()
   
   try {
-    // Attempt a graceful shutdown first.
+    // 先尝试优雅关闭模拟环境
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('Closing the simulation environment...')
+      addLog(t('log.closingSimEnv'))
       try {
         await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
           timeout: 10
         })
-          addLog('✓ Simulation environment closed')
+        addLog(t('log.simEnvClosed'))
       } catch (closeErr) {
-        addLog('Failed to close the environment. Attempting a forced stop...')
+        addLog(t('log.closeSimEnvFailed'))
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ Simulation force-stopped')
+          addLog(t('log.simForceStopSuccess'))
         } catch (stopErr) {
-          addLog(`Forced stop failed: ${stopErr.message}`)
+          addLog(t('log.forceStopFailed', { error: stopErr.message }))
         }
       }
     } else {
-      // The environment is not running. Check whether a process still needs to be stopped.
+      // 环境未运行，检查是否需要停止进程
       if (isSimulating.value) {
-        addLog('Stopping simulation process...')
+        addLog(t('log.stoppingSimProcess'))
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ Simulation stopped')
+          addLog(t('log.simStopped'))
         } catch (err) {
-          addLog(`Failed to stop simulation: ${err.message}`)
+          addLog(t('log.stopSimFailed', { error: err.message }))
         }
       }
     }
   } catch (err) {
-    addLog(`Failed to inspect simulation status: ${err.message}`)
+    addLog(t('log.checkStatusFailed', { error: err.message }))
   }
   
-  // Return to Step 2 (environment setup).
+  // 返回到 Step 2 (环境搭建)
   router.push({ name: 'Simulation', params: { simulationId: currentSimulationId.value } })
 }
 
 const handleNextStep = () => {
-  // Step3Simulation handles report generation and routing directly.
-  // This method remains as a fallback.
-  addLog('Entered Step 4: Generate Report')
+  // Step3Simulation 组件会直接处理报告生成和路由跳转
+  // 这个方法仅作为备用
+  addLog(t('log.enterStep4'))
 }
 
 // --- Data Logic ---
 const loadSimulationData = async () => {
   try {
-    addLog(`Loading simulation data: ${currentSimulationId.value}`)
+    addLog(t('log.loadingSimData', { id: currentSimulationId.value }))
     
-    // Fetch simulation data.
+    // 获取 simulation 信息
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
       
-      // Fetch simulation config to read minutes_per_round.
+      // 获取 simulation config 以获取 minutes_per_round
       try {
         const configRes = await getSimulationConfig(currentSimulationId.value)
         if (configRes.success && configRes.data?.time_config?.minutes_per_round) {
           minutesPerRound.value = configRes.data.time_config.minutes_per_round
-          addLog(`Time config: ${minutesPerRound.value} minutes per round`)
+          addLog(t('log.timeConfig', { minutes: minutesPerRound.value }))
         }
       } catch (configErr) {
-        addLog(`Failed to load time config. Using default: ${minutesPerRound.value} minutes per round`)
+        addLog(t('log.timeConfigFetchFailed', { minutes: minutesPerRound.value }))
       }
       
-      // Fetch project data.
+      // 获取 project 信息
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`Project loaded: ${projRes.data.project_id}`)
+          addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
           
-          // Fetch graph data.
+          // 获取 graph 数据
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
         }
       }
     } else {
-      addLog(`Failed to load simulation data: ${simRes.error || 'Unknown error'}`)
+      addLog(t('log.loadSimDataFailed', { error: simRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Load error: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
 const loadGraph = async (graphId) => {
-  // Avoid full-screen loading flashes during active simulation refreshes.
-  // Keep loading visible for manual refreshes and the initial load.
+  // 当正在模拟时，自动刷新不显示全屏 loading，以免闪烁
+  // 手动刷新或初始加载时显示 loading
   if (!isSimulating.value) {
     graphLoading.value = true
   }
@@ -252,11 +257,11 @@ const loadGraph = async (graphId) => {
     if (res.success) {
       graphData.value = res.data
       if (!isSimulating.value) {
-        addLog('Graph data loaded')
+        addLog(t('log.graphDataLoadSuccess'))
       }
     }
   } catch (err) {
-    addLog(`Failed to load graph data: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -273,8 +278,8 @@ let graphRefreshTimer = null
 
 const startGraphRefresh = () => {
   if (graphRefreshTimer) return
-  addLog('Enabled live graph refresh (30s)')
-  // Refresh immediately, then every 30 seconds
+  addLog(t('log.graphRealtimeRefreshStart'))
+  // 立即刷新一次，然后每30秒刷新
   graphRefreshTimer = setInterval(refreshGraph, 30000)
 }
 
@@ -282,7 +287,7 @@ const stopGraphRefresh = () => {
   if (graphRefreshTimer) {
     clearInterval(graphRefreshTimer)
     graphRefreshTimer = null
-    addLog('Stopped live graph refresh')
+    addLog(t('log.graphRealtimeRefreshStop'))
   }
 }
 
@@ -295,11 +300,11 @@ watch(isSimulating, (newValue) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('SimulationRunView initialized')
+  addLog(t('log.simRunViewInit'))
   
-  // Log maxRounds configuration (value is already read from query on init)
+  // 记录 maxRounds 配置（值已在初始化时从 query 参数获取）
   if (maxRounds.value) {
-    addLog(`Custom simulation rounds: ${maxRounds.value}`)
+    addLog(t('log.customRounds', { rounds: maxRounds.value }))
   }
   
   loadSimulationData()
@@ -444,3 +449,4 @@ onUnmounted(() => {
   border-right: 1px solid #EAEAEA;
 }
 </style>
+
