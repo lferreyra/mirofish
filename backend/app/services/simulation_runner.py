@@ -609,7 +609,35 @@ class SimulationRunner:
         try:
             with open(log_path, 'r', encoding='utf-8') as f:
                 f.seek(position)
-                for line in f:
+                # Track the file position of each complete (newline-terminated)
+                # line so we never advance past a partial line that the writer
+                # process hasn't finished flushing yet.
+                #
+                # Why this matters:
+                # The simulation subprocess writes JSONL (one JSON object per
+                # line, terminated by '\n').  When we poll with the file
+                # iterator or readline(), Python may return a partial line
+                # (no trailing '\n') if the writer hasn't flushed the
+                # remainder yet.  That partial line fails json.loads and is
+                # silently skipped.  If we then return a position past that
+                # partial data, the *next* poll starts mid-line: the reader
+                # sees the tail of the original line (also invalid JSON),
+                # so the action is permanently lost.
+                #
+                # Fix: use readline() (which allows f.tell()) and only
+                # advance `safe_position` after reading a complete line
+                # that ends with '\n'.  Partial lines are left unread for
+                # the next poll cycle.
+                safe_position = position
+                while True:
+                    line = f.readline()
+                    if not line:
+                        break  # EOF
+                    # A line without a trailing newline is incomplete — the
+                    # writer is still mid-write.  Stop here and retry later.
+                    if not line.endswith('\n'):
+                        break
+                    safe_position = f.tell()
                     line = line.strip()
                     if line:
                         try:
@@ -685,7 +713,7 @@ class SimulationRunner:
                             
                         except json.JSONDecodeError:
                             pass
-                return f.tell()
+                return safe_position
         except Exception as e:
             logger.warning(f"读取动作日志失败: {log_path}, error={e}")
             return position
