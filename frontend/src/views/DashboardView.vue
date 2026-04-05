@@ -4,49 +4,26 @@ import { useRouter } from 'vue-router'
 import service from '../api'
 import AppShell from '../components/layout/AppShell.vue'
 import MetricCard from '../components/ui/MetricCard.vue'
-import SentimentBar from '../components/ui/SentimentBar.vue'
-import AugurButton from '../components/ui/AugurButton.vue'
 
 const router = useRouter()
 const projetos = ref([])
+const simulacoes = ref([])
 const carregando = ref(true)
-const expandidos = ref({})
 
-// ─── Carregar dados ───────────────────────────────────────────
 async function carregarDados() {
   carregando.value = true
   try {
     const [projRes, simRes] = await Promise.allSettled([
       service.get('/api/graph/project/list'),
-      service.get('/api/simulation/history', { params: { limit: 50 } })
+      service.get('/api/simulation/history', { params: { limit: 5 } })
     ])
-
-    const projetosRaw = projRes.status === 'fulfilled'
-      ? (projRes.value?.data || projRes.value || [])
-      : []
-
-    const simsRaw = simRes.status === 'fulfilled'
-      ? (simRes.value?.data || simRes.value || [])
-      : []
-
-    const listaProj = Array.isArray(projetosRaw) ? projetosRaw
-      : (projetosRaw.data || projetosRaw.projects || projetosRaw.items || [])
-
-    const listaSims = Array.isArray(simsRaw) ? simsRaw
-      : (simsRaw.data || simsRaw.history || simsRaw.simulations || simsRaw.items || [])
-
-    projetos.value = listaProj
-      .map(p => ({
-        ...p,
-        simulacoes: listaSims.filter(s =>
-          s.project_id === p.project_id || s.project_id === p.id
-        )
-      }))
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-
-    // Expandir o primeiro projeto por padrão
-    if (projetos.value.length > 0) {
-      expandidos.value[projetos.value[0].project_id || projetos.value[0].id] = true
+    if (projRes.status === 'fulfilled') {
+      const raw = projRes.value?.data || projRes.value
+      projetos.value = Array.isArray(raw) ? raw : (raw?.data || raw?.projects || raw?.items || [])
+    }
+    if (simRes.status === 'fulfilled') {
+      const raw = simRes.value?.data || simRes.value
+      simulacoes.value = Array.isArray(raw) ? raw : (raw?.data || raw?.history || raw?.simulations || [])
     }
   } catch (e) {
     console.error('Erro ao carregar dashboard:', e)
@@ -55,59 +32,30 @@ async function carregarDados() {
   }
 }
 
-// ─── Métricas ─────────────────────────────────────────────────
-const metrics = computed(() => {
-  const todasSims = projetos.value.flatMap(p => p.simulacoes || [])
-  return {
-    projetos: projetos.value.length,
-    simulacoes: todasSims.length,
-    agentes: todasSims.reduce((acc, s) => acc + (s.entities_count || s.agent_count || 0), 0),
-    relatorios: todasSims.filter(s => s.report_id).length
+const metrics = computed(() => ({
+  projetos: projetos.value.length,
+  simulacoes: simulacoes.value.length,
+  agentes: simulacoes.value.reduce((acc, s) => acc + (s.entities_count || s.agent_count || 0), 0),
+  relatorios: simulacoes.value.filter(s => s.report_id).length
+}))
+
+const recentes = computed(() =>
+  projetos.value.slice().sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 5)
+)
+
+function badgeProjeto(p) {
+  const map = {
+    graph_completed: { label: 'Pronto', cls: 'b-done' },
+    graph_building: { label: 'Construindo', cls: 'b-ready' },
+    ontology_generated: { label: 'Processando', cls: 'b-ready' },
+    failed: { label: 'Erro', cls: 'b-error' },
   }
-})
-
-// ─── Helpers ─────────────────────────────────────────────────
-function toggleExpandir(id) {
-  expandidos.value[id] = !expandidos.value[id]
-}
-
-function abrirSimulacao(sim) {
-  const status = sim.runner_status || sim.status
-  if (status === 'running') return router.push(`/simulacao/${sim.simulation_id}/executar`)
-  if (sim.report_id) return router.push(`/relatorio/${sim.report_id}`)
-  return router.push(`/simulacao/${sim.project_id}`)
-}
-
-function novaSimulacao() {
-  router.push('/novo')
-}
-
-function statusBadge(sim) {
-  const status = sim.runner_status || sim.status
-  if (status === 'running') return { label: 'Em execução', cls: 'badge-running' }
-  if (status === 'completed') return { label: 'Concluído', cls: 'badge-done' }
-  if (status === 'failed') return { label: 'Erro', cls: 'badge-error' }
-  if (status === 'preparing' || status === 'ready') return { label: 'Preparando', cls: 'badge-preparing' }
-  return { label: 'Rascunho', cls: 'badge-draft' }
-}
-
-function projetoStatusBadge(projeto) {
-  if (projeto.simulacoes?.some(s => (s.runner_status || s.status) === 'running')) {
-    return { label: 'Ativo', cls: 'badge-running' }
-  }
-  if (projeto.status === 'graph_completed') return { label: 'Pronto', cls: 'badge-done' }
-  if (projeto.status === 'graph_building') return { label: 'Construindo', cls: 'badge-preparing' }
-  return { label: projeto.status || 'Criado', cls: 'badge-draft' }
+  return map[p.status] || { label: 'Criado', cls: 'b-draft' }
 }
 
 function formatarData(dt) {
   if (!dt) return ''
   return new Date(dt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-function truncar(txt, n = 80) {
-  if (!txt) return '—'
-  return txt.length > n ? txt.slice(0, n) + '...' : txt
 }
 
 onMounted(carregarDados)
@@ -116,200 +64,88 @@ onMounted(carregarDados)
 <template>
   <AppShell title="Dashboard">
     <template #actions>
-      <button class="btn-nova" @click="novaSimulacao">+ Nova Simulação</button>
+      <button class="btn-nova" @click="router.push('/novo')">+ Nova Simulação</button>
     </template>
 
-    <!-- Métricas -->
-    <section class="grid-metrics">
-      <MetricCard title="Projetos" :value="metrics.projetos" sub="Ideias em simulação" trend="up" />
+    <section class="metrics">
+      <MetricCard title="Projetos" :value="metrics.projetos" sub="No workspace" trend="up" />
       <MetricCard title="Simulações" :value="metrics.simulacoes" sub="Total executadas" trend="up" />
-      <MetricCard title="Agentes Totais" :value="metrics.agentes" sub="Base ativa" trend="up" />
+      <MetricCard title="Agentes" :value="metrics.agentes" sub="Criados no total" trend="up" />
       <MetricCard title="Relatórios" :value="metrics.relatorios" sub="Concluídos" />
     </section>
 
-    <!-- Carregando -->
-    <div v-if="carregando" class="loading-state">
+    <div v-if="carregando" class="loading">
       <div class="spinner"></div>
-      <span>Carregando projetos...</span>
+      <span>Carregando...</span>
     </div>
 
-    <!-- Estado vazio -->
-    <div v-else-if="projetos.length === 0" class="empty-state">
+    <div v-else-if="projetos.length === 0" class="empty">
       <div class="empty-icon">🔭</div>
-      <div class="empty-title">Nenhum projeto ainda</div>
-      <div class="empty-sub">Crie sua primeira simulação para começar a prever o futuro do seu negócio.</div>
-      <button class="btn-nova" @click="novaSimulacao" style="margin-top:16px;">+ Criar primeira simulação</button>
+      <div class="empty-title">Bem-vindo ao AUGUR</div>
+      <div class="empty-sub">Crie sua primeira simulação para prever como o mercado vai reagir antes de lançar seu produto, marca ou serviço.</div>
+      <button class="btn-nova-lg" @click="router.push('/novo')">✦ Criar primeira simulação</button>
     </div>
 
-    <!-- Lista de projetos -->
-    <div v-else class="projetos-lista">
-      <div
-        v-for="projeto in projetos"
-        :key="projeto.project_id || projeto.id"
-        class="projeto-card"
-        :class="{ 'projeto-ativo': projeto.simulacoes?.some(s => (s.runner_status || s.status) === 'running') }"
-      >
-        <!-- Header do projeto -->
-        <div class="projeto-header" @click="toggleExpandir(projeto.project_id || projeto.id)">
-          <div class="projeto-info">
-            <div class="projeto-nome">{{ projeto.name || 'Projeto sem nome' }}</div>
+    <div v-else>
+      <div class="secao-header">
+        <h3 class="secao-titulo">Projetos recentes</h3>
+        <span class="secao-sub">Clique em um projeto para ver suas simulações</span>
+      </div>
+      <div class="projetos-lista">
+        <div
+          v-for="p in recentes"
+          :key="p.project_id || p.id"
+          class="projeto-card"
+          @click="router.push(`/projeto/${p.project_id || p.id}`)"
+        >
+          <div class="projeto-left">
+            <div class="projeto-nome">{{ p.name || 'Projeto sem nome' }}</div>
             <div class="projeto-meta">
-              <span>{{ formatarData(projeto.created_at) }}</span>
-              <span class="meta-sep">·</span>
-              <span>{{ (projeto.files || []).length }} arquivo{{ (projeto.files || []).length !== 1 ? 's' : '' }}</span>
-              <span class="meta-sep">·</span>
-              <span>{{ projeto.simulacoes?.length || 0 }} simulação{{ (projeto.simulacoes?.length || 0) !== 1 ? 'ões' : '' }}</span>
+              {{ formatarData(p.created_at) }}
+              <span class="sep">·</span>
+              {{ (p.files || []).length }} arquivo{{ (p.files || []).length !== 1 ? 's' : '' }}
             </div>
           </div>
-          <div class="projeto-actions">
-            <span :class="['badge', projetoStatusBadge(projeto).cls]">
-              {{ projetoStatusBadge(projeto).label }}
-            </span>
-            <button class="btn-sim-nova" @click.stop="novaSimulacao" title="Nova simulação neste projeto">
-              + Simular
-            </button>
-            <span class="chevron" :class="{ aberto: expandidos[projeto.project_id || projeto.id] }">›</span>
-          </div>
-        </div>
-
-        <!-- Simulações do projeto -->
-        <div v-if="expandidos[projeto.project_id || projeto.id]" class="simulacoes-lista">
-
-          <!-- Sem simulações -->
-          <div v-if="!projeto.simulacoes?.length" class="sim-vazia">
-            <span>Nenhuma simulação ainda para este projeto.</span>
-            <button class="btn-link" @click="novaSimulacao">Criar simulação →</button>
-          </div>
-
-          <!-- Lista de simulações -->
-          <div
-            v-for="sim in projeto.simulacoes"
-            :key="sim.simulation_id"
-            class="sim-item"
-            @click="abrirSimulacao(sim)"
-          >
-            <div class="sim-hipotese">{{ truncar(sim.simulation_requirement || sim.hypothesis || '—') }}</div>
-            <div class="sim-meta">
-              <span>{{ formatarData(sim.created_at) }}</span>
-              <span class="meta-sep">·</span>
-              <span>{{ sim.entities_count || sim.agent_count || 0 }} agentes</span>
-              <span v-if="sim.current_round || sim.total_rounds" class="meta-sep">·</span>
-              <span v-if="sim.current_round || sim.total_rounds">
-                Rodada {{ sim.current_round || 0 }}/{{ sim.total_rounds || 0 }}
-              </span>
-            </div>
-            <div class="sim-footer">
-              <span :class="['badge', statusBadge(sim).cls]">{{ statusBadge(sim).label }}</span>
-              <div class="sim-links">
-                <span v-if="sim.report_id" class="link-btn" @click.stop="router.push(`/relatorio/${sim.report_id}`)">Ver relatório →</span>
-                <span v-else-if="(sim.runner_status || sim.status) === 'running'" class="link-btn" @click.stop="router.push(`/simulacao/${sim.simulation_id}/executar`)">Acompanhar →</span>
-                <span v-else class="link-btn" @click.stop="abrirSimulacao(sim)">Abrir →</span>
-              </div>
-            </div>
-
-            <!-- Barra de progresso se em execução -->
-            <div v-if="(sim.runner_status || sim.status) === 'running' && sim.total_rounds" class="sim-progress">
-              <div class="sim-progress-fill" :style="{ width: Math.round(((sim.current_round || 0) / sim.total_rounds) * 100) + '%' }"></div>
-            </div>
+          <div class="projeto-right">
+            <span :class="['badge', badgeProjeto(p).cls]">{{ badgeProjeto(p).label }}</span>
+            <span class="arrow">›</span>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Sentimento (decorativo por enquanto) -->
-    <div style="margin-top: 24px;">
-      <SentimentBar label="Sentimento médio — última semana" :positive="58" :neutral="27" :negative="15" />
+      <div v-if="projetos.length > 5" class="ver-todos">Veja todos os projetos no menu lateral</div>
     </div>
   </AppShell>
 </template>
 
 <style scoped>
-.grid-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
-
-.btn-nova {
-  background: var(--accent); color: #000; border: none; border-radius: 8px;
-  padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
-}
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 28px; }
+.btn-nova { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
 .btn-nova:hover { opacity: 0.85; }
-
-/* Loading */
-.loading-state { display: flex; align-items: center; gap: 12px; padding: 40px; color: var(--text-muted); }
+.loading { display: flex; align-items: center; gap: 12px; padding: 40px; color: var(--text-muted); }
 .spinner { width: 20px; height: 20px; border: 2px solid var(--border-md); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* Empty */
-.empty-state { text-align: center; padding: 60px 20px; }
-.empty-icon { font-size: 48px; margin-bottom: 16px; }
-.empty-title { font-size: 18px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; }
-.empty-sub { font-size: 14px; color: var(--text-secondary); max-width: 400px; margin: 0 auto; }
-
-/* Projetos */
-.projetos-lista { display: flex; flex-direction: column; gap: 12px; }
-
-.projeto-card {
-  background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: 12px; overflow: hidden; transition: border-color 0.2s;
-}
-.projeto-card.projeto-ativo { border-color: rgba(0,229,195,0.3); }
-
-.projeto-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; cursor: pointer; transition: background 0.15s;
-}
-.projeto-header:hover { background: var(--bg-raised); }
-
-.projeto-nome { font-size: 15px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+.empty { text-align: center; padding: 60px 20px; }
+.empty-icon { font-size: 52px; margin-bottom: 16px; }
+.empty-title { font-size: 22px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+.empty-sub { font-size: 14px; color: var(--text-secondary); max-width: 460px; margin: 0 auto 24px; line-height: 1.7; }
+.btn-nova-lg { background: var(--accent); color: #000; border: none; border-radius: 10px; padding: 13px 28px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn-nova-lg:hover { opacity: 0.85; }
+.secao-header { margin-bottom: 14px; }
+.secao-titulo { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 4px; }
+.secao-sub { font-size: 12px; color: var(--text-muted); }
+.projetos-lista { display: flex; flex-direction: column; gap: 10px; }
+.projeto-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; }
+.projeto-card:hover { border-color: var(--border-md); background: var(--bg-raised); }
+.projeto-nome { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
 .projeto-meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-.meta-sep { opacity: 0.4; }
-
-.projeto-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-
-.btn-sim-nova {
-  background: var(--accent2-dim); color: var(--accent2); border: 1px solid rgba(124,111,247,0.3);
-  border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all 0.15s;
-}
-.btn-sim-nova:hover { background: var(--accent2); color: #fff; }
-
-.chevron { font-size: 18px; color: var(--text-muted); transition: transform 0.2s; display: inline-block; }
-.chevron.aberto { transform: rotate(90deg); }
-
-/* Badges */
-.badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-.badge-done { background: rgba(0,229,195,0.1); color: var(--accent); }
-.badge-running { background: rgba(245,166,35,0.1); color: #f5a623; }
-.badge-error { background: rgba(255,90,90,0.1); color: var(--danger); }
-.badge-preparing { background: rgba(124,111,247,0.1); color: var(--accent2); }
-.badge-draft { background: rgba(107,107,128,0.15); color: var(--text-muted); }
-
-/* Simulações */
-.simulacoes-lista { border-top: 1px solid var(--border); }
-
-.sim-vazia {
-  padding: 16px 20px; display: flex; align-items: center; gap: 12px;
-  font-size: 13px; color: var(--text-muted);
-}
-.btn-link { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: 13px; }
-.btn-link:hover { text-decoration: underline; }
-
-.sim-item {
-  padding: 14px 20px; border-bottom: 1px solid var(--border);
-  cursor: pointer; transition: background 0.15s;
-}
-.sim-item:last-child { border-bottom: none; }
-.sim-item:hover { background: var(--bg-raised); }
-
-.sim-hipotese { font-size: 13px; color: var(--text-primary); margin-bottom: 4px; line-height: 1.5; }
-.sim-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-
-.sim-footer { display: flex; align-items: center; justify-content: space-between; }
-.sim-links { display: flex; gap: 10px; }
-.link-btn { font-size: 12px; color: var(--accent2); cursor: pointer; }
-.link-btn:hover { text-decoration: underline; }
-
-.sim-progress { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-.sim-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
-
-@media (max-width: 1080px) {
-  .grid-metrics { grid-template-columns: repeat(2, 1fr); }
-}
+.sep { opacity: 0.4; }
+.projeto-right { display: flex; align-items: center; gap: 12px; }
+.arrow { font-size: 20px; color: var(--text-muted); }
+.ver-todos { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 16px; }
+.badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.b-done { background: rgba(0,229,195,0.1); color: var(--accent); }
+.b-ready { background: rgba(124,111,247,0.1); color: var(--accent2); }
+.b-error { background: rgba(255,90,90,0.1); color: var(--danger); }
+.b-draft { background: rgba(107,107,128,0.15); color: var(--text-muted); }
+@media (max-width: 1080px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
 </style>
