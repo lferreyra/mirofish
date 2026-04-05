@@ -75,7 +75,13 @@
     "layoutGraph": "Graph",
     "layoutSplit": "Split",
     "layoutWorkbench": "Workbench",
-    "stepNames": ["Graph Build", "Env Setup", "Run Simulation", "Report Generation", "Deep Interaction"]
+    "stepNames": [
+      "Graph Build",
+      "Env Setup",
+      "Run Simulation",
+      "Report Generation",
+      "Deep Interaction"
+    ]
   },
   "step1": {
     "ontologyGeneration": "Ontology Generation",
@@ -205,7 +211,8 @@
     "forceStopSuccess": "Simulation force stopped",
     "forceStopFailed": "Force stop failed: {error}",
     "startGenerateReportBtn": "Generate Report",
-    "generatingReportBtn": "Starting..."
+    "generatingReportBtn": "Starting...",
+    "startFailedShort": "Start failed"
   },
   "step4": {
     "generatingSection": "Generating {title}...",
@@ -247,7 +254,9 @@
     "panelRelatedEdges": "Related Edges",
     "panelRelatedNodes": "Related Nodes",
     "world1": "World 1",
-    "world2": "World 2"
+    "world2": "World 2",
+    "selectionReason": "Selection Reason",
+    "waitingToStart": "Waiting to Start"
   },
   "step5": {
     "interactiveTools": "Interactive Tools",
@@ -282,7 +291,10 @@
     "errorOccurred": "Sorry, an error occurred: {error}",
     "noResponse": "No response",
     "requestFailed": "Request failed",
-    "selectAgentFirst": "Please select a simulated individual first"
+    "selectAgentFirst": "Please select a simulated individual first",
+    "roleQuestioner": "Questioner",
+    "roleYou": "You",
+    "chatHistoryPrompt": "Here is our previous conversation:\n{history}\n\nMy new question is: {message}"
   },
   "graph": {
     "panelTitle": "Graph Relationship Visualization",
