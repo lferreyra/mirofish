@@ -12,7 +12,8 @@ const routes = [
   { path: '/simulacao/:projectId', name: 'Simulacao', component: SimulationView, props: true },
   { path: '/simulacao/:simulationId/executar', name: 'Execucao', component: SimulationRunView, props: true },
   { path: '/relatorio/:reportId', name: 'Relatorio', component: ReportView, props: true },
-  { path: '/agentes/:reportId', name: 'Agentes', component: InteractionView, props: true }
+  { path: '/agentes/:reportId', name: 'Agentes', component: InteractionView, props: true },
+  { path: '/projeto/:projectId', name: 'Projeto', component: DashboardView, props: true }
 ]
 
 export default createRouter({
