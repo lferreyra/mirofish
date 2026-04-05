@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '../components/layout/AppShell.vue'
 import service from '../api'
@@ -33,9 +33,9 @@ const segmentos = [
     label: 'Política & Opinião',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h18v4H3zM7 10h10M7 14h6M5 21h14a2 2 0 0 0 2-2v-5H3v5a2 2 0 0 0 2 2z"/></svg>`,
     exemplos: [
-      '"Como diferentes grupos vão reagir à aprovação da reforma tributária?"',
-      '"Qual será o impacto eleitoral de um escândalo de corrupção?"',
-      '"Como a população vai responder a uma nova lei ambiental?"'
+      'Como diferentes grupos vão reagir à aprovação da reforma tributária?',
+      'Qual será o impacto eleitoral de um escândalo de corrupção?',
+      'Como a população vai responder a uma nova lei ambiental?'
     ]
   },
   {
@@ -43,9 +43,9 @@ const segmentos = [
     label: 'Negócios & Mercado',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
     exemplos: [
-      '"Como o lançamento de um produto vai ser recebido pelo mercado?"',
-      '"Qual a reação dos clientes a uma mudança de preços?"',
-      '"Como a entrada de um concorrente vai afetar nossa base?"'
+      'Como o lançamento de um produto vai ser recebido pelo mercado?',
+      'Qual a reação dos clientes a uma mudança de preços?',
+      'Como a entrada de um concorrente vai afetar nossa base?'
     ]
   },
   {
@@ -53,9 +53,9 @@ const segmentos = [
     label: 'Comportamento Social',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     exemplos: [
-      '"Como diferentes gerações vão reagir a uma mudança cultural?"',
-      '"Qual será o comportamento das redes sociais após um evento viral?"',
-      '"Como a sociedade vai absorver uma nova tecnologia?"'
+      'Como diferentes gerações vão reagir a uma mudança cultural?',
+      'Qual será o comportamento das redes sociais após um evento viral?',
+      'Como a sociedade vai absorver uma nova tecnologia?'
     ]
   },
   {
@@ -63,9 +63,9 @@ const segmentos = [
     label: 'Organizações & RH',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
     exemplos: [
-      '"Como os colaboradores vão reagir a uma mudança de política interna?"',
-      '"Qual o impacto de uma reestruturação organizacional no engajamento?"',
-      '"Como comunicar uma demissão em massa para minimizar danos?"'
+      'Como os colaboradores vão reagir a uma mudança de política interna?',
+      'Qual o impacto de uma reestruturação organizacional no engajamento?',
+      'Como comunicar uma demissão em massa para minimizar danos?'
     ]
   },
   {
@@ -73,9 +73,9 @@ const segmentos = [
     label: 'Saúde & Bem-estar',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
     exemplos: [
-      '"Como a população vai reagir a uma nova política de saúde pública?"',
-      '"Qual será a adesão a uma campanha de vacinação?"',
-      '"Como comunicar riscos de saúde sem gerar pânico?"'
+      'Como a população vai reagir a uma nova política de saúde pública?',
+      'Qual será a adesão a uma campanha de vacinação?',
+      'Como comunicar riscos de saúde sem gerar pânico?'
     ]
   },
   {
@@ -83,9 +83,9 @@ const segmentos = [
     label: 'Educação & Pesquisa',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>`,
     exemplos: [
-      '"Como estudantes e professores vão reagir a uma reforma curricular?"',
-      '"Qual será o impacto de uma nova metodologia de ensino?"',
-      '"Como a comunidade acadêmica vai receber uma descoberta científica?"'
+      'Como estudantes e professores vão reagir a uma reforma curricular?',
+      'Qual será o impacto de uma nova metodologia de ensino?',
+      'Como a comunidade acadêmica vai receber uma descoberta científica?'
     ]
   },
   {
@@ -93,9 +93,9 @@ const segmentos = [
     label: 'Sustentabilidade',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
     exemplos: [
-      '"Como consumidores vão reagir a um produto com embalagem sustentável?"',
-      '"Qual será o impacto de uma política de carbono zero?"',
-      '"Como comunicar iniciativas ESG para diferentes públicos?"'
+      'Como consumidores vão reagir a um produto com embalagem sustentável?',
+      'Qual será o impacto de uma política de carbono zero?',
+      'Como comunicar iniciativas ESG para diferentes públicos?'
     ]
   },
   {
@@ -103,15 +103,22 @@ const segmentos = [
     label: 'Inovação & Tecnologia',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
     exemplos: [
-      '"Como o mercado vai reagir ao lançamento de uma IA generativa?"',
-      '"Qual será a adoção de uma nova tecnologia B2B?"',
-      '"Como diferentes grupos vão reagir à automação de empregos?"'
+      'Como o mercado vai reagir ao lançamento de uma IA generativa?',
+      'Qual será a adoção de uma nova tecnologia B2B?',
+      'Como diferentes grupos vão reagir à automação de empregos?'
     ]
   }
 ]
 
 const segmentoAtual = computed(() => segmentos.find(s => s.id === segmento.value))
 const exemplosAtuais = computed(() => segmentoAtual.value?.exemplos || [])
+
+// ─── Selecionar exemplo ──────────────────────────────────────────
+function selecionarExemplo(ex) {
+  cenario.value = ex
+  hipotese.value = ex
+  titulo.value = ex.slice(0, 60)
+}
 
 // ─── Estimativas em tempo real ──────────────────────────────────
 const estimativaMinutos = computed(() => {
@@ -146,7 +153,6 @@ const qualidadeMateriais = computed(() => {
 
 // ─── Validações ─────────────────────────────────────────────────
 const etapa1Valida = computed(() => titulo.value.trim().length >= 3 && hipotese.value.trim().length >= 10)
-const etapa2Valida = computed(() => true) // opcional
 const etapa3Valida = computed(() => agentes.value >= 5 && rodadas.value >= 1)
 
 // ─── Gerar hipótese com IA ──────────────────────────────────────
@@ -163,7 +169,6 @@ async function gerarHipotese() {
     if (data.titulo) titulo.value = data.titulo
     if (data.hipotese) hipotese.value = data.hipotese
   } catch (e) {
-    // fallback: estruturar localmente
     titulo.value = cenario.value.slice(0, 60)
     hipotese.value = `Como ${cenario.value.toLowerCase()} vai impactar a opinião pública nos próximos meses?`
   } finally {
@@ -287,12 +292,9 @@ function etapaAnterior() {
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════════════════════ -->
-      <!-- ETAPA 1: HIPÓTESE                                      -->
-      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- ETAPA 1: HIPÓTESE -->
       <div v-if="step === 1" class="step-content">
 
-        <!-- Bloco: Segmento -->
         <div class="card">
           <div class="card-head">
             <span class="card-icon">💡</span>
@@ -315,7 +317,6 @@ function etapaAnterior() {
           </div>
         </div>
 
-        <!-- Bloco: Exemplos dinâmicos -->
         <transition name="fade">
           <div v-if="exemplosAtuais.length" class="card card-slim">
             <div class="examples-label">
@@ -327,7 +328,7 @@ function etapaAnterior() {
                 v-for="ex in exemplosAtuais"
                 :key="ex"
                 class="example-chip"
-                @click="cenario = ex.replace(/['"]/g, ''); hipotese = ex.replace(/['"]/g, '')"
+                @click="selecionarExemplo(ex)"
               >
                 {{ ex }}
               </button>
@@ -335,7 +336,6 @@ function etapaAnterior() {
           </div>
         </transition>
 
-        <!-- Bloco: Cenário + IA -->
         <div class="card">
           <div class="card-head">
             <span class="card-icon">✦</span>
@@ -346,13 +346,11 @@ function etapaAnterior() {
           </div>
 
           <div class="field">
-            <div class="field-label-row">
-              <label class="field-label">Descreva seu cenário</label>
-            </div>
+            <label class="field-label">Descreva seu cenário</label>
             <textarea
               v-model="cenario"
               class="field-textarea"
-              :placeholder="segmentoAtual ? `Ex: ${segmentoAtual.exemplos[0].replace(/['\&quot;]/g, '')}` : 'Ex: Quero entender como diferentes grupos da população vão reagir a um aumento de impostos sobre combustíveis...'"
+              placeholder="Ex: Quero entender como diferentes grupos da população vão reagir a um aumento de impostos sobre combustíveis..."
               rows="3"
             />
             <div class="field-hint">Quanto mais contexto você fornecer, mais precisa será a simulação.</div>
@@ -360,7 +358,6 @@ function etapaAnterior() {
 
           <button
             class="btn-generate"
-            :class="{ loading: gerandoHipotese }"
             :disabled="!cenario.trim() || gerandoHipotese"
             @click="gerarHipotese"
           >
@@ -370,7 +367,6 @@ function etapaAnterior() {
           </button>
         </div>
 
-        <!-- Bloco: Campos manuais -->
         <div class="card">
           <div class="card-divider-label">Prefere preencher diretamente? Use os campos abaixo.</div>
 
@@ -407,9 +403,7 @@ function etapaAnterior() {
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════════════════════ -->
-      <!-- ETAPA 2: MATERIAIS                                     -->
-      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- ETAPA 2: MATERIAIS -->
       <div v-else-if="step === 2" class="step-content">
 
         <div class="card">
@@ -424,16 +418,14 @@ function etapaAnterior() {
             </div>
           </div>
 
-          <!-- Dica de qualidade -->
           <div class="quality-tip">
-            <span class="tip-icon">💡</span>
+            <span>💡</span>
             Dica: Documentos de qualidade fazem uma diferença enorme. Pesquisas acadêmicas, relatórios de mercado e dados históricos são os melhores insumos.
           </div>
 
-          <!-- Drop zone -->
           <div
             class="drop-zone"
-            :class="{ 'drag-over': dragOver, 'has-files': arquivos.length > 0 }"
+            :class="{ 'drag-over': dragOver }"
             @dragover.prevent="dragOver = true"
             @dragleave="dragOver = false"
             @drop="onDrop"
@@ -460,7 +452,6 @@ function etapaAnterior() {
             </div>
           </div>
 
-          <!-- Lista de arquivos -->
           <transition-group name="file-list" tag="div" class="files-list" v-if="arquivos.length">
             <div v-for="(arq, idx) in arquivos" :key="arq.name" class="file-item">
               <span class="file-icon">{{ fileIcon(arq.name) }}</span>
@@ -468,7 +459,7 @@ function etapaAnterior() {
                 <div class="file-name">{{ arq.name }}</div>
                 <div class="file-size">{{ formatBytes(arq.size) }}</div>
               </div>
-              <button class="file-remove" @click="removerArquivo(idx)" title="Remover">
+              <button class="file-remove" @click="removerArquivo(idx)">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                   <line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/>
                 </svg>
@@ -476,17 +467,16 @@ function etapaAnterior() {
             </div>
           </transition-group>
 
-          <!-- Indicador de qualidade -->
-          <div class="quality-indicator" v-if="arquivos.length >= 0">
+          <div class="quality-indicator">
             <div class="quality-bar">
               <div
                 class="quality-fill"
-                :style="{ width: Math.min(100, arquivos.length * 25) + '%', background: qualidadeMateriais.value.cor }"
+                :style="{ width: Math.min(100, arquivos.length * 25) + '%', background: qualidadeMateriais.cor }"
               ></div>
             </div>
             <div class="quality-info">
-              <span class="quality-label" :style="{ color: qualidadeMateriais.value.cor }">{{ qualidadeMateriais.value.label }}</span>
-              <span class="quality-desc">{{ qualidadeMateriais.value.desc }}</span>
+              <span class="quality-label" :style="{ color: qualidadeMateriais.cor }">{{ qualidadeMateriais.label }}</span>
+              <span class="quality-desc">{{ qualidadeMateriais.desc }}</span>
             </div>
           </div>
         </div>
@@ -497,29 +487,19 @@ function etapaAnterior() {
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════════════════════ -->
-      <!-- ETAPA 3: PARÂMETROS                                    -->
-      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- ETAPA 3: PARÂMETROS -->
       <div v-else-if="step === 3" class="step-content">
 
         <div class="card">
           <div class="card-title-lg">Parâmetros da Simulação</div>
           <div class="card-sub-lg">Mais agentes e rodadas = análise mais rica e precisa, porém mais lenta.</div>
 
-          <!-- Slider: Agentes -->
           <div class="param-block">
             <div class="param-header">
               <label class="param-label">Número de Agentes</label>
               <span class="param-value accent">{{ agentes }}</span>
             </div>
-            <input
-              type="range"
-              min="5"
-              max="500"
-              step="5"
-              v-model.number="agentes"
-              class="slider"
-            />
+            <input type="range" min="5" max="500" step="5" v-model.number="agentes" class="slider" />
             <div class="param-bounds">
               <span>5 (teste rápido)</span>
               <span>500 (máxima riqueza)</span>
@@ -527,20 +507,12 @@ function etapaAnterior() {
             <div class="param-desc">{{ descricaoAgentes }}</div>
           </div>
 
-          <!-- Slider: Rodadas -->
           <div class="param-block">
             <div class="param-header">
               <label class="param-label">Número de Rodadas</label>
               <span class="param-value accent">{{ rodadas }}</span>
             </div>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              step="1"
-              v-model.number="rodadas"
-              class="slider"
-            />
+            <input type="range" min="1" max="100" step="1" v-model.number="rodadas" class="slider" />
             <div class="param-bounds">
               <span>1 (instantâneo)</span>
               <span>100 (evolução completa)</span>
@@ -548,15 +520,9 @@ function etapaAnterior() {
             <div class="param-desc">{{ descricaoRodadas }}</div>
           </div>
 
-          <!-- Data de referência -->
           <div class="param-block">
             <div class="param-header">
-              <label class="param-label">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14" style="margin-right:6px;vertical-align:middle">
-                  <rect x="1" y="3" width="14" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="1" y1="7" x2="15" y2="7"/>
-                </svg>
-                Data de Referência Temporal
-              </label>
+              <label class="param-label">Data de Referência Temporal</label>
             </div>
             <div class="param-sub">O sistema usará esta data como "hoje" em todas as análises e cenários.</div>
             <input type="date" v-model="dataReferencia" class="field-input date-input" />
@@ -564,7 +530,6 @@ function etapaAnterior() {
           </div>
         </div>
 
-        <!-- Resumo -->
         <div class="card summary-card">
           <div class="summary-title">Resumo da sua simulação</div>
           <div class="summary-grid">
@@ -586,7 +551,6 @@ function etapaAnterior() {
             </div>
           </div>
 
-          <!-- Estimativas -->
           <div class="estimates">
             <div class="estimate-item">
               <div class="estimate-icon">⏱</div>
@@ -606,14 +570,12 @@ function etapaAnterior() {
           </div>
         </div>
 
-        <!-- Erro -->
         <div v-if="error" class="error-msg">{{ error }}</div>
 
         <div class="step-nav">
           <button class="btn-back" @click="etapaAnterior">← Voltar</button>
           <button
             class="btn-create"
-            :class="{ loading: isLoading }"
             :disabled="!etapa3Valida || isLoading"
             @click="criarSimulacao"
           >
@@ -637,71 +599,26 @@ function etapaAnterior() {
   gap: 20px;
   padding-bottom: 60px;
 }
-
-/* Breadcrumb */
 .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
 .bc-link { cursor: pointer; color: var(--text-secondary); transition: color 0.15s; }
 .bc-link:hover { color: var(--text-primary); }
 .bc-sep { color: var(--text-muted); }
 .bc-current { color: var(--text-primary); }
-
-/* Header */
 .wizard-title { font-size: 26px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.5px; }
 .wizard-sub { font-size: 14px; color: var(--text-secondary); }
-
-/* Steps track */
-.steps-track {
-  display: flex;
-  align-items: flex-start;
-  padding: 4px 0;
-}
-.step-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  flex: 1;
-}
-.step-dot {
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; z-index: 1;
-  background: var(--bg-raised); border: 2px solid var(--border-md);
-  color: var(--text-muted); transition: all 0.3s;
-}
-.step-item.active .step-dot {
-  background: var(--accent2); border-color: var(--accent2); color: #fff;
-}
-.step-item.done .step-dot {
-  background: var(--accent); border-color: var(--accent); color: #000;
-}
+.steps-track { display: flex; align-items: flex-start; padding: 4px 0; }
+.step-item { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+.step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; z-index: 1; background: var(--bg-raised); border: 2px solid var(--border-md); color: var(--text-muted); transition: all 0.3s; }
+.step-item.active .step-dot { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+.step-item.done .step-dot { background: var(--accent); border-color: var(--accent); color: #000; }
 .step-check { display: flex; align-items: center; justify-content: center; }
 .step-check svg { width: 16px; height: 16px; }
-.step-connector {
-  position: absolute;
-  top: 15px; left: 50%;
-  width: 100%; height: 2px;
-  background: var(--border-md);
-  z-index: 0; transition: background 0.3s;
-}
+.step-connector { position: absolute; top: 15px; left: 50%; width: 100%; height: 2px; background: var(--border-md); z-index: 0; transition: background 0.3s; }
 .step-connector.done { background: var(--accent); }
-.step-label {
-  font-size: 11px; color: var(--text-muted); margin-top: 6px;
-  text-align: center; white-space: nowrap;
-}
+.step-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; white-space: nowrap; }
 .step-item.active .step-label { color: var(--accent2); font-weight: 500; }
 .step-item.done .step-label { color: var(--text-secondary); }
-
-/* Cards */
-.card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; }
 .card-slim { padding: 16px 20px; gap: 12px; }
 .card-head { display: flex; align-items: flex-start; gap: 12px; }
 .card-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
@@ -709,217 +626,52 @@ function etapaAnterior() {
 .card-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
 .card-title-lg { font-size: 17px; font-weight: 600; color: var(--text-primary); }
 .card-sub-lg { font-size: 13px; color: var(--text-secondary); }
-
-/* Segment grid */
-.segment-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.segment-btn {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 10px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  color: var(--text-secondary);
-}
-.segment-btn:hover {
-  border-color: var(--border-md);
-  color: var(--text-primary);
-  background: var(--bg-overlay);
-}
-.segment-btn.selected {
-  border-color: var(--accent2);
-  background: var(--accent2-dim);
-  color: var(--text-primary);
-}
+.segment-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.segment-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: var(--text-secondary); }
+.segment-btn:hover { border-color: var(--border-md); color: var(--text-primary); background: var(--bg-overlay); }
+.segment-btn.selected { border-color: var(--accent2); background: var(--accent2-dim); color: var(--text-primary); }
 .seg-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .seg-icon :deep(svg) { width: 20px; height: 20px; }
 .seg-label { font-size: 11px; text-align: center; line-height: 1.3; }
-
-/* Exemplos */
-.examples-label {
-  font-size: 12px; color: var(--accent2);
-  display: flex; align-items: center; gap: 6px;
-}
+.examples-label { font-size: 12px; color: var(--accent2); display: flex; align-items: center; gap: 6px; }
 .ex-icon { font-size: 10px; }
 .examples-list { display: flex; flex-direction: column; gap: 6px; }
-.example-chip {
-  background: var(--bg-overlay);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 13px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.example-chip:hover {
-  border-color: var(--accent2);
-  color: var(--text-primary);
-  background: var(--accent2-dim);
-}
-
-/* Fields */
+.example-chip { background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: left; font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.example-chip:hover { border-color: var(--accent2); color: var(--text-primary); background: var(--accent2-dim); }
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field-label-row { display: flex; justify-content: space-between; align-items: center; }
 .field-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
 .required { color: var(--accent); }
-.field-input {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-md);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 14px;
-  padding: 11px 14px;
-  outline: none;
-  transition: border-color 0.15s;
-  width: 100%;
-}
+.field-input { background: var(--bg-raised); border: 1px solid var(--border-md); border-radius: 8px; color: var(--text-primary); font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.15s; width: 100%; }
 .field-input:focus { border-color: var(--accent2); }
-.field-textarea {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-md);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 14px;
-  padding: 11px 14px;
-  outline: none;
-  resize: vertical;
-  font-family: inherit;
-  line-height: 1.6;
-  transition: border-color 0.15s;
-}
+.field-textarea { background: var(--bg-raised); border: 1px solid var(--border-md); border-radius: 8px; color: var(--text-primary); font-size: 14px; padding: 11px 14px; outline: none; resize: vertical; font-family: inherit; line-height: 1.6; transition: border-color 0.15s; }
 .field-textarea:focus { border-color: var(--accent2); }
 .field-hint { font-size: 12px; color: var(--text-muted); }
 .date-input { max-width: 200px; }
-
-/* Botão gerar com IA */
-.btn-generate {
-  background: var(--accent2);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 13px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-  letter-spacing: -0.2px;
-}
+.btn-generate { background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 13px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
 .btn-generate:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
 .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-/* Divider label */
-.card-divider-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-  position: relative;
-  padding: 0 12px;
-}
-.card-divider-label::before,
-.card-divider-label::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 30%;
-  height: 1px;
-  background: var(--border);
-}
-.card-divider-label::before { left: 0; }
-.card-divider-label::after { right: 0; }
-
-/* Drop zone */
-.drop-zone {
-  border: 2px dashed var(--border-md);
-  border-radius: 12px;
-  padding: 36px 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: var(--bg-raised);
-}
-.drop-zone:hover, .drop-zone.drag-over {
-  border-color: var(--accent);
-  background: rgba(0,229,195,0.04);
-}
+.card-divider-label { font-size: 12px; color: var(--text-muted); text-align: center; }
+.drop-zone { border: 2px dashed var(--border-md); border-radius: 12px; padding: 36px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-raised); }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(0,229,195,0.04); }
 .drop-content { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .drop-icon { color: var(--text-muted); margin-bottom: 4px; }
 .drop-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .drop-sub { font-size: 12px; color: var(--text-muted); }
-
-/* Optional badge */
-.optional-badge {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--bg-overlay);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2px 8px;
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-/* Quality tip */
-.quality-tip {
-  background: rgba(124,111,247,0.08);
-  border: 1px solid rgba(124,111,247,0.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
-  color: var(--accent2);
-  display: flex;
-  gap: 8px;
-  line-height: 1.5;
-}
-
-/* Files list */
+.optional-badge { font-size: 11px; color: var(--text-muted); background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
+.quality-tip { background: rgba(124,111,247,0.08); border: 1px solid rgba(124,111,247,0.2); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--accent2); display: flex; gap: 8px; line-height: 1.5; }
 .files-list { display: flex; flex-direction: column; gap: 8px; }
-.file-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--bg-overlay);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-}
+.file-item { display: flex; align-items: center; gap: 10px; background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
 .file-icon { font-size: 18px; flex-shrink: 0; }
 .file-info { flex: 1; min-width: 0; }
 .file-name { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .file-size { font-size: 11px; color: var(--text-muted); }
-.file-remove {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  transition: color 0.15s;
-}
+.file-remove { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; display: flex; transition: color 0.15s; }
 .file-remove:hover { color: var(--danger); }
-
-/* Quality indicator */
 .quality-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .quality-fill { height: 100%; border-radius: 2px; transition: all 0.4s; }
 .quality-info { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 .quality-label { font-size: 12px; font-weight: 600; }
 .quality-desc { font-size: 12px; color: var(--text-muted); }
-
-/* Params */
 .param-block { display: flex; flex-direction: column; gap: 8px; }
 .param-header { display: flex; justify-content: space-between; align-items: center; }
 .param-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
@@ -928,118 +680,34 @@ function etapaAnterior() {
 .param-desc { font-size: 12px; color: var(--text-secondary); background: var(--bg-raised); border-radius: 6px; padding: 8px 12px; }
 .param-sub { font-size: 12px; color: var(--text-secondary); }
 .param-tip { font-size: 12px; color: var(--accent2); }
-
-.slider {
-  width: 100%;
-  accent-color: var(--accent2);
-  height: 4px;
-  cursor: pointer;
-}
-
-/* Summary */
+.slider { width: 100%; accent-color: var(--accent2); height: 4px; cursor: pointer; }
 .summary-card { background: var(--bg-raised); }
 .summary-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .summary-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
+.summary-row { display: flex; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
 .summary-row:last-child { border-bottom: none; }
 .summary-key { color: var(--text-muted); }
 .summary-val { color: var(--text-primary); max-width: 60%; text-align: right; }
-
-/* Estimates */
-.estimates {
-  display: flex;
-  align-items: center;
-  background: var(--bg-overlay);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
+.estimates { display: flex; align-items: center; background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .estimate-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; flex: 1; }
 .estimate-icon { font-size: 22px; }
 .estimate-label { font-size: 11px; color: var(--text-muted); }
 .estimate-value { font-size: 16px; font-weight: 600; color: var(--text-primary); font-family: var(--font-mono); }
 .estimate-divider { width: 1px; height: 40px; background: var(--border); }
-
-/* Nav buttons */
-.step-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-back, .btn-cancel {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 10px 16px;
-  border-radius: 8px;
-  transition: color 0.15s;
-}
+.step-nav { display: flex; justify-content: space-between; align-items: center; }
+.btn-back, .btn-cancel { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 14px; padding: 10px 16px; border-radius: 8px; transition: color 0.15s; }
 .btn-back:hover, .btn-cancel:hover { color: var(--text-primary); }
-.btn-next {
-  background: var(--accent2);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+.btn-next { background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-next:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
 .btn-next:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-.btn-create {
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 13px 28px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  letter-spacing: -0.3px;
-}
+.btn-create { background: var(--accent); color: #000; border: none; border-radius: 10px; padding: 13px 28px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
 .btn-create:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
 .btn-create:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-
-/* Accent color */
 .accent { color: var(--accent); }
-
-/* Spinner */
-.spinner {
-  width: 14px; height: 14px;
-  border: 2px solid rgba(0,0,0,0.3);
-  border-top-color: #000;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; }
 .btn-generate .spinner { border-color: rgba(255,255,255,0.3); border-top-color: #fff; }
-
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* Error */
-.error-msg {
-  background: rgba(255,90,90,0.1);
-  border: 1px solid rgba(255,90,90,0.3);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--danger);
-}
-
-/* Transitions */
+.error-msg { background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--danger); }
 .fade-enter-active, .fade-leave-active { transition: all 0.25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-8px); }
 .file-list-enter-active, .file-list-leave-active { transition: all 0.2s ease; }
