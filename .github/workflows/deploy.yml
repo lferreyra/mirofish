@@ -1,10 +1,8 @@
-name: Deploy MiroFish
-
+name: Deploy AUGUR
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,8 +16,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /opt/mirofish
-            git pull origin main
-            docker compose pull
-            docker compose up -d --force-recreate
-            docker image prune -f
-            echo "✅ Deploy concluído: $(date)"
+            git fetch origin
+            git reset --hard origin/main
+            docker compose restart mirofish
+            echo "✅ Deploy AUGUR concluído: $(date)"

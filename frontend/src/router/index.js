@@ -8,7 +8,6 @@ import InteractionView from '../views/InteractionView.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: DashboardView },
-  { path: '/projeto/:projectId', name: 'Projeto', component: () => import('../views/DashboardView.vue'), props: true },
   { path: '/novo', name: 'NovaSimulacao', component: NewSimulationView },
   { path: '/simulacao/:projectId', name: 'Simulacao', component: SimulationView, props: true },
   { path: '/simulacao/:simulationId/executar', name: 'Execucao', component: SimulationRunView, props: true },
