@@ -5,15 +5,16 @@ import SimulationView from '../views/SimulationView.vue'
 import SimulationRunView from '../views/SimulationRunView.vue'
 import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
+import ProjetoView from '../views/ProjetoView.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: DashboardView },
   { path: '/novo', name: 'NovaSimulacao', component: NewSimulationView },
+  { path: '/projeto/:projectId', name: 'Projeto', component: ProjetoView, props: true },
   { path: '/simulacao/:projectId', name: 'Simulacao', component: SimulationView, props: true },
   { path: '/simulacao/:simulationId/executar', name: 'Execucao', component: SimulationRunView, props: true },
   { path: '/relatorio/:reportId', name: 'Relatorio', component: ReportView, props: true },
-  { path: '/agentes/:reportId', name: 'Agentes', component: InteractionView, props: true },
-  { path: '/projeto/:projectId', name: 'Projeto', component: DashboardView, props: true }
+  { path: '/agentes/:reportId', name: 'Agentes', component: InteractionView, props: true }
 ]
 
 export default createRouter({
