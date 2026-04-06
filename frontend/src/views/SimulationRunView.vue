@@ -552,11 +552,11 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
           </div>
           <svg v-else :viewBox="`0 0 ${CW} ${CH}`" class="chart-svg" preserveAspectRatio="xMidYMid meet">
             <g v-for="l in evoChart.yLines" :key="l.v">
-              <line :x1="cp.l" :y1="l.y" :x2="CW-cp.r" :y2="l.y" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>
-              <text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">{{ l.v }}%</text>
+              <line :x1="cp.l" :y1="l.y" :x2="CW-cp.r" :y2="l.y" stroke="rgba(0,0,0,0.08)" stroke-width="1" stroke-dasharray="3,3"/>
+              <text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(0,0,0,0.3)" font-size="8">{{ l.v }}%</text>
             </g>
             <g v-for="lb in evoChart.labels" :key="lb.r">
-              <text :x="lb.x" :y="CH-cp.b+14" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="8">R{{ lb.r }}</text>
+              <text :x="lb.x" :y="CH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="8">R{{ lb.r }}</text>
             </g>
             <path :d="evoChart.c"  fill="none" stroke="#00e5c3" stroke-width="2"   stroke-linejoin="round"/>
             <path :d="evoChart.iv" fill="none" stroke="#7c6ff7" stroke-width="2"   stroke-linejoin="round"/>
@@ -582,7 +582,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
           <circle :cx="NET/2" :cy="NET/2" r="75" fill="none" stroke="rgba(0,0,0,0.04)"/>
           <line v-for="(e,i) in netEdges" :key="'e'+i"
             :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-            :stroke-width="e.w || 1" stroke="rgba(255,255,255,0.08)" stroke-linecap="round"/>
+            :stroke-width="e.w || 1" stroke="rgba(0,0,0,0.12)" stroke-linecap="round"/>
           <g v-for="(n,i) in agentNodes" :key="'n'+i">
             <circle :cx="n.x" :cy="n.y" :r="n.size+2" :fill="ROLE_COLORS[n.role]" opacity="0.12"/>
             <circle :cx="n.x" :cy="n.y" :r="n.size"
