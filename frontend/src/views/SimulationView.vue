@@ -220,7 +220,8 @@ async function verificarTask(taskId) {
 async function reconstruirGrafo(pid, project) {
   const res = await service.post('/api/graph/build', {
     project_id:             pid,
-    simulation_requirement: project.simulation_requirement || 'Análise geral'
+    simulation_requirement: project.simulation_requirement || 'Análise geral',
+    force:                  true  // necessário quando status ainda é 'graph_building' mas task morreu
   })
   const data = res.data || res
   if (!data.task_id) throw new Error('Falha ao iniciar construção do grafo.')
