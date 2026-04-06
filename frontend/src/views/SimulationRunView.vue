@@ -401,6 +401,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
         <div class="banner-actions">
           <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/agentes`)">🧠 Agentes</button>
           <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/influentes`)">👑 Influentes</button>
+          <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/posts`)">📝 Posts</button>
           <button v-if="temRelatorio" class="btn-rel" @click="verRelatorio">📊 Ver Relatório →</button>
           <div v-else-if="gerandoRelatorio" class="gerando-tag"><div class="mspin"></div></div>
           <button v-else class="btn-g" @click="voltarProjeto">← Projeto</button>
