@@ -212,6 +212,7 @@ onMounted(carregar)
         </div>
         <div class="proj-actions">
           <button class="btn-nova" @click="abrirModal">+ Nova Simulação</button>
+          <button class="btn-grafo" @click="router.push(`/projeto/${pid}/grafo`)" title="Ver Grafo de Conhecimento">🕸 Grafo</button>
           <button class="btn-del" @click="confirmDelete = true" title="Excluir">🗑</button>
         </div>
       </div>
@@ -513,6 +514,8 @@ onMounted(carregar)
 .btn-nova { background:var(--accent); color:#000; border:none; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:700; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
 .btn-nova:hover { opacity:.85; }
 .btn-del { background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:8px; padding:7px 10px; cursor:pointer; font-size:14px; transition:all .15s; }
+.btn-grafo { background:none; border:1px solid var(--border); color:var(--accent2); border-radius:8px; padding:7px 14px; cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; }
+.btn-grafo:hover { background:var(--accent2-dim); border-color:var(--accent2); }
 .btn-del:hover { border-color:var(--danger); color:var(--danger); }
 .btn-ghost { background:transparent; border:none; color:var(--text-secondary); cursor:pointer; font-size:13px; padding:8px 14px; border-radius:8px; transition:color .15s; }
 .btn-ghost:hover { color:var(--text-primary); }
