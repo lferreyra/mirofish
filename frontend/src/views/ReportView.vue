@@ -426,7 +426,115 @@ async function voltar() {
   }
   router.push(pid ? `/projeto/${pid}` : '/')
 }
-function exportarPDF() { window.print() }
+const gerandoPDF = ref(false)
+const pageRef = ref(null)
+
+async function exportarPDF() {
+  gerandoPDF.value = true
+  
+  try {
+    // Carregar html2pdf.js do CDN
+    if (!window.html2pdf) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script')
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+        s.onload = resolve
+        s.onerror = reject
+        document.head.appendChild(s)
+      })
+    }
+    
+    // Expandir TODA a analise profunda antes de capturar
+    const prevTab = deepTab.value
+    const el = pageRef.value
+    if (!el) return
+    
+    // Criar clone para nao alterar a tela
+    const clone = el.cloneNode(true)
+    
+    // No clone: mostrar TODAS as deep sections, esconder tabs
+    clone.querySelectorAll('.deep-tabs').forEach(t => t.style.display = 'none')
+    clone.querySelectorAll('.deep-content').forEach(c => c.style.display = 'none')
+    clone.querySelectorAll('.deep-print-all').forEach(p => p.style.display = 'block')
+    // Expandir accordions
+    clone.querySelectorAll('.sec-body-inner').forEach(s => s.style.display = 'block')
+    // Esconder botoes e CTA
+    clone.querySelectorAll('.np').forEach(n => n.style.display = 'none')
+    // Mostrar print-header
+    const ph = clone.querySelector('.print-header')
+    if (ph) ph.style.display = 'block'
+    
+    // Aplicar estilos de impressao
+    clone.style.background = '#ffffff'
+    clone.style.color = '#1a1a2e'
+    clone.style.padding = '20px'
+    clone.querySelectorAll('.bloco, .kpi-card, .chart-bloco, .cen-card, .risk-card, .rec-card, .insight-card, .pred-card').forEach(b => {
+      b.style.background = '#ffffff'
+      b.style.borderColor = '#e0e0ee'
+      b.style.color = '#2a2a3e'
+    })
+    clone.querySelectorAll('.bloco-label, .bloco-label-sm, .kpi-label, .prob-title').forEach(l => {
+      l.style.color = '#6b6b80'
+    })
+    clone.querySelectorAll('.md-body, .cen-desc, .risk-desc, .rec-desc, .insight-text, .pred-text, .tl-desc').forEach(t => {
+      t.style.color = '#3a3a4e'
+    })
+    clone.querySelectorAll('.sec-nom, .cb-val, .kpi-valor, .cen-nome, .risk-name, .rec-name').forEach(t => {
+      t.style.color = '#1a1a2e'
+    })
+    clone.querySelectorAll('.deep-print-header').forEach(h => {
+      h.style.color = '#7c6ff7'
+      h.style.borderBottom = '2px solid #7c6ff7'
+      h.style.paddingBottom = '6px'
+      h.style.marginBottom = '12px'
+      h.style.fontSize = '16px'
+      h.style.fontWeight = '700'
+    })
+    // Timeline fix
+    clone.querySelectorAll('.timeline').forEach(t => t.style.borderLeftColor = '#ccc')
+    clone.querySelectorAll('.tl-dot').forEach(d => { d.style.borderColor = '#7c6ff7'; d.style.background = '#fff' })
+    
+    // Montar temporariamente no DOM (invisivel)
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'fixed'
+    wrapper.style.left = '-9999px'
+    wrapper.style.top = '0'
+    wrapper.style.width = '210mm'
+    wrapper.appendChild(clone)
+    document.body.appendChild(wrapper)
+    
+    const nomeArquivo = (titulo.value || 'Relatorio-AUGUR')
+      .replace(/[^a-zA-Z0-9À-ú\s-]/g, '')
+      .replace(/\s+/g, '_')
+      .slice(0, 60)
+    
+    await window.html2pdf()
+      .set({
+        margin: [10, 12, 10, 12],
+        filename: `${nomeArquivo}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          letterRendering: true,
+          scrollY: 0,
+          windowWidth: 800
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      })
+      .from(clone)
+      .save()
+    
+    document.body.removeChild(wrapper)
+    
+  } catch (e) {
+    console.error('Erro ao gerar PDF:', e)
+    alert('Erro ao gerar PDF. Tente novamente.')
+  } finally {
+    gerandoPDF.value = false
+  }
+}
 function abrirChat() {
   // Navigate to interaction/chat view if available
   const rid = route.params.reportId
@@ -438,7 +546,10 @@ function abrirChat() {
   <AppShell :title="titulo">
     <template #actions>
       <AugurButton variant="ghost" @click="voltar" class="np">← Projeto</AugurButton>
-      <AugurButton @click="exportarPDF" class="np">⬇ Exportar PDF</AugurButton>
+      <AugurButton @click="exportarPDF" :disabled="gerandoPDF" class="np">
+        <span v-if="gerandoPDF">⏳ Gerando PDF...</span>
+        <span v-else>⬇ Exportar PDF</span>
+      </AugurButton>
     </template>
 
     <div v-if="carregando" class="loading np">
@@ -452,7 +563,7 @@ function abrirChat() {
       <button class="btn-g" @click="voltar">← Voltar</button>
     </div>
 
-    <div v-else-if="report" class="page">
+    <div v-else-if="report" ref="pageRef" class="page">
 
       <!-- Print-only header -->
       <div class="print-header">
