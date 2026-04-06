@@ -9,6 +9,7 @@ import InteractionView  from '../views/InteractionView.vue'
 import GraphView        from '../views/GraphView.vue'
 import AgentesView      from '../views/AgentesView.vue'
 import InfluentesView   from '../views/InfluentesView.vue'
+import CompararView     from '../views/CompararView.vue'
 
 const routes = [
   {
@@ -75,6 +76,11 @@ const routes = [
     name: 'Grafo',
     component: GraphView,
     props: true
+  },
+  {
+    path: '/comparar',
+    name: 'Comparar',
+    component: CompararView
   },
   {
     path: '/:pathMatch(.*)*',
