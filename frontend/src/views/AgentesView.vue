@@ -63,6 +63,7 @@ function conversar() {
 <template>
   <AppShell title="Agentes da Simulação">
     <template #actions>
+      <AugurButton variant="ghost" @click="router.push(`/simulacao/${simId}/posts`)">📝 Posts</AugurButton>
       <AugurButton variant="ghost" @click="router.push(`/simulacao/${simId}/influentes`)">👑 Influentes</AugurButton>
       <AugurButton variant="ghost" @click="router.back()">← Voltar</AugurButton>
     </template>
@@ -96,7 +97,8 @@ function conversar() {
       </div>
 
       <div class="agents-grid">
-        <div v-for="(agent, i) in filtrados" :key="agent.user_id || agent.name || i" class="agent-card">
+        <div v-for="(agent, i) in filtrados" :key="agent.user_id || agent.name || i" class="agent-card"
+          @click="router.push(`/simulacao/${simId}/agente/${i}`)">
           <div class="agent-top">
             <div class="avatar" :style="{background: corAvatar(i)}">{{ iniciais(agent.name) }}</div>
             <div class="agent-info">
@@ -139,7 +141,7 @@ function conversar() {
 .search-bar input { flex:1;background:none;border:none;color:var(--text-primary);font-size:13px;outline:none; }
 
 .agents-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
-.agent-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s; }
+.agent-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;cursor:pointer; }
 .agent-card:hover { border-color:var(--accent2); }
 .agent-top { display:flex;align-items:center;gap:12px; }
 .avatar { width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0; }
