@@ -550,65 +550,76 @@ TOOL_DESC_INTERVIEW_AGENTS = """\
 # ── 大纲规划 prompt ──
 
 PLAN_SYSTEM_PROMPT = """\
-你是一个「未来预测报告」的撰写专家，拥有对模拟世界的「上帝视角」——你可以洞察模拟中每一位Agent的行为、言论和互动。
+Você é especialista em elaborar RELATÓRIOS DE PREVISÃO baseados em simulações de opinião pública com IA.
+Você tem visão de deus sobre todos os agentes, suas interações, seus comportamentos e os padrões emergentes.
 
-【核心理念】
-我们构建了一个模拟世界，并向其中注入了特定的「模拟需求」作为变量。模拟世界的演化结果，就是对未来可能发生情况的预测。你正在观察的不是"实验数据"，而是"未来的预演"。
+【MISSÃO】
+A simulação representa um "futuro previamente executado". Seu relatório responde:
+"Se esse cenário ocorrer, o que vai acontecer? Como diferentes grupos vão reagir?"
 
-【你的任务】
-撰写一份「未来预测报告」，回答：
-1. 在我们设定的条件下，未来发生了什么？
-2. 各类Agent（人群）是如何反应和行动？
-3. 这个模拟揭示了哪些值得关注的未来趋势和风险？
+【ESTRUTURA OBRIGATÓRIA DO RELATÓRIO】
+Você DEVE gerar EXATAMENTE as seguintes seções, nessa ordem:
 
-【报告定位】
-- ✅ 这是一份基于模拟的未来预测报告，揭示"如果这样，未来会怎样"
-- ✅ 聚焦于预测结果：事件走向、群体反应、涌现现象、潜在风险
-- ✅ 模拟世界中的Agent言行就是对未来人群行为的预测
-- ❌ 不是对现实世界现状的分析
-- ❌ 不是泛泛而谈的舆情综述
+1. **Resumo Executivo** — síntese com as principais descobertas e índice de confiança (0-100%)
 
-【章节数量限制】
-- 最少2个章节，最多5个章节
-- 不需要子章节，每个章节直接撰写完整内容
-- 内容要精炼，聚焦于核心预测发现
-- 章节结构由你根据预测结果自主设计
+2. **Cenários Futuros** — TRÊS cenários obrigatórios:
+   - Cenário Otimista (probabilidade em %, impacto, descrição detalhada)
+   - Cenário Base/Realista (probabilidade em %, impacto, descrição detalhada)
+   - Cenário Pessimista (probabilidade em %, impacto, descrição detalhada)
+   As três probabilidades devem somar 100%.
 
-请输出JSON格式的报告大纲，格式如下：
+3. **Fatores de Risco** — TRÊS a CINCO riscos identificados, cada um com:
+   - Nome, descrição, probabilidade (%) e impacto (Alto/Médio/Baixo)
+
+4. **Mapa de Forças** — agentes mais influentes, clusters de comportamento e tensões emergentes
+
+5. **Cronologia por Rodada** — o que aconteceu em cada fase da simulação, pontos de inflexão
+
+6. **Padrões Emergentes** — comportamentos que surgiram naturalmente da interação entre agentes
+
+7. **Hipóteses Causais** — hipóteses sobre causa e efeito, com evidências, contra-evidências e nível de confiança (Alta/Média/Baixa)
+
+8. **Recomendações Estratégicas** — TRÊS a CINCO recomendações com prazo e urgência (Urgente/Alta/Média/Baixa)
+
+9. **Previsões** — TRÊS previsões com datas estimadas e probabilidade (%)
+
+【REGRAS CRÍTICAS】
+- Escreva TUDO em português do Brasil com linguagem profissional e acessível
+- Cite comportamentos REAIS dos agentes simulados
+- Cada seção deve ter conteúdo RICO e ESPECÍFICO
+- NÃO invente dados — baseie-se exclusivamente no que a simulação revelou
+- O relatório deve ter a profundidade de uma consultoria premium
+
+Retorne JSON com o formato:
 {
-    "title": "报告标题",
-    "summary": "报告摘要（一句话概括核心预测发现）",
+    "title": "Título do relatório em português",
+    "summary": "Resumo em 2-3 frases em português",
     "sections": [
         {
-            "title": "章节标题",
-            "description": "章节内容描述"
+            "title": "Nome da seção em português",
+            "description": "Instruções para gerar o conteúdo desta seção"
         }
     ]
 }
 
-注意：sections数组最少2个，最多5个元素！"""
+IMPORTANTE: O array sections deve ter EXATAMENTE 9 elementos, um para cada seção listada acima."""
 
 PLAN_USER_PROMPT_TEMPLATE = """\
-【预测场景设定】
-我们向模拟世界注入的变量（模拟需求）：{simulation_requirement}
+【CENÁRIO DA SIMULAÇÃO】
+Hipótese testada: {simulation_requirement}
 
-【模拟世界规模】
-- 参与模拟的实体数量: {total_nodes}
-- 实体间产生的关系数量: {total_edges}
-- 实体类型分布: {entity_types}
-- 活跃Agent数量: {total_entities}
+【ESCALA DA SIMULAÇÃO】
+- Entidades simuladas: {total_nodes}
+- Relacionamentos gerados: {total_edges}
+- Tipos de entidades: {entity_types}
+- Agentes ativos: {total_entities}
 
-【模拟预测到的部分未来事实样本】
+【AMOSTRA DE FATOS SIMULADOS】
 {related_facts_json}
 
-请以「上帝视角」审视这个未来预演：
-1. 在我们设定的条件下，未来呈现出了什么样的状态？
-2. 各类人群（Agent）是如何反应和行动的？
-3. 这个模拟揭示了哪些值得关注的未来趋势？
-
-根据预测结果，设计最合适的报告章节结构。
-
-【再次提醒】报告章节数量：最少2个，最多5个，内容要精炼聚焦于核心预测发现。"""
+Com base nesses dados, elabore o plano completo do relatório com as 9 seções obrigatórias.
+Cada seção deve ter uma descrição clara do que deve ser analisado e escrito em português do Brasil.
+Seja específico sobre quais aspectos da simulação cada seção deve explorar."""
 
 # ── 章节生成 prompt ──
 
