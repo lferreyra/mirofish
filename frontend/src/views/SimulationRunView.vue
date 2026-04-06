@@ -377,7 +377,40 @@ async function carregarProjectId() {
   } catch { /* ignorar */ }
 }
 
-onMounted(() => { carregarProjectId(); poll.start() })
+onMounted(async () => {
+  carregarProjectId()
+  poll.start()
+  // Carregar dados retroativos se simulação já concluída
+  try {
+    const res = await service.get(`/api/simulation/${route.params.simulationId}/run-status`)
+    const raw = res?.data?.data || res?.data || {}
+    const s = (raw.status || '').toLowerCase()
+    if (s === 'completed' || s === 'finished') {
+      try {
+        const aRes = await service.get(`/api/analytics/${route.params.simulationId}`)
+        const ana = aRes?.data?.data || aRes?.data || {}
+        const twR = ana?.twitter?.rounds || []
+        const rdR = ana?.reddit?.rounds || []
+        const byRound = {}
+        ;[...twR, ...rdR].forEach(r => {
+          const rn = r.round_num ?? r.round ?? 0
+          if (!byRound[rn]) byRound[rn] = { tw: 0, rd: 0 }
+          if (r.platform === 'twitter') byRound[rn].tw += (r.actions || r.count || 1)
+          else byRound[rn].rd += (r.actions || r.count || 1)
+        })
+        const rounds = Object.keys(byRound).map(Number).sort((a,b) => a - b)
+        if (rounds.length > 1 && roundHistory.value.length <= 1) {
+          roundHistory.value = rounds.map(r => ({
+            r, tw: byRound[r].tw, rd: byRound[r].rd,
+            tot: byRound[r].tw + byRound[r].rd,
+            c: 80, iv: 70, ts: 15
+          }))
+          lastRound.value = rounds[rounds.length - 1]
+        }
+      } catch {}
+    }
+  } catch {}
+})
 onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.value) })
 </script>
 
