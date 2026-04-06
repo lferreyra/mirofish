@@ -1,6 +1,6 @@
 """
-LLM客户端封装
-统一使用OpenAI格式调用
+LLM
+OpenAI
 
 AUGUR Enhancement: Rate limit handling com backoff exponencial,
 sleep inteligente e abort após timeout configurável.
@@ -26,7 +26,7 @@ CONTEXT_MAX_RETRIES       = 2       # tentativas para context_length_exceeded
 
 
 class LLMClient:
-    """LLM客户端 com rate limit handling robusto"""
+    """LLM com rate limit handling robusto"""
 
     def __init__(
         self,
@@ -39,7 +39,7 @@ class LLMClient:
         self.model    = model    or Config.LLM_MODEL_NAME
 
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY Configuração")
 
         self.client = OpenAI(
             api_key=self.api_key,
