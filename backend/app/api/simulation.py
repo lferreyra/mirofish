@@ -2004,8 +2004,10 @@ def get_simulation_posts(simulation_id: str):
         
         try:
             cursor.execute("""
-                SELECT * FROM post 
-                ORDER BY created_at DESC 
+                SELECT p.*, u.name as author, u.user_name as username
+                FROM post p
+                LEFT JOIN user u ON p.user_id = u.user_id
+                ORDER BY p.created_at DESC 
                 LIMIT ? OFFSET ?
             """, (limit, offset))
             
