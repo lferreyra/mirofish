@@ -152,7 +152,7 @@ function defaultCenarios() {
     { nome:'Estagnação',              prob:20, cor:'#f5a623', impacto:'Médio impacto', corI:'rgba(245,166,35,0.12)' },
     { nome:'Crise Operacional',       prob:10, cor:'#ff5a5a', impacto:'Alto impacto',  corI:'rgba(255,90,90,0.12)'  },
   ]
-})
+}
 
 // ─── CHARTS ──────────────────────────────────────────────────
 
