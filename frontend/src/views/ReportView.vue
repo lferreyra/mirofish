@@ -124,8 +124,18 @@ function truncar(text, n = 120) {
   return text.length > n ? text.slice(0, n) + '...' : text
 }
 
-function voltar() {
-  const pid = report.value?.project_id
+async function voltar() {
+  // project_id pode vir direto do relatório (backend enriquecido)
+  // ou precisamos buscar via simulation_id
+  let pid = report.value?.project_id
+  if (!pid && report.value?.simulation_id) {
+    try {
+      const res = await service.get('/api/simulation/list', { params: { limit: 200 } })
+      const lista = res?.data?.data || res?.data || []
+      const sim = lista.find(s => s.simulation_id === report.value.simulation_id)
+      pid = sim?.project_id
+    } catch { /* ignorar */ }
+  }
   router.push(pid ? `/projeto/${pid}` : '/')
 }
 
