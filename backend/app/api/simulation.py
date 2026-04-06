@@ -788,7 +788,7 @@ def get_simulation(simulation_id: str):
 @simulation_bp.route('/list', methods=['GET'])
 def list_simulations():
     """
-    列出所有模拟
+    列出所有模拟（enriquecido com runner_status, current_round, total_rounds e report_id)
     
     Query参数：
         project_id: 按项目ID过滤（可选）
@@ -799,10 +799,45 @@ def list_simulations():
         manager = SimulationManager()
         simulations = manager.list_simulations(project_id=project_id)
         
+        enriched = []
+        for sim in simulations:
+            sim_dict = sim.to_dict()
+
+            # Enriquecer com simulation_config (simulation_requirement, rodadas)
+            config = manager.get_simulation_config(sim.simulation_id)
+            if config:
+                sim_dict['simulation_requirement'] = config.get('simulation_requirement', '')
+                time_cfg = config.get('time_config', {})
+                recommended_rounds = int(
+                    time_cfg.get('total_simulation_hours', 0) * 60 /
+                    max(time_cfg.get('minutes_per_round', 60), 1)
+                )
+            else:
+                sim_dict.setdefault('simulation_requirement', '')
+                recommended_rounds = 0
+
+            # Enriquecer com run_state (runner_status, current_round, total_rounds)
+            run_state = SimulationRunner.get_run_state(sim.simulation_id)
+            if run_state:
+                sim_dict['runner_status']  = run_state.runner_status.value
+                sim_dict['current_round']  = run_state.current_round
+                sim_dict['total_rounds']   = run_state.total_rounds if run_state.total_rounds > 0 else recommended_rounds
+                sim_dict['progress_percent'] = run_state.progress_percent if hasattr(run_state, 'progress_percent') else 0
+            else:
+                sim_dict.setdefault('runner_status', 'idle')
+                sim_dict.setdefault('current_round', 0)
+                sim_dict.setdefault('total_rounds', recommended_rounds)
+                sim_dict.setdefault('progress_percent', 0)
+
+            # Enriquecer com report_id
+            sim_dict['report_id'] = _get_report_id_for_simulation(sim.simulation_id)
+
+            enriched.append(sim_dict)
+        
         return jsonify({
             "success": True,
-            "data": [s.to_dict() for s in simulations],
-            "count": len(simulations)
+            "data": enriched,
+            "count": len(enriched)
         })
         
     except Exception as e:
