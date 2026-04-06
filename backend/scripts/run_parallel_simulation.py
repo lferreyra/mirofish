@@ -102,6 +102,13 @@ else:
         load_dotenv(_backend_env)
         print(f"已加载环境配置: {_backend_env}")
 
+from app.utils.openrouter_runtime import (
+    configure_openrouter_runtime,
+    get_effective_llm_api_key,
+)
+
+configure_openrouter_runtime()
+
 
 class MaxTokensWarningFilter(logging.Filter):
     """过滤掉 camel-ai 关于 max_tokens 的警告（我们故意不设置 max_tokens，让模型自行决定）"""
@@ -1010,7 +1017,10 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
         config_label = "[加速LLM]"
     else:
         # 使用通用配置
-        llm_api_key = os.environ.get("LLM_API_KEY", "")
+        llm_api_key = get_effective_llm_api_key(
+            explicit_api_key=os.environ.get("LLM_API_KEY", ""),
+            base_url=os.environ.get("LLM_BASE_URL", ""),
+        ) or ""
         llm_base_url = os.environ.get("LLM_BASE_URL", "")
         llm_model = os.environ.get("LLM_MODEL_NAME", "")
         config_label = "[通用LLM]"
@@ -1024,7 +1034,7 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
         os.environ["OPENAI_API_KEY"] = llm_api_key
     
     if not os.environ.get("OPENAI_API_KEY"):
-        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY")
+        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY 或 OPENROUTER_API_KEY1..N")
     
     if llm_base_url:
         os.environ["OPENAI_API_BASE_URL"] = llm_base_url

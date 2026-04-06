@@ -9,6 +9,10 @@ from typing import Optional, Dict, Any, List
 from openai import OpenAI
 
 from ..config import Config
+from .logger import get_logger
+from .openrouter_runtime import classify_openrouter_error, is_openrouter_base_url
+
+logger = get_logger('mirofish.llm_client')
 
 
 class LLMClient:
@@ -37,7 +41,8 @@ class LLMClient:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[Dict] = None
+        response_format: Optional[Dict] = None,
+        request_label: Optional[str] = None,
     ) -> str:
         """
         发送聊天请求
@@ -60,9 +65,40 @@ class LLMClient:
         
         if response_format:
             kwargs["response_format"] = response_format
-        
-        response = self.client.chat.completions.create(**kwargs)
+
+        if request_label:
+            logger.info(
+                "LLM call start label=%s model=%s provider=%s",
+                request_label,
+                self.model,
+                "openrouter" if is_openrouter_base_url(self.base_url) else "generic-openai-compatible",
+            )
+
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+        except Exception as e:
+            if request_label:
+                logger.warning(
+                    "LLM call failed label=%s category=%s error=%s",
+                    request_label,
+                    classify_openrouter_error(e) if is_openrouter_base_url(self.base_url) else "non_openrouter_error",
+                    str(e)[:200],
+                )
+            raise
+
         content = response.choices[0].message.content
+        if content is None:
+            finish_reason = None
+            if getattr(response, "choices", None):
+                finish_reason = getattr(response.choices[0], "finish_reason", None)
+            logger.warning(
+                "LLM returned empty content label=%s model=%s finish_reason=%s",
+                request_label or "unknown",
+                self.model,
+                finish_reason,
+            )
+            return ""
+
         # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
@@ -71,7 +107,8 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        request_label: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         发送聊天请求并返回JSON
@@ -88,7 +125,8 @@ class LLMClient:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
+            request_label=request_label,
         )
         # 清理markdown代码块标记
         cleaned_response = response.strip()
@@ -100,4 +138,3 @@ class LLMClient:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
             raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
-

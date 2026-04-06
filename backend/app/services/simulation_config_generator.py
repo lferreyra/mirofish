@@ -20,6 +20,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..utils.openrouter_runtime import classify_openrouter_error, is_openrouter_base_url
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
@@ -439,6 +440,13 @@ class SimulationConfigGenerator:
         
         for attempt in range(max_attempts):
             try:
+                logger.info(
+                    "simulation_config llm_call_start attempt=%s/%s model=%s provider=%s",
+                    attempt + 1,
+                    max_attempts,
+                    self.model_name,
+                    "openrouter" if is_openrouter_base_url(self.base_url) else "generic-openai-compatible",
+                )
                 response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=[
@@ -472,7 +480,13 @@ class SimulationConfigGenerator:
                     last_error = e
                     
             except Exception as e:
-                logger.warning(f"LLM调用失败 (attempt {attempt+1}): {str(e)[:80]}")
+                logger.warning(
+                    "simulation_config llm_call_failed attempt=%s/%s category=%s error=%s",
+                    attempt + 1,
+                    max_attempts,
+                    classify_openrouter_error(e) if is_openrouter_base_url(self.base_url) else "non_openrouter_error",
+                    str(e)[:120],
+                )
                 last_error = e
                 import time
                 time.sleep(2 * (attempt + 1))
@@ -984,4 +998,3 @@ class SimulationConfigGenerator:
                 "influence_weight": 1.0
             }
     
-

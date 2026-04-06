@@ -115,17 +115,27 @@ cp .env.example .env
 **Required Environment Variables:**
 
 ```env
-# LLM API Configuration (supports any LLM API with OpenAI SDK format)
-# Recommended: Alibaba Qwen-plus model via Bailian Platform: https://bailian.console.aliyun.com/
-# High consumption, try simulations with fewer than 40 rounds first
-LLM_API_KEY=your_api_key
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_MODEL_NAME=qwen-plus
+# LLM API configuration (default example uses an OpenRouter free model)
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL_NAME=arcee-ai/trinity-large-preview:free
+
+# Recommended: OpenRouter pooled keys
+OPENROUTER_API_KEY1=your_openrouter_api_key_1
+OPENROUTER_API_KEY2=your_openrouter_api_key_2
+OPENROUTER_API_KEY3=your_openrouter_api_key_3
+OPENROUTER_API_KEY4=your_openrouter_api_key_4
+OPENROUTER_API_KEY5=your_openrouter_api_key_5
+OPENROUTER_API_KEY6=your_openrouter_api_key_6
+
+# Optional single-key compatibility variable
+# LLM_API_KEY=your_openrouter_api_key
 
 # Zep Cloud Configuration
 # Free monthly quota is sufficient for simple usage: https://app.getzep.com/
 ZEP_API_KEY=your_zep_api_key
 ```
+
+> In OpenRouter mode, MiroFish now uses request-level round-robin across `OPENROUTER_API_KEY1..N`, and automatically fails over to the next key on `401/402/429/5xx`, auth-related `403`, or credit/rate-limit/provider availability errors.
 
 #### 2. Install Dependencies
 
@@ -168,8 +178,8 @@ npm run frontend  # Start frontend only
 # 1. Configure environment variables (same as source deployment)
 cp .env.example .env
 
-# 2. Pull image and start
-docker compose up -d
+# 2. Build from the current repo and start
+docker compose up -d --build
 ```
 
 Reads `.env` from root directory by default, maps ports `3000 (frontend) / 5001 (backend)`

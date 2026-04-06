@@ -6,6 +6,12 @@
 import os
 from dotenv import load_dotenv
 
+from .utils.openrouter_runtime import (
+    configure_openrouter_runtime,
+    get_configured_openrouter_api_keys,
+    get_default_openrouter_base_url,
+)
+
 # 加载项目根目录的 .env 文件
 # 路径: MiroFish/.env (相对于 backend/app/config.py)
 project_root_env = os.path.join(os.path.dirname(__file__), '../../.env')
@@ -15,6 +21,9 @@ if os.path.exists(project_root_env):
 else:
     # 如果根目录没有 .env，尝试加载环境变量（用于生产环境）
     load_dotenv(override=True)
+
+# 如果当前使用 OpenRouter，则为兼容代码路径补齐单键变量并安装运行时补丁
+configure_openrouter_runtime()
 
 
 class Config:
@@ -26,11 +35,14 @@ class Config:
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
+
+    # OpenRouter 多 Key 配置
+    OPENROUTER_API_KEYS = get_configured_openrouter_api_keys()
     
     # LLM配置（统一使用OpenAI格式）
-    LLM_API_KEY = os.environ.get('LLM_API_KEY')
-    LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
-    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
+    LLM_API_KEY = os.environ.get('LLM_API_KEY') or (OPENROUTER_API_KEYS[0] if OPENROUTER_API_KEYS else None)
+    LLM_BASE_URL = os.environ.get('LLM_BASE_URL', get_default_openrouter_base_url())
+    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'arcee-ai/trinity-large-preview:free')
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
@@ -67,9 +79,8 @@ class Config:
     def validate(cls):
         """验证必要配置"""
         errors = []
-        if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY 未配置")
+        if not cls.LLM_API_KEY and not cls.OPENROUTER_API_KEYS:
+            errors.append("未配置 LLM_API_KEY 或 OPENROUTER_API_KEY1..N")
         if not cls.ZEP_API_KEY:
             errors.append("ZEP_API_KEY 未配置")
         return errors
-

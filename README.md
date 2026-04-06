@@ -115,17 +115,27 @@ cp .env.example .env
 **必需的环境变量：**
 
 ```env
-# LLM API配置（支持 OpenAI SDK 格式的任意 LLM API）
-# 推荐使用阿里百炼平台qwen-plus模型：https://bailian.console.aliyun.com/
-# 注意消耗较大，可先进行小于40轮的模拟尝试
-LLM_API_KEY=your_api_key
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_MODEL_NAME=qwen-plus
+# LLM API 配置（默认示例使用 OpenRouter 免费模型）
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL_NAME=arcee-ai/trinity-large-preview:free
+
+# OpenRouter 多 Key 轮询（推荐）
+OPENROUTER_API_KEY1=your_openrouter_api_key_1
+OPENROUTER_API_KEY2=your_openrouter_api_key_2
+OPENROUTER_API_KEY3=your_openrouter_api_key_3
+OPENROUTER_API_KEY4=your_openrouter_api_key_4
+OPENROUTER_API_KEY5=your_openrouter_api_key_5
+OPENROUTER_API_KEY6=your_openrouter_api_key_6
+
+# 可选：单 Key 兼容变量
+# LLM_API_KEY=your_openrouter_api_key
 
 # Zep Cloud 配置
 # 每月免费额度即可支撑简单使用：https://app.getzep.com/
 ZEP_API_KEY=your_zep_api_key
 ```
+
+> 当前版本会在 OpenRouter 模式下对 `OPENROUTER_API_KEY1..N` 做请求级 round-robin；同一请求若遇到 `401/402/429/5xx`、鉴权类 `403`、或 credit/rate-limit/provider 错误，会自动切换到下一个 key 重试。
 
 #### 2. 安装依赖
 
@@ -168,8 +178,8 @@ npm run frontend  # 仅启动前端
 # 1. 配置环境变量（同源码部署）
 cp .env.example .env
 
-# 2. 拉取镜像并启动
-docker compose up -d
+# 2. 基于当前仓库代码构建并启动
+docker compose up -d --build
 ```
 
 默认会读取根目录下的 `.env`，并映射端口 `3000（前端）/5001（后端）`

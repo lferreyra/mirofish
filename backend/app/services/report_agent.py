@@ -879,6 +879,15 @@ class ReportAgent:
     
     # 对话中的最大工具调用次数
     MAX_TOOL_CALLS_PER_CHAT = 2
+    DEFAULT_OUTLINE_TITLE = "模拟分析报告"
+    DEFAULT_OUTLINE_SUMMARY = "基于模拟结果生成的关键趋势、行为变化与风险分析。"
+    DEFAULT_SECTION_TITLES = [
+        "核心发现",
+        "行为变化与渠道迁移",
+        "竞争格局与市场影响",
+        "风险与机会",
+        "后续观察重点",
+    ]
     
     def __init__(
         self, 
@@ -914,6 +923,88 @@ class ReportAgent:
         self.console_logger: Optional[ReportConsoleLogger] = None
         
         logger.info(f"ReportAgent 初始化完成: graph_id={graph_id}, simulation_id={simulation_id}")
+
+    def _build_default_outline(self) -> ReportOutline:
+        """构建兜底大纲，确保章节结构始终有效"""
+        return ReportOutline(
+            title="未来预测报告",
+            summary="基于模拟预测的未来趋势与风险分析",
+            sections=[
+                ReportSection(title="预测场景与核心发现"),
+                ReportSection(title="人群行为预测分析"),
+                ReportSection(title="趋势展望与风险提示")
+            ]
+        )
+
+    def _sanitize_section_title(self, title: Any) -> str:
+        """清理章节标题，避免 None、空串或 Markdown 噪音"""
+        if title is None:
+            return ""
+
+        cleaned = str(title).strip()
+        cleaned = re.sub(r'^[#\-\*\s]+', '', cleaned)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
+
+    def _sanitize_outline_response(self, response: Dict[str, Any]) -> ReportOutline:
+        """规范化 LLM 返回的大纲，避免空标题、重复标题和空章节数组"""
+        report_title = self._sanitize_section_title(response.get("title")) or self.DEFAULT_OUTLINE_TITLE
+        summary = self._sanitize_section_title(response.get("summary")) or self.DEFAULT_OUTLINE_SUMMARY
+
+        raw_sections = response.get("sections", [])
+        if not isinstance(raw_sections, list):
+            raw_sections = []
+
+        sections: List[ReportSection] = []
+        used_titles = set()
+        fallback_index = 0
+
+        for idx, section_data in enumerate(raw_sections[:5], start=1):
+            raw_title = ""
+            if isinstance(section_data, dict):
+                raw_title = section_data.get("title")
+            elif isinstance(section_data, str):
+                raw_title = section_data
+
+            title = self._sanitize_section_title(raw_title)
+
+            if not title:
+                while (
+                    fallback_index < len(self.DEFAULT_SECTION_TITLES)
+                    and self.DEFAULT_SECTION_TITLES[fallback_index] in used_titles
+                ):
+                    fallback_index += 1
+                title = (
+                    self.DEFAULT_SECTION_TITLES[fallback_index]
+                    if fallback_index < len(self.DEFAULT_SECTION_TITLES)
+                    else f"核心发现 {idx}"
+                )
+                logger.warning("大纲第 %s 个章节标题为空，已自动替换为: %s", idx, title)
+
+            if title in used_titles:
+                base_title = title
+                suffix = 2
+                while f"{base_title} ({suffix})" in used_titles:
+                    suffix += 1
+                title = f"{base_title} ({suffix})"
+                logger.warning("大纲章节标题重复，已重命名为: %s", title)
+
+            used_titles.add(title)
+            sections.append(ReportSection(title=title, content=""))
+
+        while len(sections) < 2:
+            fallback_title = self.DEFAULT_SECTION_TITLES[len(sections)]
+            if fallback_title in used_titles:
+                fallback_title = f"{fallback_title} ({len(sections) + 1})"
+            used_titles.add(fallback_title)
+            sections.append(ReportSection(title=fallback_title, content=""))
+            logger.warning("大纲章节数量不足，已补充兜底章节: %s", fallback_title)
+
+        return ReportOutline(
+            title=report_title,
+            summary=summary,
+            sections=sections
+        )
     
     def _define_tools(self) -> Dict[str, Dict[str, Any]]:
         """定义可用工具"""
@@ -1178,44 +1269,24 @@ class ReportAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.3
+                temperature=0.3,
+                request_label="report_planning"
             )
             
             if progress_callback:
                 progress_callback("planning", 80, "正在解析大纲结构...")
             
-            # 解析大纲
-            sections = []
-            for section_data in response.get("sections", []):
-                sections.append(ReportSection(
-                    title=section_data.get("title", ""),
-                    content=""
-                ))
-            
-            outline = ReportOutline(
-                title=response.get("title", "模拟分析报告"),
-                summary=response.get("summary", ""),
-                sections=sections
-            )
+            outline = self._sanitize_outline_response(response)
             
             if progress_callback:
                 progress_callback("planning", 100, "大纲规划完成")
             
-            logger.info(f"大纲规划完成: {len(sections)} 个章节")
+            logger.info(f"大纲规划完成: {len(outline.sections)} 个章节")
             return outline
             
         except Exception as e:
             logger.error(f"大纲规划失败: {str(e)}")
-            # 返回默认大纲（3个章节，作为fallback）
-            return ReportOutline(
-                title="未来预测报告",
-                summary="基于模拟预测的未来趋势与风险分析",
-                sections=[
-                    ReportSection(title="预测场景与核心发现"),
-                    ReportSection(title="人群行为预测分析"),
-                    ReportSection(title="趋势展望与风险提示")
-                ]
-            )
+            return self._build_default_outline()
     
     def _generate_section_react(
         self, 
@@ -1303,7 +1374,8 @@ class ReportAgent:
             response = self.llm.chat(
                 messages=messages,
                 temperature=0.5,
-                max_tokens=4096
+                max_tokens=4096,
+                request_label="report_generation"
             )
 
             # 检查 LLM 返回是否为 None（API 异常或内容为空）
@@ -1506,7 +1578,8 @@ class ReportAgent:
         response = self.llm.chat(
             messages=messages,
             temperature=0.5,
-            max_tokens=4096
+            max_tokens=4096,
+            request_label="report_generation_force_final"
         )
 
         # 检查强制收尾时 LLM 返回是否为 None
@@ -1826,7 +1899,8 @@ class ReportAgent:
         for iteration in range(max_iterations):
             response = self.llm.chat(
                 messages=messages,
-                temperature=0.5
+                temperature=0.5,
+                request_label="report_chat"
             )
             
             # 解析工具调用
@@ -1866,7 +1940,8 @@ class ReportAgent:
         # 达到最大迭代，获取最终响应
         final_response = self.llm.chat(
             messages=messages,
-            temperature=0.5
+            temperature=0.5,
+            request_label="report_chat_final"
         )
         
         # 清理响应
@@ -2497,24 +2572,9 @@ class ReportManager:
     
     @classmethod
     def get_report_by_simulation(cls, simulation_id: str) -> Optional[Report]:
-        """根据模拟ID获取报告"""
-        cls._ensure_reports_dir()
-        
-        for item in os.listdir(cls.REPORTS_DIR):
-            item_path = os.path.join(cls.REPORTS_DIR, item)
-            # 新格式：文件夹
-            if os.path.isdir(item_path):
-                report = cls.get_report(item)
-                if report and report.simulation_id == simulation_id:
-                    return report
-            # 兼容旧格式：JSON文件
-            elif item.endswith('.json'):
-                report_id = item[:-5]
-                report = cls.get_report(report_id)
-                if report and report.simulation_id == simulation_id:
-                    return report
-        
-        return None
+        """根据模拟ID获取最新报告"""
+        reports = cls.list_reports(simulation_id=simulation_id, limit=1)
+        return reports[0] if reports else None
     
     @classmethod
     def list_reports(cls, simulation_id: Optional[str] = None, limit: int = 50) -> List[Report]:
