@@ -119,6 +119,13 @@ cp .env.example .env
 LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_MODEL_NAME=arcee-ai/trinity-large-preview:free
 
+# Dedicated model for initial attachment parsing (optional)
+# Used only for the first-pass reading of uploaded PDF / image / text files
+# Falls back to LLM_* automatically when omitted
+# INPUT_LLM_API_KEY=your_input_llm_api_key
+# INPUT_LLM_BASE_URL=https://openrouter.ai/api/v1
+# INPUT_LLM_MODEL_NAME=openai/gpt-4.1-mini
+
 # Recommended: OpenRouter pooled keys
 OPENROUTER_API_KEY1=your_openrouter_api_key_1
 OPENROUTER_API_KEY2=your_openrouter_api_key_2
@@ -136,6 +143,8 @@ ZEP_API_KEY=your_zep_api_key
 ```
 
 > In OpenRouter mode, MiroFish now uses request-level round-robin across `OPENROUTER_API_KEY1..N`, and automatically fails over to the next key on `401/402/429/5xx`, auth-related `403`, or credit/rate-limit/provider availability errors.
+>
+> The current backend only auto-loads the project-root `.env` file at startup; `.env.openrouter` is not loaded automatically. If you want to enable `INPUT_LLM_*`, place them in the root `.env`.
 
 #### 2. Install Dependencies
 

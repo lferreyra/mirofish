@@ -44,13 +44,18 @@ class Config:
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', get_default_openrouter_base_url())
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'arcee-ai/trinity-large-preview:free')
     
+    # 首次附件解析专用 LLM 配置（可选，不配置则回退到通用 LLM）
+    INPUT_LLM_API_KEY = os.environ.get('INPUT_LLM_API_KEY') or LLM_API_KEY
+    INPUT_LLM_BASE_URL = os.environ.get('INPUT_LLM_BASE_URL') or LLM_BASE_URL
+    INPUT_LLM_MODEL_NAME = os.environ.get('INPUT_LLM_MODEL_NAME') or LLM_MODEL_NAME
+    
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')
-    ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown'}
+    ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown', 'png', 'jpg', 'jpeg', 'webp'}
     
     # 文本处理配置
     DEFAULT_CHUNK_SIZE = 500  # 默认切块大小

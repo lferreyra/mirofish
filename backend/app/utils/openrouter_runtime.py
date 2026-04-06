@@ -96,7 +96,10 @@ def get_default_openrouter_base_url() -> str:
     return _OPENROUTER_BASE_URL
 
 
-def get_configured_openrouter_api_keys(include_llm_fallback: bool = True) -> list[str]:
+def get_configured_openrouter_api_keys(
+    include_llm_fallback: bool = True,
+    reverse: bool = False,
+) -> list[str]:
     """
     Collect configured OpenRouter keys in priority order.
 
@@ -129,7 +132,8 @@ def get_configured_openrouter_api_keys(include_llm_fallback: bool = True) -> lis
             continue
         numbered_keys.append((int(suffix), env_value))
 
-    for _, env_value in sorted(numbered_keys, key=lambda item: item[0]):
+    ordered_numbered_keys = sorted(numbered_keys, key=lambda item: item[0], reverse=reverse)
+    for _, env_value in ordered_numbered_keys:
         add_key(env_value)
 
     combined_keys = os.environ.get("OPENROUTER_API_KEYS", "")
@@ -144,14 +148,15 @@ def get_configured_openrouter_api_keys(include_llm_fallback: bool = True) -> lis
     return ordered_keys
 
 
-def get_primary_openrouter_api_key() -> Optional[str]:
-    keys = get_configured_openrouter_api_keys()
+def get_primary_openrouter_api_key(reverse: bool = False) -> Optional[str]:
+    keys = get_configured_openrouter_api_keys(reverse=reverse)
     return keys[0] if keys else None
 
 
 def get_effective_llm_api_key(
     explicit_api_key: Optional[str] = None,
     base_url: Optional[str] = None,
+    reverse_openrouter_pool: bool = False,
 ) -> Optional[str]:
     """
     Resolve a single effective API key for compatibility checks.
@@ -164,7 +169,7 @@ def get_effective_llm_api_key(
 
     resolved_base_url = base_url or os.environ.get("LLM_BASE_URL", "")
     if is_openrouter_base_url(resolved_base_url):
-        pooled_key = get_primary_openrouter_api_key()
+        pooled_key = get_primary_openrouter_api_key(reverse=reverse_openrouter_pool)
         if pooled_key:
             return pooled_key
 

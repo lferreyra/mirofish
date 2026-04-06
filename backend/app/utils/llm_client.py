@@ -3,6 +3,7 @@ LLM客户端封装
 统一使用OpenAI格式调用
 """
 
+import base64
 import json
 import re
 from typing import Optional, Dict, Any, List
@@ -38,7 +39,7 @@ class LLMClient:
     
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         temperature: float = 0.7,
         max_tokens: int = 4096,
         response_format: Optional[Dict] = None,
@@ -103,9 +104,58 @@ class LLMClient:
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
     
+    def analyze_image(
+        self,
+        image_bytes: bytes,
+        prompt: str,
+        mime_type: str = "image/png",
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.1,
+        max_tokens: int = 1800,
+        request_label: Optional[str] = None,
+    ) -> str:
+        """
+        使用多模态模型分析图片。
+        
+        Args:
+            image_bytes: 图片二进制内容
+            prompt: 用户提示词
+            mime_type: 图片 MIME 类型
+            system_prompt: 系统提示词
+            temperature: 温度参数
+            max_tokens: 最大 token 数
+            
+        Returns:
+            模型响应文本
+        """
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        user_message = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mime_type};base64,{image_base64}"
+                    }
+                }
+            ]
+        }
+        messages: List[Dict[str, Any]] = [user_message]
+        
+        if system_prompt:
+            messages.insert(0, {"role": "system", "content": system_prompt})
+        
+        return self.chat(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            request_label=request_label,
+        )
+    
     def chat_json(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         temperature: float = 0.3,
         max_tokens: int = 4096,
         request_label: Optional[str] = None,

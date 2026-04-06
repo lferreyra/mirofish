@@ -119,6 +119,13 @@ cp .env.example .env
 LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_MODEL_NAME=arcee-ai/trinity-large-preview:free
 
+# 首次附件解析专用模型（可选）
+# 仅用于最初上传的 PDF / 图片 / 文本附件读取
+# 不配置时会自动回退到 LLM_* 配置
+# INPUT_LLM_API_KEY=your_input_llm_api_key
+# INPUT_LLM_BASE_URL=https://openrouter.ai/api/v1
+# INPUT_LLM_MODEL_NAME=openai/gpt-4.1-mini
+
 # OpenRouter 多 Key 轮询（推荐）
 OPENROUTER_API_KEY1=your_openrouter_api_key_1
 OPENROUTER_API_KEY2=your_openrouter_api_key_2
@@ -136,6 +143,8 @@ ZEP_API_KEY=your_zep_api_key
 ```
 
 > 当前版本会在 OpenRouter 模式下对 `OPENROUTER_API_KEY1..N` 做请求级 round-robin；同一请求若遇到 `401/402/429/5xx`、鉴权类 `403`、或 credit/rate-limit/provider 错误，会自动切换到下一个 key 重试。
+>
+> 当前 backend 启动时只会自动加载项目根目录 `.env`；`.env.openrouter` 不会被自动读取。若需要启用 `INPUT_LLM_*`，请写入根目录 `.env`。
 
 #### 2. 安装依赖
 

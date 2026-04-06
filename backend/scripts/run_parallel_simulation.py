@@ -1006,13 +1006,17 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
     boost_api_key = os.environ.get("LLM_BOOST_API_KEY", "")
     boost_base_url = os.environ.get("LLM_BOOST_BASE_URL", "")
     boost_model = os.environ.get("LLM_BOOST_MODEL_NAME", "")
-    has_boost_config = bool(boost_api_key)
+    has_boost_config = bool(boost_api_key or boost_base_url or boost_model)
     
     # 根据参数和配置情况选择使用哪个 LLM
     if use_boost and has_boost_config:
         # 使用加速配置
-        llm_api_key = boost_api_key
-        llm_base_url = boost_base_url
+        llm_base_url = boost_base_url or os.environ.get("LLM_BASE_URL", "")
+        llm_api_key = get_effective_llm_api_key(
+            explicit_api_key=boost_api_key,
+            base_url=llm_base_url,
+            reverse_openrouter_pool=True,
+        ) or ""
         llm_model = boost_model or os.environ.get("LLM_MODEL_NAME", "")
         config_label = "[加速LLM]"
     else:

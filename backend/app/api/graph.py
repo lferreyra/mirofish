@@ -13,13 +13,15 @@ from ..config import Config
 from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
-from ..utils.file_parser import FileParser
+from ..utils.file_parser import FileParser, TEXT_ONLY_MODE, TEXT_PLUS_VISION_MODE
+from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
 
 # 获取日志器
 logger = get_logger('mirofish.api')
+SUPPORTED_INPUT_PARSE_MODES = {TEXT_ONLY_MODE, TEXT_PLUS_VISION_MODE}
 
 
 def allowed_file(filename: str) -> bool:
@@ -153,14 +155,22 @@ def generate_ontology():
         simulation_requirement = request.form.get('simulation_requirement', '')
         project_name = request.form.get('project_name', 'Unnamed Project')
         additional_context = request.form.get('additional_context', '')
+        input_parse_mode = request.form.get('input_parse_mode', TEXT_ONLY_MODE).strip().lower()
         
         logger.debug(f"项目名称: {project_name}")
         logger.debug(f"模拟需求: {simulation_requirement[:100]}...")
+        logger.debug(f"输入解析模式: {input_parse_mode}")
         
         if not simulation_requirement:
             return jsonify({
                 "success": False,
                 "error": "请提供模拟需求描述 (simulation_requirement)"
+            }), 400
+        
+        if input_parse_mode not in SUPPORTED_INPUT_PARSE_MODES:
+            return jsonify({
+                "success": False,
+                "error": f"不支持的 input_parse_mode: {input_parse_mode}"
             }), 400
         
         # 获取上传的文件
@@ -176,9 +186,18 @@ def generate_ontology():
         project.simulation_requirement = simulation_requirement
         logger.info(f"创建项目: {project.project_id}")
         
+        input_llm_client = None
+        if input_parse_mode == TEXT_PLUS_VISION_MODE:
+            input_llm_client = LLMClient(
+                api_key=Config.INPUT_LLM_API_KEY,
+                base_url=Config.INPUT_LLM_BASE_URL,
+                model=Config.INPUT_LLM_MODEL_NAME,
+            )
+        
         # 保存文件并提取文本
         document_texts = []
         all_text = ""
+        skipped_image_files = []
         
         for file in uploaded_files:
             if file and file.filename and allowed_file(file.filename):
@@ -194,16 +213,37 @@ def generate_ontology():
                 })
                 
                 # 提取文本
-                text = FileParser.extract_text(file_info["path"])
+                extraction_result = FileParser.extract_input_content(
+                    file_info["path"],
+                    parse_mode=input_parse_mode,
+                    input_llm_client=input_llm_client,
+                )
+                if extraction_result.skipped:
+                    skipped_image_files.append(file_info["original_filename"])
+                    logger.info(
+                        "跳过文件: %s, reason=%s",
+                        file_info["original_filename"],
+                        extraction_result.skip_reason or "unknown",
+                    )
+                    continue
+
+                text = extraction_result.text
                 text = TextProcessor.preprocess_text(text)
+                if not text:
+                    logger.info("文件提取结果为空: %s", file_info["original_filename"])
+                    continue
                 document_texts.append(text)
                 all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
         
         if not document_texts:
             ProjectManager.delete_project(project.project_id)
+            if input_parse_mode == TEXT_ONLY_MODE and skipped_image_files:
+                error_message = "当前选择“仅文本”模式时，图片文件会被跳过；请切换到“文本 + Vision”或上传可提取文本的文件"
+            else:
+                error_message = "没有成功处理任何文档，请检查文件格式"
             return jsonify({
                 "success": False,
-                "error": "没有成功处理任何文档，请检查文件格式"
+                "error": error_message
             }), 400
         
         # 保存提取的文本
@@ -242,7 +282,8 @@ def generate_ontology():
                 "ontology": project.ontology,
                 "analysis_summary": project.analysis_summary,
                 "files": project.files,
-                "total_text_length": project.total_text_length
+                "total_text_length": project.total_text_length,
+                "input_parse_mode": input_parse_mode,
             }
         })
         
