@@ -336,6 +336,8 @@ function mdSimple(text) {
 <template>
   <AppShell title="Central de Entrevistas">
     <template #actions>
+      <AugurButton variant="ghost" @click="router.push(`/simulacao/${simulationId}/agentes`)" v-if="simulationId">🧠 Agentes</AugurButton>
+      <AugurButton variant="ghost" @click="router.push(`/simulacao/${simulationId}/posts`)" v-if="simulationId">📝 Posts</AugurButton>
       <AugurButton variant="ghost" @click="router.push(`/relatorio/${route.params.reportId}`)">← Relatório</AugurButton>
     </template>
 
