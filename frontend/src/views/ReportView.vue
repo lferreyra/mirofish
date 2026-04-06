@@ -585,19 +585,17 @@ async function exportarPDF() {
     const ph = clone.querySelector('.print-header')
     if (ph) ph.style.display = 'block'
     
-    // Aplicar estilos de impressao — override CSS variables para tema claro
-    clone.style.cssText += ';--bg-base:#fff;--bg-surface:#fff;--bg-raised:#f5f5fa;--bg-overlay:#eee;--text-primary:#1a1a2e;--text-secondary:#3a3a5a;--text-muted:#6b6b8a;--border:#ddd;--border-md:#ccc;--accent:#0a8a6f;--accent2:#5a4fd4;--danger:#d44;--gold:#b87a00;background:#fff!important;color:#1a1a2e!important;padding:20px;'
-    // Force all elements to light theme
-    clone.querySelectorAll('*').forEach(el => {
-      const s = getComputedStyle(el)
-      const bg = s.backgroundColor
-      if (bg && (bg.includes('5,') || bg.includes('9,') || bg.includes('10,') || bg.includes('17,'))) el.style.backgroundColor = 'transparent'
-      const co = s.color
-      if (co && (co.includes('240,') || co.includes('255,') || co.includes('136,'))) el.style.color = '#2a2a3e'
+    // PDF: tema já é claro, só garantir fundo branco puro e remover transparências
+    clone.style.cssText += ';background:#fff!important;padding:20px;'
+    clone.querySelectorAll('.bloco, .kpi-card, .chart-bloco, .cen-card, .risk-card, .rec-card, .insight-card, .pred-card, .sent-card, .post-card, .achado-card').forEach(b => {
+      b.style.background = '#ffffff'
+      b.style.boxShadow = 'none'
+      b.style.border = '1px solid #e0e0e8'
     })
+    // SVG text: garantir que var(--text-*) resolve para escuro
     clone.querySelectorAll('svg text').forEach(t => {
       const f = t.getAttribute('fill') || ''
-      if (f.includes('--text') || f.includes('fff') || f.includes('f0f0')) t.setAttribute('fill', '#2a2a3e')
+      if (f.includes('var(--text')) t.setAttribute('fill', '#1a1a2e')
     })
     clone.querySelectorAll('.bloco, .kpi-card, .chart-bloco, .cen-card, .risk-card, .rec-card, .insight-card, .pred-card, .sent-card, .post-card, .achado-card').forEach(b => {
       b.style.background = '#ffffff'
@@ -729,7 +727,7 @@ function abrirChat() {
         <div class="resumo-inner">
           <div class="gauge-wrap">
             <svg viewBox="0 0 120 80" class="gauge-svg">
-              <path d="M 16 65 A 44 44 0 0 1 104 65" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" stroke-linecap="round"/>
+              <path d="M 16 65 A 44 44 0 0 1 104 65" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="8" stroke-linecap="round"/>
               <path :d="gaugePath(confianca)" fill="none" stroke="url(#gaugeGrad)" stroke-width="8" stroke-linecap="round"/>
               <defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c6ff7"/><stop offset="100%" stop-color="#00e5c3"/></linearGradient></defs>
               <text x="60" y="56" text-anchor="middle" fill="var(--text-primary)" font-size="24" font-weight="800">{{ confianca }}%</text>
@@ -781,8 +779,8 @@ function abrirChat() {
           <div class="chart-axis-label">Métricas por rodada</div>
           <svg :viewBox="`0 0 ${chartW} ${chartH}`" class="chart-svg" preserveAspectRatio="xMidYMid meet">
             <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00e5c3" stop-opacity="0.18"/><stop offset="100%" stop-color="#00e5c3" stop-opacity="0"/></linearGradient></defs>
-            <g v-for="l in lineChart.yLines" :key="l.val"><line :x1="cp.l" :y1="l.y" :x2="chartW-cp.r" :y2="l.y" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="9">{{ l.val }}</text></g>
-            <g v-for="lb in lineChart.labels" :key="lb.r"><text :x="lb.x" :y="chartH-cp.b+14" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9">R{{ lb.r }}</text></g>
+            <g v-for="l in lineChart.yLines" :key="l.val"><line :x1="cp.l" :y1="l.y" :x2="chartW-cp.r" :y2="l.y" stroke="rgba(0,0,0,0.06)" stroke-width="1"/><text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(0,0,0,0.3)" font-size="9">{{ l.val }}</text></g>
+            <g v-for="lb in lineChart.labels" :key="lb.r"><text :x="lb.x" :y="chartH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="9">R{{ lb.r }}</text></g>
             <path :d="lineChart.area" fill="url(#ag)" stroke="none"/>
             <path :d="lineChart.tw" fill="none" stroke="#1da1f2" stroke-width="2" stroke-linejoin="round"/>
             <path :d="lineChart.rd" fill="none" stroke="#ff4500" stroke-width="2" stroke-linejoin="round"/>
@@ -792,8 +790,8 @@ function abrirChat() {
         <div class="bloco chart-bloco" v-if="analytics">
           <div class="bloco-label-sm" style="margin-bottom:8px">Radar de métricas</div>
           <svg viewBox="0 0 220 220" class="radar-svg" preserveAspectRatio="xMidYMid meet">
-            <polygon :points="pts(radarData.grid100)" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-            <polygon :points="pts(radarData.grid75)" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <polygon :points="pts(radarData.grid100)" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
+            <polygon :points="pts(radarData.grid75)" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
             <polygon :points="pts(radarData.grid50)" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
             <polygon :points="pts(radarData.grid25)" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
             <line v-for="ax in radarData.axes" :key="ax.label" :x1="ax.x1" :y1="ax.y1" :x2="ax.x2" :y2="ax.y2" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
