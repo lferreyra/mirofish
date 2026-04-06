@@ -129,6 +129,96 @@ const sentimentData = computed(() => {
   }
 })
 
+// Nuvem de palavras — extrair keywords dos posts
+const wordCloud = computed(() => {
+  if (posts.value.length < 3) return []
+  const stopwords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','um','uma','uns','umas',
+    'o','a','os','as','e','é','ou','que','se','com','por','para','não','mais','como','mas','foi',
+    'ser','ter','está','são','tem','sua','seu','isso','este','esta','esse','essa','ao','aos',
+    'pelo','pela','já','muito','também','pode','bem','só','ainda','sobre','entre','até','quando',
+    'ela','ele','eles','elas','nos','me','meu','minha','seu','sua','the','and','to','of','is','in','it','for','on','that','this','with','are','was','be','has','have','from','or','an','but','not','at','by','as'])
+  
+  const freq = {}
+  posts.value.forEach(p => {
+    const text = (p.content || p.text || '').toLowerCase()
+    const words = text.replace(/[^\wàáâãéêíóôõúüç\s]/g, '').split(/\s+/)
+    words.forEach(w => {
+      if (w.length > 3 && !stopwords.has(w) && !/^\d+$/.test(w)) {
+        freq[w] = (freq[w] || 0) + 1
+      }
+    })
+  })
+  
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 30)
+    .map(([word, count], i) => ({
+      word,
+      count,
+      size: Math.max(11, Math.min(28, 10 + count * 3)),
+      color: ['#00e5c3','#7c6ff7','#1da1f2','#f5a623','#ff5a5a','#e91e9c','#4caf50'][i % 7],
+      opacity: Math.max(0.5, 1 - i * 0.02)
+    }))
+})
+
+// Achados Relevantes — extrair pontos-chave do relatório
+const achadosRelevantes = computed(() => {
+  const achados = []
+  const allContent = secoes.value.map(s => s.content || '').join('\n')
+  if (!allContent) return []
+  
+  // Padrões que indicam achados relevantes
+  const patterns = [
+    /(?:importante|crucial|crítico|significativo|destaque|notável|surpreendente)[\s:]+([^.]+\.)/gi,
+    /(?:descobrimos|identificamos|observamos|constatamos|revelou)[\s:]+([^.]+\.)/gi,
+    /(?:ponto de inflexão|mudança significativa|virada)[\s:]+([^.]+\.)/gi,
+  ]
+  
+  patterns.forEach(re => {
+    let m
+    while ((m = re.exec(allContent)) !== null && achados.length < 5) {
+      const text = m[1]?.trim() || m[0]?.trim()
+      if (text.length > 20 && text.length < 250) {
+        achados.push({ text: text.replace(/\*\*/g, ''), tipo: 'achado' })
+      }
+    }
+  })
+  
+  // Se não encontrou padrões, pegar frases com ** (negrito = destaque)
+  if (achados.length < 3) {
+    const boldPatterns = [...allContent.matchAll(/\*\*([^*]{15,120})\*\*/g)]
+    boldPatterns.slice(0, 5 - achados.length).forEach(m => {
+      const text = m[1].trim()
+      if (!achados.some(a => a.text.includes(text.slice(0, 20)))) {
+        achados.push({ text, tipo: 'destaque' })
+      }
+    })
+  }
+  
+  return achados.slice(0, 5)
+})
+
+// Mapa de calor — sentimento por rodada (usando dados do analytics)
+const heatmapData = computed(() => {
+  const rds = rounds.value
+  if (rds.length < 2) return null
+  
+  // Usar as métricas disponíveis por rodada
+  const metrics = ['twitter', 'reddit', 'total']
+  const maxVal = Math.max(...rds.map(r => r.total || 0), 1)
+  
+  return {
+    rounds: rds.map(r => ({
+      round: r.round,
+      twitter: r.twitter || 0,
+      reddit: r.reddit || 0,
+      total: r.total || 0,
+      intensity: (r.total || 0) / maxVal
+    })),
+    maxVal
+  }
+})
+
 // ─── PARSERS ─────────────────────────────────────────────────
 
 // Confiança
@@ -499,7 +589,7 @@ async function exportarPDF() {
     clone.style.background = '#ffffff'
     clone.style.color = '#1a1a2e'
     clone.style.padding = '20px'
-    clone.querySelectorAll('.bloco, .kpi-card, .chart-bloco, .cen-card, .risk-card, .rec-card, .insight-card, .pred-card, .sent-card, .post-card').forEach(b => {
+    clone.querySelectorAll('.bloco, .kpi-card, .chart-bloco, .cen-card, .risk-card, .rec-card, .insight-card, .pred-card, .sent-card, .post-card, .achado-card').forEach(b => {
       b.style.background = '#ffffff'
       b.style.borderColor = '#e0e0ee'
       b.style.color = '#2a2a3e'
@@ -889,6 +979,74 @@ function abrirChat() {
         </div>
       </div>
 
+      <!-- ══════════ ACHADOS RELEVANTES ══════════ -->
+      <div class="bloco" v-if="achadosRelevantes.length">
+        <div class="bloco-label-row">
+          <span class="bloco-label">⭐ Achados Relevantes</span>
+          <span class="bloco-count">{{ achadosRelevantes.length }}</span>
+        </div>
+        <div class="achados-list">
+          <div v-for="(a, i) in achadosRelevantes" :key="i" class="achado-card">
+            <div class="achado-badge" :class="a.tipo">{{ a.tipo === 'achado' ? '🔍 Achado' : '⭐ Destaque' }}</div>
+            <div class="achado-text">{{ a.text }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ NUVEM DE PALAVRAS ══════════ -->
+      <div class="bloco" v-if="wordCloud.length">
+        <div class="bloco-label-row">
+          <span class="bloco-label">☁️ Nuvem de Palavras — Tópicos Mais Mencionados</span>
+          <span class="bloco-count">{{ wordCloud.length }}</span>
+        </div>
+        <div class="wordcloud">
+          <span v-for="(w, i) in wordCloud" :key="i" class="wc-word"
+            :style="{fontSize: w.size+'px', color: w.color, opacity: w.opacity}">
+            {{ w.word }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ══════════ MAPA DE CALOR — ATIVIDADE POR RODADA ══════════ -->
+      <div class="bloco" v-if="heatmapData">
+        <div class="bloco-label-row">
+          <span class="bloco-label">🔥 Mapa de Atividade por Rodada</span>
+        </div>
+        <div class="heatmap">
+          <div class="hm-labels">
+            <div class="hm-lbl">Twitter</div>
+            <div class="hm-lbl">Reddit</div>
+            <div class="hm-lbl">Total</div>
+          </div>
+          <div class="hm-grid">
+            <div class="hm-row">
+              <div v-for="r in heatmapData.rounds" :key="'tw'+r.round" class="hm-cell"
+                :style="{background: `rgba(29,161,242,${Math.min(r.twitter/heatmapData.maxVal, 1) * 0.8 + 0.1})`}"
+                :title="`R${r.round}: ${r.twitter} interações (Twitter)`">
+                <span v-if="r.twitter">{{ r.twitter }}</span>
+              </div>
+            </div>
+            <div class="hm-row">
+              <div v-for="r in heatmapData.rounds" :key="'rd'+r.round" class="hm-cell"
+                :style="{background: `rgba(255,69,0,${Math.min(r.reddit/heatmapData.maxVal, 1) * 0.8 + 0.1})`}"
+                :title="`R${r.round}: ${r.reddit} interações (Reddit)`">
+                <span v-if="r.reddit">{{ r.reddit }}</span>
+              </div>
+            </div>
+            <div class="hm-row">
+              <div v-for="r in heatmapData.rounds" :key="'tot'+r.round" class="hm-cell"
+                :style="{background: `rgba(0,229,195,${r.intensity * 0.8 + 0.1})`}"
+                :title="`R${r.round}: ${r.total} total`">
+                <span v-if="r.total">{{ r.total }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="hm-rounds">
+            <span v-for="r in heatmapData.rounds" :key="'lbl'+r.round" class="hm-rlbl">R{{ r.round }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ══════════ 10. ANÁLISE PROFUNDA ══════════ -->
       <div class="bloco deep-bloco" v-if="deepSections.length">
         <div class="bloco-label-row">
@@ -1170,6 +1328,35 @@ function abrirChat() {
 .post-stats { display:flex;gap:12px;font-size:11px;color:var(--text-muted); }
 .ps-like { color:#ff5a5a; }
 
+/* ─── Achados Relevantes ─────────────────────────────────── */
+.achados-list { display:flex;flex-direction:column;gap:10px; }
+.achado-card { background:var(--bg-raised);border:1px solid var(--border);border-left:3px solid #f5a623;border-radius:0 10px 10px 0;padding:14px 16px;display:flex;flex-direction:column;gap:6px; }
+.achado-badge { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px; }
+.achado-badge.achado { color:#f5a623; }
+.achado-badge.destaque { color:#7c6ff7; }
+.achado-text { font-size:13px;color:var(--text-secondary);line-height:1.7; }
+
+/* ─── Word Cloud ─────────────────────────────────────── */
+.wordcloud { display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;padding:20px 10px;min-height:80px; }
+.wc-word { font-weight:700;line-height:1.3;cursor:default;transition:transform .15s; }
+.wc-word:hover { transform:scale(1.15); }
+
+/* ─── Heatmap ─────────────────────────────────────── */
+.heatmap { display:flex;flex-direction:column;gap:4px; }
+.hm-labels { display:flex;flex-direction:column;gap:4px;position:absolute;left:0;top:0; }
+.heatmap { position:relative;padding-left:60px; }
+.hm-lbl { font-size:10px;color:var(--text-muted);height:32px;display:flex;align-items:center;position:absolute;left:0; }
+.hm-lbl:nth-child(1) { top:0; }
+.hm-lbl:nth-child(2) { top:36px; }
+.hm-lbl:nth-child(3) { top:72px; }
+.hm-grid { display:flex;flex-direction:column;gap:4px; }
+.hm-row { display:flex;gap:3px; }
+.hm-cell { height:32px;flex:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,0.8);min-width:24px;cursor:default;transition:transform .1s; }
+.hm-cell:hover { transform:scale(1.1);z-index:1; }
+.hm-cell span { text-shadow:0 1px 2px rgba(0,0,0,0.5); }
+.hm-rounds { display:flex;gap:3px;margin-top:2px; }
+.hm-rlbl { flex:1;text-align:center;font-size:9px;color:var(--text-muted);font-weight:600; }
+
 /* ─── Doc footer ─────────────────────────────────────────────── */
 .doc-foot { display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);padding:12px 4px;border-top:1px solid var(--border); }
 
@@ -1215,7 +1402,7 @@ function abrirChat() {
 
   /* White background for ALL cards */
   .bloco,.kpi-card,.chart-bloco,.cen-card,.agent-card,.prob-section,
-  .risk-card,.rec-card,.insight-card,.pred-card,.cta-bar,.deep-bloco,.sent-card,.post-card { background:#fff !important;border-color:#e0e0ee !important; }
+  .risk-card,.rec-card,.insight-card,.pred-card,.cta-bar,.deep-bloco,.sent-card,.post-card,.achado-card { background:#fff !important;border-color:#e0e0ee !important; }
 
   /* Text colors for readability */
   .md-body,.md-body :deep(*) { color:#2a2a3e !important; }
