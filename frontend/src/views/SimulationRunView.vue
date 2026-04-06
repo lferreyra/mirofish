@@ -210,7 +210,24 @@ function voltarProjeto() {
 
 const poll = usePolling(carregarStatus, 5000)
 
+// ─── Carregar project_id (não vem no run-status) ──────────────
+async function carregarProjectId() {
+  try {
+    // Tenta via simulation list para obter project_id
+    const res = await service.get('/api/simulation/list', {
+      params: { limit: 100 }
+    })
+    const raw = res?.data?.data || res?.data || res
+    const lista = Array.isArray(raw) ? raw : (raw?.simulations || raw?.history || [])
+    const sim = lista.find(s => s.simulation_id === route.params.simulationId)
+    if (sim?.project_id) {
+      status.value.project_id = sim.project_id
+    }
+  } catch { /* ignorar — voltarProjeto cai em '/' */ }
+}
+
 onMounted(() => {
+  carregarProjectId()
   poll.start()
 })
 </script>
