@@ -8,11 +8,16 @@ const route  = useRoute()
 const router = useRouter()
 
 // ─── Tela: 'config' ou 'pipeline' ────────────────────────────
-const tela = ref('config')
+// Se agentes e rodadas já vierem no query (do wizard/modal), pular config
+const _fromWizard = !!(route.query.agentes && route.query.rodadas)
+const tela = ref(_fromWizard ? 'pipeline' : 'config')
 
 // ─── Config ───────────────────────────────────────────────────
-const cfgAgentes = ref(Number(route.query.agentes) || 50)
-const cfgRodadas = ref(Number(route.query.rodadas) || 20)
+const cfgAgentes  = ref(Number(route.query.agentes)  || 50)
+const cfgRodadas  = ref(Number(route.query.rodadas)  || 20)
+// Hipótese e título opcionais passados pelo ProjetoView (nova simulação)
+const cfgHipotese = ref(route.query.hipotese ? decodeURIComponent(route.query.hipotese) : '')
+const cfgTitulo   = ref(route.query.titulo   ? decodeURIComponent(route.query.titulo)   : '')
 
 // ─── Pipeline ─────────────────────────────────────────────────
 const phase       = ref('init')
@@ -338,6 +343,13 @@ async function startSimulation(simId) {
   })
   return res.data || res
 }
+
+// ─── Auto-start se vier do wizard ───────────────────────────
+onMounted(() => {
+  if (_fromWizard) {
+    runPipeline().catch(handleError)
+  }
+})
 
 function handleError(e) {
   if (abortado.value) return
