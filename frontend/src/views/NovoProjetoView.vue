@@ -5,19 +5,66 @@ import AppShell from '../components/layout/AppShell.vue'
 import service from '../api'
 
 const router = useRouter()
-const nome = ref('')
+
+// ─── Estado geral ─────────────────────────────────────────────
+const etapa    = ref(1) // 1=identificação, 2=hipótese, 3=materiais
+const isLoading = ref(false)
+const error     = ref('')
+
+// ─── Etapa 1: Identificação ───────────────────────────────────
+const nome    = ref('')
 const cliente = ref('')
-const briefing = ref('')
+
+// ─── Etapa 2: Hipótese ────────────────────────────────────────
+const cenario          = ref('')
+const briefing         = ref('')
+const gerandoHipotese  = ref(false)
+
+// ─── Etapa 3: Materiais ───────────────────────────────────────
 const arquivos = ref([])
 const dragOver = ref(false)
-const isLoading = ref(false)
-const error = ref('')
-const etapa = ref(1) // 1 = identificação, 2 = hipótese, 3 = materiais
 
-const valido = computed(() => nome.value.trim().length >= 3 && briefing.value.trim().length >= 10)
+// ─── Validações ───────────────────────────────────────────────
+const etapa1Valida = computed(() => nome.value.trim().length >= 3)
+const etapa2Valida = computed(() => briefing.value.trim().length >= 10)
+const valido       = computed(() => etapa1Valida.value && etapa2Valida.value)
 
+// ─── Qualidade dos materiais ─────────────────────────────────
+const qualidade = computed(() => {
+  const n = arquivos.value.length
+  if (n === 0) return { label: 'Sem materiais', cor: '#6b6b80', pct: 0,   desc: 'Os agentes usarão apenas a hipótese como base' }
+  if (n === 1) return { label: 'Básico',        cor: '#f5a623', pct: 33,  desc: 'Um documento fornece contexto inicial' }
+  if (n <= 3)  return { label: 'Bom',           cor: '#7c6ff7', pct: 66,  desc: 'Múltiplos documentos enriquecem os agentes' }
+  return              { label: 'Excelente',      cor: '#00e5c3', pct: 100, desc: 'Base de conhecimento robusta para simulação precisa' }
+})
+
+// ─── Gerar hipótese com IA ────────────────────────────────────
+async function gerarHipotese() {
+  if (!cenario.value.trim()) return
+  gerandoHipotese.value = true
+  try {
+    const res = await service.post('/api/graph/generate-hypothesis', {
+      cenario:   cenario.value,
+      segmento: ''
+    })
+    const data = res.data || res
+    if (data.hipotese) briefing.value = data.hipotese
+    else if (data.titulo && !briefing.value) briefing.value = data.titulo
+  } catch {
+    // Fallback local
+    briefing.value = `Como ${cenario.value.toLowerCase()} vai impactar a opinião pública nos próximos meses?`
+  } finally {
+    gerandoHipotese.value = false
+  }
+}
+
+// ─── Upload de arquivos ───────────────────────────────────────
 function onFileChange(e) { adicionarArquivos(Array.from(e.target.files || [])) }
-function onDrop(e) { e.preventDefault(); dragOver.value = false; adicionarArquivos(Array.from(e.dataTransfer.files || [])) }
+function onDrop(e) {
+  e.preventDefault()
+  dragOver.value = false
+  adicionarArquivos(Array.from(e.dataTransfer.files || []))
+}
 function adicionarArquivos(files) {
   files.forEach(f => {
     if (f.size > 16 * 1024 * 1024) return
@@ -33,21 +80,14 @@ function formatBytes(b) {
   return (b/(1024*1024)).toFixed(1) + ' MB'
 }
 function fileIcon(n) {
-  if (n.match(/\.pdf$/i)) return '📄'
-  if (n.match(/\.docx?$/i)) return '📝'
-  if (n.match(/\.txt$/i)) return '📃'
-  if (n.match(/\.(png|jpg|jpeg)$/i)) return '🖼️'
+  if (n.match(/\.pdf$/i))           return '📄'
+  if (n.match(/\.docx?$/i))         return '📝'
+  if (n.match(/\.txt$/i))           return '📃'
+  if (n.match(/\.(png|jpg|jpeg)$/i))return '🖼️'
   return '📎'
 }
 
-const qualidade = computed(() => {
-  const n = arquivos.value.length
-  if (n === 0) return { label: 'Sem materiais', cor: '#6b6b80', pct: 0, desc: 'Os agentes usarão apenas a hipótese como base' }
-  if (n === 1) return { label: 'Básico', cor: '#f5a623', pct: 33, desc: 'Um documento fornece contexto inicial' }
-  if (n <= 3) return { label: 'Bom', cor: '#7c6ff7', pct: 66, desc: 'Múltiplos documentos enriquecem os agentes' }
-  return { label: 'Excelente', cor: '#00e5c3', pct: 100, desc: 'Base de conhecimento robusta para simulação precisa' }
-})
-
+// ─── Criar projeto ────────────────────────────────────────────
 async function criarProjeto() {
   if (!valido.value) return
   isLoading.value = true
@@ -69,14 +109,13 @@ async function criarProjeto() {
     const projectId = data1.project_id
     if (!projectId) throw new Error('project_id não retornado pelo servidor')
 
-    // Iniciar construção do grafo
     await service.post('/api/graph/build', {
       project_id: projectId,
       simulation_requirement: briefing.value
     })
 
-    // Navegar para o pipeline — o usuário acompanha todo o processo
-    router.push(`/simulacao/${projectId}?origem=novo_projeto&briefing=${encodeURIComponent(briefing.value.slice(0, 100))}`)
+    // Navegar para o pipeline — usuário acompanha todo o processo
+    router.push(`/simulacao/${projectId}?origem=novo_projeto`)
   } catch (e) {
     console.error(e)
     error.value = e?.response?.data?.error || e?.message || 'Erro ao criar projeto. Tente novamente.'
@@ -112,7 +151,9 @@ async function criarProjeto() {
         </div>
       </div>
 
-      <!-- ETAPA 1 — Identificação -->
+      <!-- ══════════════════════════════════ -->
+      <!-- ETAPA 1 — Identificação           -->
+      <!-- ══════════════════════════════════ -->
       <div v-if="etapa === 1" class="card">
         <div class="card-head">
           <span class="card-icon">📋</span>
@@ -123,49 +164,82 @@ async function criarProjeto() {
         </div>
         <div class="field">
           <label class="label">Nome do projeto <span class="req">*</span></label>
-          <input v-model="nome" class="inp" type="text" placeholder="Ex: Lançamento Linha Premium, Viabilidade Franquia 2026" autofocus/>
+          <input v-model="nome" class="inp" type="text"
+            placeholder="Ex: Lançamento Linha Premium, Viabilidade Franquia 2026" autofocus/>
           <div class="hint">Use um nome que identifique o objetivo da análise.</div>
         </div>
         <div class="field">
           <label class="label">Cliente / Empresa</label>
-          <input v-model="cliente" class="inp" type="text" placeholder="Ex: Empresa ABC, Cliente XYZ (opcional)"/>
+          <input v-model="cliente" class="inp" type="text"
+            placeholder="Ex: Empresa ABC, Cliente XYZ (opcional)"/>
         </div>
         <div class="step-nav">
           <span></span>
-          <button class="btn-next" :disabled="nome.trim().length < 3" @click="etapa = 2">
+          <button class="btn-next" :disabled="!etapa1Valida" @click="etapa = 2">
             Próximo: Hipótese →
           </button>
         </div>
       </div>
 
-      <!-- ETAPA 2 — Hipótese -->
+      <!-- ══════════════════════════════════ -->
+      <!-- ETAPA 2 — Hipótese               -->
+      <!-- ══════════════════════════════════ -->
       <div v-else-if="etapa === 2" class="card">
         <div class="card-head">
           <span class="card-icon">🎯</span>
           <div>
             <div class="card-title">Qual é sua hipótese?</div>
-            <div class="card-sub">Descreva o que você quer prever. Isso guia todos os agentes da simulação.</div>
+            <div class="card-sub">Descreva o cenário que quer testar. A IA pode estruturar sua hipótese automaticamente.</div>
           </div>
         </div>
+
+        <!-- Descreva seu cenário -->
+        <div class="field">
+          <label class="label">Descreva seu cenário</label>
+          <textarea
+            v-model="cenario"
+            class="textarea"
+            rows="3"
+            placeholder="Ex: E se reduzirmos o preço em 20%? Como mulheres 30-45 anos vão reagir ao novo posicionamento premium da marca?"
+          />
+          <div class="hint">Descreva em linguagem natural. A IA vai transformar em hipótese estruturada.</div>
+          <button
+            class="btn-generate"
+            :disabled="!cenario.trim() || gerandoHipotese"
+            @click="gerarHipotese"
+          >
+            <span v-if="gerandoHipotese" class="spinner-ia"></span>
+            <span v-else>✦</span>
+            {{ gerandoHipotese ? 'Gerando hipótese...' : 'Gerar hipótese com IA' }}
+          </button>
+        </div>
+
+        <!-- Divisor -->
+        <div class="divider-label">Ou preencha diretamente:</div>
+
+        <!-- Hipótese manual -->
         <div class="field">
           <label class="label">Hipótese / Briefing <span class="req">*</span></label>
           <textarea
             v-model="briefing"
             class="textarea"
-            rows="5"
-            placeholder="Ex: Como o mercado feminino 35-50 anos vai reagir ao lançamento de uma linha premium de bem-estar com preço acima da média? Quais são os riscos e oportunidades?"
+            rows="4"
+            placeholder="Como X vai impactar Y nos próximos Z meses? Quais são os riscos e oportunidades?"
           />
-          <div class="hint">Quanto mais contexto, mais precisa a simulação. Mínimo 10 caracteres.</div>
+          <div class="hint">Mínimo 10 caracteres. Quanto mais detalhado, mais precisa a simulação.</div>
         </div>
+
         <div class="step-nav">
           <button class="btn-ghost" @click="etapa = 1">← Voltar</button>
-          <button class="btn-next" :disabled="briefing.trim().length < 10" @click="etapa = 3">
+          <button class="btn-next" :disabled="!etapa2Valida" @click="etapa = 3">
             Próximo: Materiais →
           </button>
         </div>
       </div>
 
-      <!-- ETAPA 3 — Materiais + Criar -->
+      <!-- ══════════════════════════════════ -->
+      <!-- ETAPA 3 — Materiais + Criar       -->
+      <!-- ══════════════════════════════════ -->
       <div v-else-if="etapa === 3" class="card">
         <div class="card-head">
           <span class="card-icon">📁</span>
@@ -190,7 +264,8 @@ async function criarProjeto() {
           @drop="onDrop"
           @click="$refs.fileInput.click()"
         >
-          <input ref="fileInput" type="file" multiple accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" @change="onFileChange"/>
+          <input ref="fileInput" type="file" multiple accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
+            style="display:none" @change="onFileChange"/>
           <div class="drop-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="30" height="30">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -212,7 +287,6 @@ async function criarProjeto() {
           </div>
         </div>
 
-        <!-- Qualidade -->
         <div class="quality-wrap">
           <div class="quality-bar-bg">
             <div class="quality-bar-fill" :style="{ width: qualidade.pct + '%', background: qualidade.cor }"></div>
@@ -225,7 +299,7 @@ async function criarProjeto() {
 
         <div v-if="error" class="error-box">⚠️ {{ error }}</div>
 
-        <!-- Resumo antes de criar -->
+        <!-- Resumo -->
         <div class="resumo">
           <div class="resumo-title">Resumo do projeto</div>
           <div class="resumo-row">
@@ -268,12 +342,12 @@ async function criarProjeto() {
 .step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
 .step-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: var(--bg-raised); border: 2px solid var(--border-md); color: var(--text-muted); z-index: 1; transition: all 0.3s; }
 .step.active .step-dot { background: var(--accent2); border-color: var(--accent2); color: #fff; }
-.step.done .step-dot { background: var(--accent); border-color: var(--accent); color: #000; }
+.step.done   .step-dot { background: var(--accent);  border-color: var(--accent);  color: #000; }
 .step-line { position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: var(--border-md); z-index: 0; transition: background 0.3s; }
 .step-line.done { background: var(--accent); }
 .step-label { font-size: 10px; color: var(--text-muted); margin-top: 6px; text-align: center; }
 .step.active .step-label { color: var(--accent2); font-weight: 500; }
-.step.done .step-label { color: var(--text-secondary); }
+.step.done   .step-label { color: var(--text-secondary); }
 
 /* Card */
 .card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 18px; animation: fadeIn 0.25s ease; }
@@ -284,7 +358,7 @@ async function criarProjeto() {
 .card-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
 
 /* Fields */
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; flex-direction: column; gap: 7px; }
 .label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
 .req { color: var(--accent); }
 .inp { background: var(--bg-raised); border: 1px solid var(--border-md); border-radius: 8px; color: var(--text-primary); font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.15s; width: 100%; }
@@ -293,8 +367,30 @@ async function criarProjeto() {
 .textarea:focus { border-color: var(--accent2); }
 .hint { font-size: 12px; color: var(--text-muted); }
 
-.opt-badge { font-size: 11px; color: var(--text-muted); background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; font-weight: 400; }
+/* Botão gerar com IA */
+.btn-generate {
+  background: var(--accent2); color: #fff; border: none; border-radius: 10px;
+  padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s; align-self: flex-start;
+}
+.btn-generate:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+.btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.spinner-ia { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
 
+/* Divisor */
+.divider-label {
+  font-size: 12px; color: var(--text-muted); text-align: center;
+  position: relative;
+}
+.divider-label::before, .divider-label::after {
+  content: ''; position: absolute; top: 50%; height: 1px;
+  background: var(--border); width: 30%;
+}
+.divider-label::before { left: 0; }
+.divider-label::after  { right: 0; }
+
+.opt-badge { font-size: 11px; color: var(--text-muted); background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; font-weight: 400; }
 .quality-tip { background: rgba(124,111,247,0.08); border: 1px solid rgba(124,111,247,0.2); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--accent2); line-height: 1.5; }
 
 /* Drop zone */
@@ -339,9 +435,7 @@ async function criarProjeto() {
 .btn-criar { background: var(--accent); color: #000; border: none; border-radius: 10px; padding: 13px 28px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
 .btn-criar:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
 .btn-criar:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-
 .spinner { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.25); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
 .error-box { background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--danger); }
 </style>
