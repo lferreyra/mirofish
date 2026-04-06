@@ -18,22 +18,19 @@ const abaAtiva  = ref('relatorio')
 onMounted(async () => {
   carregando.value = true
   try {
-    const [rRes, aRes] = await Promise.allSettled([
-      service.get(`/api/report/${route.params.reportId}`),
-      service.get(`/api/report/by-simulation-analytics/${route.params.reportId}`).catch(() => null)
-    ])
+    // 1. Carregar relatório
+    const rRes = await service.get(`/api/report/${route.params.reportId}`).catch(e => ({ error: e }))
+    if (rRes.error) throw rRes.error
 
-    if (rRes.status === 'fulfilled') {
-      const raw = rRes.value?.data?.data || rRes.value?.data || rRes.value
-      report.value = raw
+    const raw = rRes?.data?.data || rRes?.data || rRes
+    report.value = raw
 
-      // Buscar analytics usando simulation_id do relatório
-      if (raw?.simulation_id) {
-        try {
-          const aRes2 = await service.get(`/api/analytics/${raw.simulation_id}`)
-          analytics.value = aRes2?.data?.data || aRes2?.data || null
-        } catch { /* analytics opcional */ }
-      }
+    // 2. Carregar analytics com simulation_id (endpoint correto: /api/analytics/<sim_id>)
+    if (raw?.simulation_id) {
+      try {
+        const aRes = await service.get(`/api/analytics/${raw.simulation_id}`)
+        analytics.value = aRes?.data?.data || aRes?.data || null
+      } catch { /* analytics é opcional — não bloqueia o relatório */ }
     }
   } catch (e) {
     erro.value = e?.response?.data?.error || e?.message || 'Erro ao carregar relatório.'
