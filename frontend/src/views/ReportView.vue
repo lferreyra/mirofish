@@ -18,7 +18,8 @@ let reportPollTimer = null
 function hasReportContent(raw) {
   const sections = raw?.outline?.sections || []
   const hasSectionBody = sections.some(s => (s?.content || '').trim().length > 0)
-  return hasSectionBody
+  const hasSummary = (raw?.outline?.summary || '').trim().length > 0
+  return hasSectionBody || hasSummary
 }
 
 async function carregarRelatorio() {
@@ -590,70 +591,7 @@ const gerandoPDF = ref(false)
 const pageRef = ref(null)
 
 async function exportarPDF() {
-  if (gerandoPDF.value) return
-  gerandoPDF.value = true
-  try {
-    const el = pageRef.value
-    if (!el) {
-      window.print()
-      return
-    }
-
-    const clone = el.cloneNode(true)
-    clone.querySelectorAll('.np,.cta-bar,.page-head').forEach(n => n.remove())
-    clone.querySelectorAll('.deep-tabs,.deep-content').forEach(n => (n.style.display = 'none'))
-    clone.querySelectorAll('.deep-print-all').forEach(n => (n.style.display = 'block'))
-    clone.querySelectorAll('.sec-body-inner').forEach(n => (n.style.display = 'block'))
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-up.')
-      return
-    }
-
-    const css = `
-      <style>
-        @page { size: A4; margin: 12mm; }
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { margin: 0; background: #fff; color: #1f2430; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 11pt; }
-        .page { padding: 0; display: flex; flex-direction: column; gap: 10px; }
-        .bloco,.kpi-card,.chart-bloco,.cen-card,.risk-card,.rec-card,.insight-card,.pred-card,.sent-card,.post-card,.achado-card,.agent-card {
-          background: #fff !important; border: 1px solid #e4e6eb !important; break-inside: avoid; page-break-inside: avoid;
-        }
-        .bloco { border-radius: 10px; padding: 14px 16px; }
-        .bloco-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .cen-grid,.agents-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        .insights-grid,.pred-grid,.posts-grid,.sentiment-grid { grid-template-columns: 1fr 1fr !important; }
-        .resumo-inner { grid-template-columns: auto 1fr !important; gap: 14px; }
-        .resumo-badges { flex-direction: row !important; flex-wrap: wrap !important; }
-        .doc-foot { border-top: 1px solid #e4e6eb; color: #69707d; padding-top: 8px; }
-        .md-body, .md-body * { color: #252b37 !important; }
-        .bloco-label,.bloco-label-sm,.cb-label,.kpi-label,.prob-title { color: #69707d !important; }
-      </style>
-    `
-
-    printWindow.document.open()
-    printWindow.document.write(`
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>${(titulo.value || 'Relatório AUGUR').replace(/</g, '&lt;')}</title>
-          ${css}
-        </head>
-        <body></body>
-      </html>
-    `)
-    printWindow.document.close()
-    printWindow.document.body.appendChild(clone)
-
-    setTimeout(() => {
-      printWindow.focus()
-      printWindow.print()
-      printWindow.close()
-    }, 250)
-  } finally {
-    gerandoPDF.value = false
-  }
+  window.print()
 }
 function abrirChat() {
   // Navigate to interaction/chat view if available
