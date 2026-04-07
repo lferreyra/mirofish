@@ -1,0 +1,93 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: MIROFISH
+    - link "Visit our GitHub ↗" [ref=e7] [cursor=pointer]:
+      - /url: https://github.com/666ghj/MiroFish
+      - text: Visit our GitHub
+      - generic [ref=e8]: ↗
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]: A simple general-purpose collective intelligence engine
+          - generic [ref=e14]: / v0.1 Preview
+        - heading "Upload any report simulate the future instantly" [level=1] [ref=e15]:
+          - text: Upload any report
+          - generic [ref=e16]: simulate the future instantly
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: Even with only a short passage of text, MiroFish can turn those real-world seeds into a parallel world of up to millions of agents. Inject variables from a god-view perspective and search for the "local optimum" in a complex, dynamic environment.
+          - paragraph [ref=e19]: Rehearse the future in agent swarms, and let better decisions emerge after a hundred battles_
+      - generic [ref=e21]:
+        - img "MiroFish Logo" [ref=e23]
+        - button "↓" [ref=e24] [cursor=pointer]
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: ■
+          - text: System Status
+        - heading "Ready" [level=2] [ref=e29]
+        - paragraph [ref=e30]: The prediction engine is standing by. Upload multiple unstructured files to initialize a simulation sequence.
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Low Cost
+            - generic [ref=e34]: Typical runs average about $5 each
+          - generic [ref=e35]:
+            - generic [ref=e36]: High Capacity
+            - generic [ref=e37]: Supports simulations with up to millions of agents
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]: ◇
+            - text: Workflow
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]: "01"
+              - generic [ref=e44]:
+                - generic [ref=e45]: Graph Build
+                - generic [ref=e46]: Extract real-world seeds, inject individual and collective memory, and build GraphRAG.
+            - generic [ref=e47]:
+              - generic [ref=e48]: "02"
+              - generic [ref=e49]:
+                - generic [ref=e50]: Environment Setup
+                - generic [ref=e51]: Extract entity relations, generate personas, and inject simulation parameters into the environment.
+            - generic [ref=e52]:
+              - generic [ref=e53]: "03"
+              - generic [ref=e54]:
+                - generic [ref=e55]: Run Simulation
+                - generic [ref=e56]: Run both platforms in parallel, interpret forecasting intent automatically, and update temporal memory dynamically.
+            - generic [ref=e57]:
+              - generic [ref=e58]: "04"
+              - generic [ref=e59]:
+                - generic [ref=e60]: Report Generation
+                - generic [ref=e61]: ReportAgent uses a rich toolset to deeply interact with the post-simulation environment.
+            - generic [ref=e62]:
+              - generic [ref=e63]: "05"
+              - generic [ref=e64]:
+                - generic [ref=e65]: Deep Interaction
+                - generic [ref=e66]: Talk to any participant in the simulated world, or interact directly with ReportAgent.
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: 01 / Input Files
+            - generic [ref=e72]: "Supported formats: PDF, MD, TXT, PNG, JPG, JPEG, WEBP"
+          - generic [ref=e73]:
+            - generic [ref=e74]: Parsing Mode
+            - generic [ref=e75]:
+              - button "Text Only" [ref=e76] [cursor=pointer]
+              - button "Text + Vision" [ref=e77] [cursor=pointer]
+            - paragraph [ref=e78]: Text + Vision keeps text extraction and adds visual enrichment for images, tables, charts, and graphics-heavy pages.
+          - generic [ref=e80] [cursor=pointer]:
+            - generic [ref=e81]: ↑
+            - generic [ref=e82]: Drag files here to upload
+            - generic [ref=e83]: or click to browse your files
+        - generic [ref=e85]: Input
+        - generic [ref=e86]:
+          - generic [ref=e88]: ">_ 02 / Simulation Prompt"
+          - generic [ref=e89]:
+            - textbox "// Describe your simulation or forecasting goal in natural language" [ref=e90]
+            - generic [ref=e91]: "Engine: MiroFish-V1.0"
+        - button "Launch Engine →" [disabled] [ref=e93]:
+          - generic [ref=e94]: Launch Engine
+          - generic [ref=e95]: →
+    - generic [ref=e96]:
+      - generic [ref=e99]: Simulation History
+      - generic [ref=e103]: Loading...

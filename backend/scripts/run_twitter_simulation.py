@@ -46,6 +46,12 @@ else:
     if os.path.exists(_backend_env):
         load_dotenv(_backend_env)
 
+from app.utils.openrouter_runtime import (
+    configure_openrouter_runtime,
+    get_effective_llm_api_key,
+)
+
+configure_openrouter_runtime()
 
 import re
 
@@ -434,7 +440,10 @@ class TwitterSimulationRunner:
         - LLM_MODEL_NAME: 模型名称
         """
         # 优先从 .env 读取配置
-        llm_api_key = os.environ.get("LLM_API_KEY", "")
+        llm_api_key = get_effective_llm_api_key(
+            explicit_api_key=os.environ.get("LLM_API_KEY", ""),
+            base_url=os.environ.get("LLM_BASE_URL", ""),
+        ) or ""
         llm_base_url = os.environ.get("LLM_BASE_URL", "")
         llm_model = os.environ.get("LLM_MODEL_NAME", "")
         
@@ -447,7 +456,7 @@ class TwitterSimulationRunner:
             os.environ["OPENAI_API_KEY"] = llm_api_key
         
         if not os.environ.get("OPENAI_API_KEY"):
-            raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY")
+            raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY 或 OPENROUTER_API_KEY1..N")
         
         if llm_base_url:
             os.environ["OPENAI_API_BASE_URL"] = llm_base_url

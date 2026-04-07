@@ -4,6 +4,7 @@ Thumbs.db
 
 # 环境变量（保护敏感信息）
 .env
+.env.openrouter
 .env.local
 .env.*.local
 .env.development
@@ -58,3 +59,7 @@ backend/uploads/
 
 # Docker 数据
 data/
+
+# Tool state directories
+.omx/
+.omc/

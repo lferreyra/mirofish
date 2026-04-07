@@ -33,7 +33,9 @@ def generate_report():
     请求（JSON）：
         {
             "simulation_id": "sim_xxxx",    // 必填，模拟ID
-            "force_regenerate": false        // 可选，强制重新生成
+            "force_regenerate": false,       // 可选，强制重新生成
+            "report_id": "report_xxxx",      // 可选，指定已有报告ID
+            "resume_failed": false           // 可选，失败后从断点继续
         }
     
     返回：
@@ -58,6 +60,8 @@ def generate_report():
             }), 400
 
         force_regenerate = data.get('force_regenerate', False)
+        requested_report_id = data.get('report_id')
+        resume_failed = data.get('resume_failed', False)
         
         # 获取模拟信息
         manager = SimulationManager()
@@ -106,9 +110,40 @@ def generate_report():
                 "error": t('api.missingSimRequirement')
             }), 400
         
-        # 提前生成 report_id，以便立即返回给前端
-        import uuid
-        report_id = f"report_{uuid.uuid4().hex[:12]}"
+        # 明确要求从失败报告续跑时，复用现有 report_id
+        if requested_report_id:
+            existing_requested_report = ReportManager.get_report(requested_report_id)
+            if not existing_requested_report:
+                return jsonify({
+                    "success": False,
+                    "error": f"报告不存在: {requested_report_id}"
+                }), 404
+            if existing_requested_report.simulation_id != simulation_id:
+                return jsonify({
+                    "success": False,
+                    "error": "report_id 与 simulation_id 不匹配"
+                }), 400
+            if existing_requested_report.status == ReportStatus.COMPLETED and not force_regenerate:
+                return jsonify({
+                    "success": True,
+                    "data": {
+                        "simulation_id": simulation_id,
+                        "report_id": existing_requested_report.report_id,
+                        "status": "completed",
+                        "message": "报告已存在",
+                        "already_generated": True
+                    }
+                })
+            if resume_failed and existing_requested_report.status != ReportStatus.FAILED:
+                return jsonify({
+                    "success": False,
+                    "error": "只有 failed 状态的报告才能断点续跑"
+                }), 400
+            report_id = requested_report_id
+        else:
+            # 提前生成 report_id，以便立即返回给前端
+            import uuid
+            report_id = f"report_{uuid.uuid4().hex[:12]}"
         
         # 创建异步任务
         task_manager = TaskManager()
@@ -153,7 +188,8 @@ def generate_report():
                 # 生成报告（传入预先生成的 report_id）
                 report = agent.generate_report(
                     progress_callback=progress_callback,
-                    report_id=report_id
+                    report_id=report_id,
+                    resume_failed=resume_failed,
                 )
                 
                 # 保存报告

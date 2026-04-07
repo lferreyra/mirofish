@@ -58,7 +58,7 @@
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
                   </div>
-                  <span class="loading-text">{{ $t('step4.generatingSection', { title: section.title }) }}</span>
+                  <span class="loading-text">Generating {{ section.title }}...</span>
                 </div>
               </div>
             </div>
@@ -85,8 +85,8 @@
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           <div class="action-bar-text">
-            <span class="action-bar-title">{{ $t('step5.interactiveTools') }}</span>
-            <span class="action-bar-subtitle mono">{{ $t('step5.agentsAvailable', { count: profiles.length }) }}</span>
+            <span class="action-bar-title">Interactive Tools</span>
+            <span class="action-bar-subtitle mono">{{ profiles.length }} agents available</span>
           </div>
         </div>
           <div class="action-bar-tabs">
@@ -98,7 +98,7 @@
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
               </svg>
-              <span>{{ $t('step5.chatWithReportAgent') }}</span>
+              <span>Chat with Report Agent</span>
             </button>
             <div class="agent-dropdown" v-if="profiles.length > 0">
               <button 
@@ -110,13 +110,13 @@
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span>{{ selectedAgent ? selectedAgent.username : $t('step5.chatWithAgent') }}</span>
+                <span>{{ selectedAgent ? selectedAgent.username : 'Chat with any individual in the world' }}</span>
                 <svg class="dropdown-arrow" :class="{ open: showAgentDropdown }" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
               <div v-if="showAgentDropdown" class="dropdown-menu">
-                <div class="dropdown-header">{{ $t('step5.selectChatTarget') }}</div>
+                <div class="dropdown-header">Select Conversation Target</div>
                 <div 
                   v-for="(agent, idx) in profiles" 
                   :key="idx"
@@ -126,13 +126,13 @@
                   <div class="agent-avatar">{{ (agent.username || 'A')[0] }}</div>
                   <div class="agent-info">
                     <span class="agent-name">{{ agent.username }}</span>
-                    <span class="agent-role">{{ agent.profession || $t('step2.unknownProfession') }}</span>
+                    <span class="agent-role">{{ agent.profession || 'Unknown profession' }}</span>
                   </div>
                 </div>
               </div>
             </div>
             <div class="tab-divider"></div>
-            <button
+            <button 
               class="tab-pill survey-pill"
               :class="{ active: activeTab === 'survey' }"
               @click="selectSurveyTab"
@@ -141,7 +141,7 @@
                 <path d="M9 11l3 3L22 4"></path>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
               </svg>
-              <span>{{ $t('step5.sendSurvey') }}</span>
+              <span>Send a survey into the world</span>
             </button>
           </div>
         </div>
@@ -154,8 +154,8 @@
             <div class="tools-card-header">
               <div class="tools-card-avatar">R</div>
               <div class="tools-card-info">
-                <div class="tools-card-name">{{ $t('step5.reportAgentChat') }}</div>
-                <div class="tools-card-subtitle">{{ $t('step5.reportAgentDesc') }}</div>
+                <div class="tools-card-name">Report Agent - Chat</div>
+                <div class="tools-card-subtitle">A fast conversational mode of the report-generation agent, with access to 4 professional tools and the full memory of MiroFish.</div>
               </div>
               <button class="tools-card-toggle" @click="showToolsDetail = !showToolsDetail">
                 <svg :class="{ 'is-expanded': showToolsDetail }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,8 +172,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">{{ $t('step5.toolInsightForge') }}</div>
-                    <div class="tool-desc">{{ $t('step5.toolInsightForgeDesc') }}</div>
+                    <div class="tool-name">InsightForge Deep Attribution</div>
+                    <div class="tool-desc">Align real-world seed data with simulation state and combine Global/Local Memory to provide deep cross-temporal attribution analysis.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-blue">
@@ -184,8 +184,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">{{ $t('step5.toolPanoramaSearch') }}</div>
-                    <div class="tool-desc">{{ $t('step5.toolPanoramaSearchDesc') }}</div>
+                    <div class="tool-name">PanoramaSearch Panorama Trace</div>
+                    <div class="tool-desc">Reconstruct event propagation paths with graph-based breadth-first traversal and capture the topology of full information flow.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-orange">
@@ -195,8 +195,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">{{ $t('step5.toolQuickSearch') }}</div>
-                    <div class="tool-desc">{{ $t('step5.toolQuickSearchDesc') }}</div>
+                    <div class="tool-name">QuickSearch Fast Retrieval</div>
+                    <div class="tool-desc">An instant GraphRAG query interface optimized for index efficiency, used to quickly extract specific node attributes and discrete facts.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-green">
@@ -208,8 +208,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">{{ $t('step5.toolInterviewSubAgent') }}</div>
-                    <div class="tool-desc">{{ $t('step5.toolInterviewSubAgentDesc') }}</div>
+                    <div class="tool-name">InterviewSubAgent Virtual Interview</div>
+                    <div class="tool-desc">An autonomous interview agent that can run multi-turn conversations in parallel with simulated individuals and collect unstructured opinions and psychological states.</div>
                   </div>
                 </div>
               </div>
@@ -224,7 +224,7 @@
                 <div class="profile-card-name">{{ selectedAgent.username }}</div>
                 <div class="profile-card-meta">
                   <span v-if="selectedAgent.name" class="profile-card-handle">@{{ selectedAgent.name }}</span>
-                  <span class="profile-card-profession">{{ selectedAgent.profession || $t('step2.unknownProfession') }}</span>
+                  <span class="profile-card-profession">{{ selectedAgent.profession || 'Unknown profession' }}</span>
                 </div>
               </div>
               <button class="profile-card-toggle" @click="showFullProfile = !showFullProfile">
@@ -235,7 +235,7 @@
             </div>
             <div v-if="showFullProfile && selectedAgent.bio" class="profile-card-body">
               <div class="profile-card-bio">
-                <div class="profile-card-label">{{ $t('step5.profileBio') }}</div>
+                <div class="profile-card-label">Bio</div>
                 <p>{{ selectedAgent.bio }}</p>
               </div>
             </div>
@@ -250,7 +250,7 @@
                 </svg>
               </div>
               <p class="empty-text">
-                {{ chatTarget === 'report_agent' ? $t('step5.chatEmptyReportAgent') : $t('step5.chatEmptyAgent') }}
+                {{ chatTarget === 'report_agent' ? 'Chat with Report Agent to explore the report in depth.' : 'Chat with simulated individuals to understand their perspectives.' }}
               </p>
             </div>
             <div 
@@ -292,7 +292,7 @@
             <textarea 
               v-model="chatInput"
               class="chat-input"
-              :placeholder="$t('step5.chatInputPlaceholder')"
+              placeholder="Type your question..."
               @keydown.enter.exact.prevent="sendMessage"
               :disabled="isSending || (!selectedAgent && chatTarget === 'agent')"
               rows="1"
@@ -317,8 +317,8 @@
           <div class="survey-setup">
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">{{ $t('step5.selectSurveyTarget') }}</span>
-                <span class="selection-count">{{ $t('step5.selectedCount', { selected: selectedAgents.size, total: profiles.length }) }}</span>
+                <span class="section-title">Select Survey Targets</span>
+                <span class="selection-count">Selected {{ selectedAgents.size }} / {{ profiles.length }}</span>
               </div>
               <div class="agents-grid">
                 <label 
@@ -335,7 +335,7 @@
                   <div class="checkbox-avatar">{{ (agent.username || 'A')[0] }}</div>
                   <div class="checkbox-info">
                     <span class="checkbox-name">{{ agent.username }}</span>
-                    <span class="checkbox-role">{{ agent.profession || $t('step2.unknownProfession') }}</span>
+                    <span class="checkbox-role">{{ agent.profession || 'Unknown profession' }}</span>
                   </div>
                   <div class="checkbox-indicator">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3">
@@ -345,20 +345,20 @@
                 </label>
               </div>
               <div class="selection-actions">
-                <button class="action-link" @click="selectAllAgents">{{ $t('step5.selectAll') }}</button>
+                <button class="action-link" @click="selectAllAgents">Select All</button>
                 <span class="action-divider">|</span>
-                <button class="action-link" @click="clearAgentSelection">{{ $t('step5.clearSelection') }}</button>
+                <button class="action-link" @click="clearAgentSelection">Clear</button>
               </div>
             </div>
 
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">{{ $t('step5.surveyQuestions') }}</span>
+                <span class="section-title">Survey Question</span>
               </div>
               <textarea 
                 v-model="surveyQuestion"
                 class="survey-input"
-                :placeholder="$t('step5.surveyInputPlaceholder')"
+                placeholder="Enter the question you want to ask all selected targets..."
                 rows="3"
               ></textarea>
             </div>
@@ -369,15 +369,15 @@
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
-              <span v-else>{{ $t('step5.submitSurvey') }}</span>
+              <span v-else>Send Survey</span>
             </button>
           </div>
 
           <!-- Survey Results -->
           <div v-if="surveyResults.length > 0" class="survey-results">
             <div class="results-header">
-              <span class="results-title">{{ $t('step5.surveyResults') }}</span>
-              <span class="results-count">{{ $t('step5.surveyResultsCount', { count: surveyResults.length }) }}</span>
+              <span class="results-title">Survey Results</span>
+              <span class="results-count">{{ surveyResults.length }} responses</span>
             </div>
             <div class="results-list">
               <div 
@@ -389,7 +389,7 @@
                   <div class="result-avatar">{{ (result.agent_name || 'A')[0] }}</div>
                   <div class="result-info">
                     <span class="result-name">{{ result.agent_name }}</span>
-                    <span class="result-role">{{ result.profession || $t('step2.unknownProfession') }}</span>
+                    <span class="result-role">{{ result.profession || 'Unknown profession' }}</span>
                   </div>
                 </div>
                 <div class="result-question">
@@ -412,11 +412,8 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { chatWithReport, getReport, getAgentLog } from '../api/report'
 import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
-
-const { t } = useI18n()
 
 const props = defineProps({
   reportId: String,
@@ -538,7 +535,7 @@ const selectAgent = (agent, idx) => {
   
   // 恢复该 Agent 的对话记录
   chatHistory.value = chatHistoryCache.value[`agent_${idx}`] || []
-  addLog(t('log.selectChatTarget', { name: agent.username }))
+  addLog(`Select Conversation Target: ${agent.username}`)
 }
 
 const formatTime = (timestamp) => {
@@ -576,17 +573,17 @@ const renderMarkdown = (content) => {
     return `<li class="md-oli" data-level="${level}">${text}</li>`
   })
   
-  // 包装无序列表
+  // 包装None序列表
   html = html.replace(/(<li class="md-li"[^>]*>.*?<\/li>\s*)+/g, '<ul class="md-ul">$&</ul>')
   // 包装有序列表
   html = html.replace(/(<li class="md-oli"[^>]*>.*?<\/li>\s*)+/g, '<ol class="md-ol">$&</ol>')
   
   // 清理列表项之间的所有空白
   html = html.replace(/<\/li>\s+<li/g, '</li><li')
-  // 清理列表开始标签后的空白
+  // 清理列表开始Tags后的空白
   html = html.replace(/<ul class="md-ul">\s+/g, '<ul class="md-ul">')
   html = html.replace(/<ol class="md-ol">\s+/g, '<ol class="md-ol">')
-  // 清理列表结束标签前的空白
+  // 清理列表结束Tags前的空白
   html = html.replace(/\s+<\/ul>/g, '</ul>')
   html = html.replace(/\s+<\/ol>/g, '</ol>')
   
@@ -602,14 +599,14 @@ const renderMarkdown = (content) => {
   html = html.replace(/(<\/h[2-5]>)<\/p>/g, '$1')
   html = html.replace(/<p class="md-p">(<ul|<ol|<blockquote|<pre|<hr)/g, '$1')
   html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>|<\/pre>)<\/p>/g, '$1')
-  // 清理块级元素前后的 <br> 标签
+  // 清理块级元素前后的 <br> Tags
   html = html.replace(/<br>\s*(<ul|<ol|<blockquote)/g, '$1')
   html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>)\s*<br>/g, '$1')
   // 清理 <p><br> 紧跟块级元素的情况（多余空行导致）
   html = html.replace(/<p class="md-p">(<br>\s*)+(<ul|<ol|<blockquote|<pre|<hr)/g, '$2')
-  // 清理连续的 <br> 标签
+  // 清理连续的 <br> Tags
   html = html.replace(/(<br>\s*){2,}/g, '<br>')
-  // 清理块级元素后紧跟的段落开始标签前的 <br>
+  // 清理块级元素后紧跟的段落开始Tags前的 <br>
   html = html.replace(/(<\/ol>|<\/ul>|<\/blockquote>)<br>(<p|<div)/g, '$1$2')
 
   // 修复非连续有序列表的编号：当单项 <ol> 被段落内容隔开时，保持编号递增
@@ -665,10 +662,10 @@ const sendMessage = async () => {
       await sendToAgent(message)
     }
   } catch (err) {
-    addLog(t('log.sendFailed', { error: err.message }))
+    addLog(`Send failed: ${err.message}`)
     chatHistory.value.push({
       role: 'assistant',
-      content: t('step5.errorOccurred', { error: err.message }),
+      content: `Sorry, an error occurred: ${err.message}`,
       timestamp: new Date().toISOString()
     })
   } finally {
@@ -680,7 +677,7 @@ const sendMessage = async () => {
 }
 
 const sendToReportAgent = async (message) => {
-  addLog(t('log.sendToReportAgent', { message: message.substring(0, 50) }))
+  addLog(`Sent to Report Agent: ${message.substring(0, 50)}...`)
   
   // Build chat history for API
   const historyForApi = chatHistory.value
@@ -700,21 +697,21 @@ const sendToReportAgent = async (message) => {
   if (res.success && res.data) {
     chatHistory.value.push({
       role: 'assistant',
-      content: res.data.response || res.data.answer || t('step5.noResponse'),
+      content: res.data.response || res.data.answer || 'No response',
       timestamp: new Date().toISOString()
     })
-    addLog(t('log.reportAgentReplied'))
+    addLog('Report Agent replied')
   } else {
-    throw new Error(res.error || t('step5.requestFailed'))
+    throw new Error(res.error || 'Request failed')
   }
 }
 
 const sendToAgent = async (message) => {
   if (!selectedAgent.value || selectedAgentIndex.value === null) {
-    throw new Error(t('step5.selectAgentFirst'))
+    throw new Error('Please select a simulated individual first')
   }
   
-  addLog(t('log.sendToAgent', { name: selectedAgent.value.username, message: message.substring(0, 50) }))
+  addLog(`Sent to ${selectedAgent.value.username}: ${message.substring(0, 50)}...`)
   
   // Build prompt with chat history
   let prompt = message
@@ -722,9 +719,9 @@ const sendToAgent = async (message) => {
     const historyContext = chatHistory.value
       .filter(msg => msg.content !== message)
       .slice(-6)
-      .map(msg => `${msg.role === 'user' ? '提问者' : '你'}：${msg.content}`)
+      .map(msg => `${msg.role === 'user' ? 'Interviewer' : 'You'}: ${msg.content}`)
       .join('\n')
-    prompt = `以下是我们之前的对话：\n${historyContext}\n\n现在我的新问题是：${message}`
+    prompt = `Here is our previous conversation:\n${historyContext}\n\nMy new question is: ${message}`
   }
   
   const res = await interviewAgents({
@@ -736,8 +733,8 @@ const sendToAgent = async (message) => {
   })
   
   if (res.success && res.data) {
-    // 正确的数据路径: res.data.result.results 是一个对象字典
-    // 格式: {"twitter_0": {...}, "reddit_0": {...}} 或单平台 {"reddit_0": {...}}
+    // 正确的数据路径: res.data.result.results 是一items对象字典
+    // 格式: {"twitter_0": {...}, "reddit_0": {...}} or单平台 {"reddit_0": {...}}
     const resultData = res.data.result || res.data
     const resultsDict = resultData.results || resultData
     
@@ -764,12 +761,12 @@ const sendToAgent = async (message) => {
         content: responseContent,
         timestamp: new Date().toISOString()
       })
-      addLog(t('log.agentReplied', { name: selectedAgent.value.username }))
+      addLog(`${selectedAgent.value.username} replied`)
     } else {
-      throw new Error(t('step5.noResponse'))
+      throw new Error('No response data')
     }
   } else {
-    throw new Error(res.error || t('step5.requestFailed'))
+    throw new Error(res.error || 'Request failed')
   }
 }
 
@@ -806,7 +803,7 @@ const submitSurvey = async () => {
   if (selectedAgents.value.size === 0 || !surveyQuestion.value.trim()) return
   
   isSurveying.value = true
-  addLog(t('log.sendSurvey', { count: selectedAgents.value.size }))
+  addLog(`Sending survey to ${selectedAgents.value.size} selected agents...`)
   
   try {
     const interviews = Array.from(selectedAgents.value).map(idx => ({
@@ -820,7 +817,7 @@ const submitSurvey = async () => {
     })
     
     if (res.success && res.data) {
-      // 正确的数据路径: res.data.result.results 是一个对象字典
+      // 正确的数据路径: res.data.result.results 是一items对象字典
       // 格式: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
       const resultData = res.data.result || res.data
       const resultsDict = resultData.results || resultData
@@ -833,20 +830,20 @@ const submitSurvey = async () => {
         const agent = profiles.value[agentIdx]
         
         // 优先使用 reddit 平台回复，其次 twitter
-        let responseContent = t('step5.noResponse')
-
+        let responseContent = 'No response'
+        
         if (typeof resultsDict === 'object' && !Array.isArray(resultsDict)) {
           const redditKey = `reddit_${agentIdx}`
           const twitterKey = `twitter_${agentIdx}`
           const agentResult = resultsDict[redditKey] || resultsDict[twitterKey]
           if (agentResult) {
-            responseContent = agentResult.response || agentResult.answer || t('step5.noResponse')
+            responseContent = agentResult.response || agentResult.answer || 'No response'
           }
         } else if (Array.isArray(resultsDict)) {
           // 兼容数组格式
           const matchedResult = resultsDict.find(r => r.agent_id === agentIdx)
           if (matchedResult) {
-            responseContent = matchedResult.response || matchedResult.answer || t('step5.noResponse')
+            responseContent = matchedResult.response || matchedResult.answer || 'No response'
           }
         }
         
@@ -860,12 +857,12 @@ const submitSurvey = async () => {
       }
       
       surveyResults.value = surveyResultsList
-      addLog(t('log.receivedReplies', { count: surveyResults.value.length }))
+      addLog(`Received ${surveyResults.value.length} responses`)
     } else {
-      throw new Error(res.error || t('step5.requestFailed'))
+      throw new Error(res.error || 'Request failed')
     }
   } catch (err) {
-    addLog(t('log.surveySendFailed', { error: err.message }))
+    addLog(`Survey send failed: ${err.message}`)
   } finally {
     isSurveying.value = false
   }
@@ -876,7 +873,7 @@ const loadReportData = async () => {
   if (!props.reportId) return
   
   try {
-    addLog(t('log.loadReportData', { id: props.reportId }))
+    addLog(`Loading report data: ${props.reportId}`)
     
     // Get report info
     const reportRes = await getReport(props.reportId)
@@ -885,7 +882,7 @@ const loadReportData = async () => {
       await loadAgentLogs()
     }
   } catch (err) {
-    addLog(t('log.loadReportFailed', { error: err.message }))
+    addLog(`Failed to load report: ${err.message}`)
   }
 }
 
@@ -907,10 +904,10 @@ const loadAgentLogs = async () => {
         }
       })
       
-      addLog(t('log.reportDataLoaded'))
+      addLog('Report data loaded successfully')
     }
   } catch (err) {
-    addLog(t('log.loadReportLogFailed', { error: err.message }))
+    addLog(`Failed to load report logs: ${err.message}`)
   }
 }
 
@@ -921,10 +918,10 @@ const loadProfiles = async () => {
     const res = await getSimulationProfilesRealtime(props.simulationId, 'reddit')
     if (res.success && res.data) {
       profiles.value = res.data.profiles || []
-      addLog(t('log.loadedProfiles', { count: profiles.value.length }))
+      addLog(`Loaded ${profiles.value.length}  simulated individuals`)
     }
   } catch (err) {
-    addLog(t('log.loadProfilesFailed', { error: err.message }))
+    addLog(`Failed to load simulated individuals: ${err.message}`)
   }
 }
 
@@ -938,7 +935,7 @@ const handleClickOutside = (e) => {
 
 // Lifecycle
 onMounted(() => {
-  addLog(t('log.step5Init'))
+  addLog('Step5 Deep InteractionInitializing')
   loadReportData()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)
@@ -2031,7 +2028,7 @@ watch(() => props.simulationId, (newId) => {
   margin-bottom: 0;
 }
 
-/* 修复有序列表编号 - 使用 CSS 计数器让多个 ol 连续编号 */
+/* 修复有序列表编号 - 使用 CSS 计数器让多items ol 连续编号 */
 .message-text {
   counter-reset: list-counter;
 }
@@ -2057,7 +2054,7 @@ watch(() => props.simulationId, (newId) => {
   flex-shrink: 0;
 }
 
-/* 无序列表样式 */
+/* None序列表样式 */
 .message-text :deep(.md-ul) {
   padding-left: 20px;
   margin: 8px 0;
@@ -2573,12 +2570,5 @@ watch(() => props.simulationId, (newId) => {
   border: none;
   border-top: 1px solid #E5E7EB;
   margin: 24px 0;
-}
-</style>
-
-<style>
-/* English locale: smaller report title */
-html[lang="en"] .report-header-block .main-title {
-  font-size: 28px;
 }
 </style>

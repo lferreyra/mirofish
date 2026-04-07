@@ -7,6 +7,7 @@ import json
 import logging
 import re
 from typing import Dict, Any, List, Optional
+from ..config import Config
 from ..utils.llm_client import LLMClient
 from ..utils.locale import get_language_instruction
 
@@ -180,7 +181,9 @@ class OntologyGenerator:
     """
     
     def __init__(self, llm_client: Optional[LLMClient] = None):
-        self.llm_client = llm_client or LLMClient()
+        self.llm_client = llm_client or LLMClient(
+            timeout_seconds=Config.ONTOLOGY_LLM_TIMEOUT_SECONDS,
+        )
     
     def generate(
         self,
@@ -217,7 +220,9 @@ class OntologyGenerator:
         result = self.llm_client.chat_json(
             messages=messages,
             temperature=0.3,
-            max_tokens=4096
+            max_tokens=Config.ONTOLOGY_LLM_MAX_TOKENS,
+            request_label="ontology.generate",
+            retry_attempts=Config.ONTOLOGY_LLM_RETRY_ATTEMPTS,
         )
         
         # 验证和后处理
@@ -503,4 +508,3 @@ class OntologyGenerator:
         code_lines.append('}')
         
         return '\n'.join(code_lines)
-
