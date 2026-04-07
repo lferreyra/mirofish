@@ -640,8 +640,11 @@ class OasisProfileGenerator:
         }
     
     def _get_system_prompt(self, is_individual: bool) -> str:
-        """"""
-        base_prompt = "You are an expert social media user persona generator. Create detailed, realistic personas for public opinion simulation. Must return valid JSON. All string values must not contain unescaped newlines."
+        """System prompt para geração de perfis de agentes."""
+        base_prompt = """You are an expert social media user persona generator for a Brazilian market simulation.
+CRITICAL LANGUAGE RULE: ALL text content (bio, persona, interested_topics) MUST be written in Brazilian Portuguese (PT-BR).
+Do NOT write in Chinese, English, or any other language. Only PT-BR.
+Create detailed, realistic personas. Must return valid JSON. All string values must not contain unescaped newlines."""
         return f"{base_prompt}\n\n{get_language_instruction()}"
     
     def _build_individual_persona_prompt(
@@ -657,40 +660,38 @@ class OasisProfileGenerator:
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else ""
         context_str = context[:3000] if context else ""
         
-        return f"""EntidadeGerar,Caso
+        return f"""Com base nas informações da entidade abaixo, gere um perfil realista de usuário de rede social. Retorne APENAS um JSON válido.
 
-Entidade: {entity_name}
-Entidade: {entity_type}
-Entidade: {entity_summary}
-Entidade: {attrs_str}
+ENTIDADE:
+- Nome: {entity_name}
+- Tipo: {entity_type}
+- Descrição: {entity_summary}
+- Atributos: {attrs_str}
 
-:
+CONTEXTO ADICIONAL:
 {context_str}
 
-GerarJSON:
+GERE um JSON com os seguintes campos:
 
-1. bio: 200
-2. persona: 2000:
-   - 
-   - Relacionamento
-   - MBTI
-   - Conteúdo
-   - /Conteúdo
-   - 
-   - 
-3. age: 
-4. gender: : "male"  "female"
-5. mbti: MBTIINTJENFP
-6. country: ""
-7. profession: 
-8. interested_topics: 
+1. "bio": Biografia curta (máx 200 caracteres) em português do Brasil
+2. "persona": Descrição detalhada (máx 2000 caracteres) em português do Brasil incluindo:
+   - Personalidade e comportamento
+   - Relacionamentos e influências
+   - Tipo MBTI
+   - Que tipo de conteúdo publica nas redes sociais
+   - Interesses e motivações
+3. "age": Idade numérica (número inteiro)
+4. "gender": DEVE ser "male" ou "female" (em inglês)
+5. "mbti": Tipo MBTI (ex: "INTJ", "ENFP")
+6. "country": País (ex: "Brasil")
+7. "profession": Profissão em português
+8. "interested_topics": Lista de tópicos de interesse em português
 
-:
-- 
-- persona
-- {get_language_instruction()} (gendermale/female)
-- ConteúdoEntidade
-- agegender"male""female"
+REGRAS OBRIGATÓRIAS:
+- TODOS os textos (bio, persona, profession, interested_topics) em PORTUGUÊS DO BRASIL
+- gender DEVE ser "male" ou "female" (inglês)
+- Retorne APENAS JSON válido, sem texto adicional
+- {get_language_instruction()}
 """
 
     def _build_group_persona_prompt(
@@ -706,40 +707,34 @@ GerarJSON:
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else ""
         context_str = context[:3000] if context else ""
         
-        return f"""/EntidadeGerar,Caso
+        return f"""Com base nas informações da entidade/organização abaixo, gere um perfil representativo para simulação em redes sociais. Retorne APENAS um JSON válido.
 
-Entidade: {entity_name}
-Entidade: {entity_type}
-Entidade: {entity_summary}
-Entidade: {attrs_str}
+ENTIDADE/ORGANIZAÇÃO:
+- Nome: {entity_name}
+- Tipo: {entity_type}
+- Descrição: {entity_summary}
+- Atributos: {attrs_str}
 
-:
+CONTEXTO ADICIONAL:
 {context_str}
 
-GerarJSON:
+GERE um JSON com os seguintes campos:
 
-1. bio: 200
-2. persona: 2000:
-   - 
-   - 
-   - 
-   - ConteúdoConteúdo
-   - 
-   - 
-   - 
-3. age: 30
-4. gender: "other"other
-5. mbti: MBTIISTJ
-6. country: ""
-7. profession: 
-8. interested_topics: 
+1. "bio": Biografia institucional curta (máx 200 caracteres) em português do Brasil
+2. "persona": Descrição detalhada do perfil público (máx 2000 caracteres) em português do Brasil
+3. "age": 30
+4. "gender": "other"
+5. "mbti": Tipo MBTI (ex: "ISTJ")
+6. "country": "Brasil"
+7. "profession": Setor de atuação em português
+8. "interested_topics": Lista de tópicos em português
 
-:
-- null
-- persona
-- {get_language_instruction()} (gender"other")
-- age30gender"other"
-- """
+REGRAS:
+- TODOS os textos em PORTUGUÊS DO BRASIL
+- gender = "other" para organizações
+- Retorne APENAS JSON válido
+- {get_language_instruction()}
+"""
     
     def _generate_profile_rule_based(
         self,
@@ -1159,4 +1154,3 @@ GerarJSON:
         """[]  save_profiles() """
         logger.warning("save_profiles_to_jsonsave_profiles")
         self.save_profiles(profiles, file_path, platform)
-
