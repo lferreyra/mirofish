@@ -55,6 +55,25 @@ _ROTATABLE_403_HINTS = (
     "provider",
     "forbidden",
 )
+_CONNECTION_ERROR_CLASS_NAMES = {
+    "apiconnectionerror",
+    "apitimeouterror",
+    "connecterror",
+    "connecttimeout",
+    "readtimeout",
+    "remotedisconnected",
+}
+_CONNECTION_ERROR_TEXT_HINTS = (
+    "connection error",
+    "connection aborted",
+    "connection reset",
+    "connection refused",
+    "remote end closed connection",
+    "timed out",
+    "timeout",
+    "temporary failure in name resolution",
+    "dns",
+)
 
 _POOL_SINGLETON: Optional["OpenRouterKeyPool"] = None
 _POOL_LOCK = threading.Lock()
@@ -75,6 +94,8 @@ def classify_openrouter_error(exc: Exception) -> str:
         return "quota_or_credit_exhausted"
     if status_code in {500, 502, 503, 504} or any(hint in error_text for hint in ("provider unavailable", "upstream", "temporarily unavailable", "server error")):
         return "provider_unavailable"
+    if _is_connection_failure(exc, error_text):
+        return "connection_error"
     if status_code == 403:
         if any(hint in error_text for hint in _NON_ROTATABLE_403_HINTS):
             return "non_rotatable_403"
@@ -221,6 +242,17 @@ def _extract_error_text(exc: Exception) -> str:
     return " | ".join(part for part in parts if part).lower()
 
 
+def _is_connection_failure(exc: Exception, error_text: Optional[str] = None) -> bool:
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return True
+
+    if type(exc).__name__.strip().lower() in _CONNECTION_ERROR_CLASS_NAMES:
+        return True
+
+    normalized_error_text = error_text if error_text is not None else _extract_error_text(exc)
+    return any(hint in normalized_error_text for hint in _CONNECTION_ERROR_TEXT_HINTS)
+
+
 def should_rotate_openrouter_key(exc: Exception) -> tuple[bool, str]:
     """Decide whether a failure should trigger key rotation."""
     status_code = getattr(exc, "status_code", None)
@@ -228,6 +260,9 @@ def should_rotate_openrouter_key(exc: Exception) -> tuple[bool, str]:
 
     if status_code in _ROTATABLE_STATUS_CODES:
         return True, f"status={status_code}"
+
+    if _is_connection_failure(exc, error_text):
+        return True, "connection-failure"
 
     if status_code == 403:
         if any(hint in error_text for hint in _NON_ROTATABLE_403_HINTS):

@@ -116,12 +116,12 @@ def generate_report():
             if not existing_requested_report:
                 return jsonify({
                     "success": False,
-                    "error": f"报告不存在: {requested_report_id}"
+                    "error": t('api.reportNotFound', id=requested_report_id)
                 }), 404
             if existing_requested_report.simulation_id != simulation_id:
                 return jsonify({
                     "success": False,
-                    "error": "report_id 与 simulation_id 不匹配"
+                    "error": t('api.reportIdSimMismatch')
                 }), 400
             if existing_requested_report.status == ReportStatus.COMPLETED and not force_regenerate:
                 return jsonify({
@@ -130,14 +130,14 @@ def generate_report():
                         "simulation_id": simulation_id,
                         "report_id": existing_requested_report.report_id,
                         "status": "completed",
-                        "message": "报告已存在",
+                        "message": t('api.reportAlreadyExists'),
                         "already_generated": True
                     }
                 })
             if resume_failed and existing_requested_report.status != ReportStatus.FAILED:
                 return jsonify({
                     "success": False,
-                    "error": "只有 failed 状态的报告才能断点续跑"
+                    "error": t('api.onlyFailedCanResume')
                 }), 400
             report_id = requested_report_id
         else:

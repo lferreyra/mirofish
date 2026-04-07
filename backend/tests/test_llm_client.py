@@ -19,6 +19,7 @@ from app.utils.llm_client import (
     LLMResponseError,
     describe_llm_failure,
 )
+from app.utils.openrouter_runtime import classify_openrouter_error, should_rotate_openrouter_key
 
 services_pkg = types.ModuleType("app.services")
 services_pkg.__path__ = [str(BACKEND_ROOT / "app" / "services")]
@@ -66,6 +67,10 @@ def build_client(responses):
     return client, create
 
 
+class APIConnectionError(Exception):
+    pass
+
+
 class LLMClientTests(unittest.TestCase):
     def test_describe_llm_failure_reports_structured_metadata(self):
         metadata = describe_llm_failure(
@@ -90,6 +95,39 @@ class LLMClientTests(unittest.TestCase):
     def test_chat_retries_retryable_response_error_then_succeeds(self):
         client, create = build_client([
             make_response(choices_missing=True),
+            make_response(content="Recovered response"),
+        ])
+
+        with patch("app.utils.llm_client.time.sleep", lambda *_: None):
+            result = client.chat(
+                messages=[{"role": "user", "content": "hello"}],
+                request_label="report_generation",
+                retry_attempts=2,
+            )
+
+        self.assertEqual(result, "Recovered response")
+        self.assertEqual(create.calls, 2)
+
+    def test_describe_llm_failure_marks_openrouter_connection_error_retryable(self):
+        metadata = describe_llm_failure(
+            APIConnectionError("Connection error."),
+            request_label="report_generation",
+            model="test-model",
+            base_url="https://openrouter.ai/api/v1",
+        )
+
+        self.assertEqual(metadata["failure_category"], "connection_error")
+        self.assertTrue(metadata["retryable"])
+
+    def test_openrouter_connection_error_is_classified_and_rotatable(self):
+        exc = APIConnectionError("Connection error.")
+
+        self.assertEqual(classify_openrouter_error(exc), "connection_error")
+        self.assertEqual(should_rotate_openrouter_key(exc), (True, "connection-failure"))
+
+    def test_chat_retries_openrouter_connection_error_then_succeeds(self):
+        client, create = build_client([
+            APIConnectionError("Connection error."),
             make_response(content="Recovered response"),
         ])
 

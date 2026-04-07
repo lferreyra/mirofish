@@ -52,6 +52,7 @@ def describe_llm_failure(
     elif provider == "openrouter":
         failure_category = classify_openrouter_error(exc)
         retryable = failure_category in {
+            "connection_error",
             "free_plan_rate_limit",
             "rate_limit",
             "quota_or_credit_exhausted",
@@ -221,6 +222,7 @@ class LLMClient:
                 retryable_error = isinstance(e, (LLMResponseError, LLMEmptyResponseError))
                 if not retryable_error and is_openrouter_base_url(self.base_url):
                     retryable_error = classify_openrouter_error(e) in {
+                        "connection_error",
                         "free_plan_rate_limit",
                         "rate_limit",
                         "quota_or_credit_exhausted",

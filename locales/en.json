@@ -388,6 +388,8 @@
     "envRunning": "Environment is running and ready for Interview commands",
     "envNotRunningShort": "Environment not running or closed",
     "requireGraphIdAndQuery": "Please provide graph_id and query",
+    "reportIdSimMismatch": "report_id does not match simulation_id",
+    "onlyFailedCanResume": "Only reports with 'failed' status can be resumed",
     "initReportAgent": "Initializing Report Agent..."
   },
   "progress": {

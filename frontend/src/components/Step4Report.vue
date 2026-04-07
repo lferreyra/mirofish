@@ -573,30 +573,30 @@ const parseInsightForge = (text) => {
   
   try {
     // 提取分析问题
-    const queryMatch = text.match(/分析问题:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Analysis question:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取预测场景
-    const reqMatch = text.match(/预测场景:\s*(.+?)(?:\n|$)/)
+    const reqMatch = text.match(/Prediction scenario:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
     // 提取统计数据 - 匹配"相关预测Facts: X条"格式
-    const factMatch = text.match(/相关预测Facts:\s*(\d+)/)
-    const entityMatch = text.match(/涉及实体:\s*(\d+)/)
+    const factMatch = text.match(/Related prediction facts:\s*(\d+)/)
+    const entityMatch = text.match(/Entities involved:\s*(\d+)/)
     const relMatch = text.match(/Relation Chains:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
     if (entityMatch) result.stats.entities = parseInt(entityMatch[1])
     if (relMatch) result.stats.relationships = parseInt(relMatch[1])
     
     // 提取Sub-Questions - 完整提取，不限制数量
-    const subQSection = text.match(/### 分析的Sub-Questions\n([\s\S]*?)(?=\n###|$)/)
+    const subQSection = text.match(/### Analyzed Sub-questions\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
     // 提取关键Facts - 完整提取，不限制数量
-    const factsSection = text.match(/### 【关键Facts】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    const factsSection = text.match(/### \[Key Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => {
@@ -613,8 +613,8 @@ const parseInsightForge = (text) => {
       const entityBlocks = entityText.split(/\n(?=- \*\*)/).filter(b => b.trim().startsWith('- **'))
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
-        const summaryMatch = block.match(/摘要:\s*"?(.+?)"?(?:\n|$)/)
-        const relatedMatch = block.match(/相关Facts:\s*(\d+)/)
+        const summaryMatch = block.match(/Summary:\s*"?(.+?)"?(?:\n|$)/)
+        const relatedMatch = block.match(/Related facts:\s*(\d+)/)
         return {
           name: nameMatch ? nameMatch[1].trim() : '',
           type: nameMatch ? nameMatch[2].trim() : '',
@@ -654,21 +654,21 @@ const parsePanorama = (text) => {
   
   try {
     // 提取查询
-    const queryMatch = text.match(/查询:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Query:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取统计数据
-    const nodesMatch = text.match(/总nodes数:\s*(\d+)/)
-    const edgesMatch = text.match(/总边数:\s*(\d+)/)
-    const activeMatch = text.match(/当前有效Facts:\s*(\d+)/)
-    const histMatch = text.match(/历史\/过期Facts:\s*(\d+)/)
+    const nodesMatch = text.match(/Total nodes:\s*(\d+)/)
+    const edgesMatch = text.match(/Total edges:\s*(\d+)/)
+    const activeMatch = text.match(/Currently active facts:\s*(\d+)/)
+    const histMatch = text.match(/Historical\/expired facts:\s*(\d+)/)
     if (nodesMatch) result.stats.nodes = parseInt(nodesMatch[1])
     if (edgesMatch) result.stats.edges = parseInt(edgesMatch[1])
     if (activeMatch) result.stats.activeFacts = parseInt(activeMatch[1])
     if (histMatch) result.stats.historicalFacts = parseInt(histMatch[1])
     
     // 提取当前有效Facts - 完整提取，不限制数量
-    const activeSection = text.match(/### 【当前有效Facts】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    const activeSection = text.match(/### \[Currently Active Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (activeSection) {
       const lines = activeSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.activeFacts = lines.map(l => {
@@ -679,7 +679,7 @@ const parsePanorama = (text) => {
     }
     
     // 提取历史/过期Facts - 完整提取，不限制数量
-    const histSection = text.match(/### 【历史\/过期Facts】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    const histSection = text.match(/### \[Historical\/Expired Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (histSection) {
       const lines = histSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.historicalFacts = lines.map(l => {
@@ -689,7 +689,7 @@ const parsePanorama = (text) => {
     }
     
     // 提取涉及实体 - 完整提取，不限制数量
-    const entitySection = text.match(/### 【涉及实体】\n([\s\S]*?)(?=\n###|$)/)
+    const entitySection = text.match(/### \[Entities Involved\]\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const lines = entitySection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.entities = lines.map(l => {
@@ -718,11 +718,11 @@ const parseInterview = (text) => {
   
   try {
     // 提取采访主题
-    const topicMatch = text.match(/\*\*采访主题:\*\*\s*(.+?)(?:\n|$)/)
+    const topicMatch = text.match(/\*\*Interview topic:\*\*\s*(.+?)(?:\n|$)/)
     if (topicMatch) result.topic = topicMatch[1].trim()
     
     // 提取采访人数（如 "5 / 9 simulated agents"）
-    const countMatch = text.match(/\*\*采访人数:\*\*\s*(\d+)\s*\/\s*(\d+)/)
+    const countMatch = text.match(/\*\*Interviewees:\*\*\s*(\d+)\s*\/\s*(\d+)/)
     if (countMatch) {
       result.successCount = parseInt(countMatch[1])
       result.totalCount = parseInt(countMatch[2])
@@ -730,7 +730,7 @@ const parseInterview = (text) => {
     }
     
     // 提取采访对象选择理由
-    const reasonMatch = text.match(/### 采访对象选择理由\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
+    const reasonMatch = text.match(/### Interviewee Selection Rationale\n([\s\S]*?)(?=\n---\n|\n### Interview Transcript)/)
     if (reasonMatch) {
       result.selectionReason = reasonMatch[1].trim()
     }
@@ -760,7 +760,7 @@ const parseInterview = (text) => {
         // 格式2: - 选择名字（index X）：理由
         // 例如: - 选择家长_601（index 0）：作为家长群体代表...
         if (!headerMatch) {
-          headerMatch = line.match(/^-\s*选择([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
+          headerMatch = line.match(/^-\s*(?:选择|Select(?:ed)?)\s*([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
           if (headerMatch) {
             name = headerMatch[1].trim()
             reasonStart = headerMatch[2]
@@ -785,7 +785,7 @@ const parseInterview = (text) => {
           // 开始新的人
           currentName = name
           currentReason = reasonStart ? [reasonStart.trim()] : []
-        } else if (currentName && line.trim() && !line.match(/^未选|^综上|^最终选择/)) {
+        } else if (currentName && line.trim() && !line.match(/^Unselect|^In summary|^Final selection|^未选|^综上|^最终选择/)) {
           // 理由的续行（排除结尾总结段落）
           currentReason.push(line.trim())
         }
@@ -802,7 +802,7 @@ const parseInterview = (text) => {
     const individualReasons = parseIndividualReasons(result.selectionReason)
     
     // 提取每items采访记录
-    const interviewBlocks = text.split(/#### 采访 #\d+:/).slice(1)
+    const interviewBlocks = text.split(/#### Interview #\d+:/).slice(1)
     
     interviewBlocks.forEach((block, index) => {
       const interview = {
@@ -855,13 +855,13 @@ const parseInterview = (text) => {
       }
       
       // 提取回答 - 分Twitter和Reddit
-      const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*关键引言|$)/)
+      const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*Key quotes|$)/)
       if (answerMatch) {
         const answerText = answerMatch[1].trim()
         
         // 分离Twitter和Reddit回答
-        const twitterMatch = answerText.match(/【Twitter平台回答】\n?([\s\S]*?)(?=【Reddit平台回答】|$)/)
-        const redditMatch = answerText.match(/【Reddit平台回答】\n?([\s\S]*?)$/)
+        const twitterMatch = answerText.match(/\[Twitter Response\]\n?([\s\S]*?)(?=\[Reddit Response\]|$)/)
+        const redditMatch = answerText.match(/\[Reddit Response\]\n?([\s\S]*?)$/)
         
         if (twitterMatch) {
           interview.twitterAnswer = twitterMatch[1].trim()
@@ -887,7 +887,7 @@ const parseInterview = (text) => {
       }
       
       // 提取关键引言（兼容多种引号格式）
-      const quotesMatch = block.match(/\*\*关键引言:\*\*\n([\s\S]*?)(?=\n---|\n####|$)/)
+      const quotesMatch = block.match(/\*\*Key quotes:\*\*\n([\s\S]*?)(?=\n---|\n####|$)/)
       if (quotesMatch) {
         const quotesText = quotesMatch[1]
         // 优先匹配 > "text" 格式
@@ -909,7 +909,7 @@ const parseInterview = (text) => {
     })
     
     // 提取采访摘要
-    const summaryMatch = text.match(/### 采访摘要与核心观点\n([\s\S]*?)$/)
+    const summaryMatch = text.match(/### Interview Summary and Key Points\n([\s\S]*?)$/)
     if (summaryMatch) {
       result.summary = summaryMatch[1].trim()
     }
@@ -931,22 +931,22 @@ const parseQuickSearch = (text) => {
   
   try {
     // 提取搜索查询
-    const queryMatch = text.match(/搜索查询:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Search query:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取结果数量
-    const countMatch = text.match(/找到\s*(\d+)\s*条/)
+    const countMatch = text.match(/Found\s*(\d+)\s*related/)
     if (countMatch) result.count = parseInt(countMatch[1])
     
     // 提取相关Facts - 完整提取，不限制数量
-    const factsSection = text.match(/### 相关Facts:\n([\s\S]*)$/)
+    const factsSection = text.match(/### Related facts:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
     // 尝试提取边信息（如果有）
-    const edgesSection = text.match(/### 相关边:\n([\s\S]*?)(?=\n###|$)/)
+    const edgesSection = text.match(/### Related edges:\n([\s\S]*?)(?=\n###|$)/)
     if (edgesSection) {
       const lines = edgesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.edges = lines.map(l => {
@@ -1348,7 +1348,7 @@ const InterviewDisplay = {
     const isPlaceholderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '(No reply was received from this platform)' || t === '(该平台未获得回复)' || t === '[No Reply]'
+      return t === '(No response received from this platform)' || t === '(No reply was received from this platform)' || t === '(该平台未获得回复)' || t === '[No Reply]'
     }
 
     // 尝试按问题编号分割回答
@@ -1363,7 +1363,7 @@ const InterviewDisplay = {
       let match
 
       // 优先尝试 "Question X:" 格式
-      const cnPattern = /(?:^|[\r\n]+)问题(\d+)[：:]\s*/g
+      const cnPattern = /(?:^|[\r\n]+)(?:问题|Question)\s*(\d+)[：:]\s*/g
       while ((match = cnPattern.exec(answerText)) !== null) {
         matches.push({
           num: parseInt(match[1]),
@@ -1387,7 +1387,7 @@ const InterviewDisplay = {
       // 如果没有找到编号or只找到一items，返回整体
       if (matches.length <= 1) {
         const cleaned = answerText
-          .replace(/^问题\d+[：:]\s*/, '')
+          .replace(/^(?:问题|Question)\s*\d+[：:]\s*/, '')
           .replace(/^\d+\.\s+/, '')
           .trim()
         return [cleaned || answerText]
@@ -1705,7 +1705,7 @@ const QuickSearchDisplay = {
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Related Nodes'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.nodes.length} items`)
+            h('span', { class: 'panel-count' }, `${props.result.nodes.length} items`)
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 
