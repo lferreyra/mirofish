@@ -104,7 +104,7 @@ class GraphBuilderService:
         chunk_size: int,
         chunk_overlap: int,
         batch_size: int,
-        locale: str = 'zh'
+        locale: str = 'pt'
     ):
         """Grafo"""
         set_locale(locale)
@@ -484,4 +484,3 @@ class GraphBuilderService:
     def delete_graph(self, graph_id: str):
         """Grafo"""
         self.client.graph.delete(graph_id=graph_id)
-

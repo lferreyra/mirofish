@@ -453,7 +453,7 @@ class SimulationRunner:
         return state
     
     @classmethod
-    def _monitor_simulation(cls, simulation_id: str, locale: str = 'zh'):
+    def _monitor_simulation(cls, simulation_id: str, locale: str = 'pt'):
         """Simulação"""
         set_locale(locale)
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
@@ -1680,4 +1680,3 @@ class SimulationRunner:
             results = results[:limit]
         
         return results
-
