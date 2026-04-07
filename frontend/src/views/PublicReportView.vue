@@ -2,7 +2,6 @@
 import { onMounted, ref, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import service from '../api'
-import { marked } from 'marked'
 
 const route = useRoute()
 const token = computed(() => route.params.token)
@@ -16,7 +15,23 @@ const chatHistory = ref([])
 const chatLoading = ref(false)
 const activeTab = ref('report') // report | chat
 
-function md(txt) { return marked.parse(txt || '', { breaks: true }) }
+function md(text) {
+  if (!text) return ''
+  return text
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,  '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,   '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,    '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,    '<em>$1</em>')
+    .replace(/^> (.+)$/gm,    '<blockquote>$1</blockquote>')
+    .replace(/^[-•]\s(.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, s => '<ul>'+s+'</ul>')
+    .replace(/^\d+\.\s(.+)$/gm,'<li>$1</li>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/^(?!<)(.+)$/gm, m => '<p>'+m+'</p>')
+    .replace(/<p><\/p>/g, '')
+}
 function truncar(t, n) { return (t || '').length > n ? t.slice(0, n) + '...' : t }
 
 const titulo = computed(() => report.value?.outline?.title || 'Relatório de Previsão')
