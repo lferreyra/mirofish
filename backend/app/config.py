@@ -43,11 +43,18 @@ class Config:
     LLM_API_KEY = os.environ.get('LLM_API_KEY') or (OPENROUTER_API_KEYS[0] if OPENROUTER_API_KEYS else None)
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', get_default_openrouter_base_url())
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'arcee-ai/trinity-large-preview:free')
+    LLM_REQUEST_TIMEOUT_SECONDS = float(os.environ.get('LLM_REQUEST_TIMEOUT_SECONDS', '300'))
+    LLM_JSON_RETRY_ATTEMPTS = int(os.environ.get('LLM_JSON_RETRY_ATTEMPTS', '3'))
+    ONTOLOGY_LLM_TIMEOUT_SECONDS = float(os.environ.get('ONTOLOGY_LLM_TIMEOUT_SECONDS', str(LLM_REQUEST_TIMEOUT_SECONDS)))
+    ONTOLOGY_LLM_RETRY_ATTEMPTS = int(os.environ.get('ONTOLOGY_LLM_RETRY_ATTEMPTS', str(LLM_JSON_RETRY_ATTEMPTS)))
+    ONTOLOGY_LLM_MAX_TOKENS = int(os.environ.get('ONTOLOGY_LLM_MAX_TOKENS', '8192'))
     
     # 首次附件解析专用 LLM 配置（可选，不配置则回退到通用 LLM）
     INPUT_LLM_API_KEY = os.environ.get('INPUT_LLM_API_KEY') or LLM_API_KEY
     INPUT_LLM_BASE_URL = os.environ.get('INPUT_LLM_BASE_URL') or LLM_BASE_URL
     INPUT_LLM_MODEL_NAME = os.environ.get('INPUT_LLM_MODEL_NAME') or LLM_MODEL_NAME
+    INPUT_LLM_IMAGE_MAX_TOKENS = int(os.environ.get('INPUT_LLM_IMAGE_MAX_TOKENS', '24000'))
+    INPUT_LLM_PDF_VISION_MAX_TOKENS = int(os.environ.get('INPUT_LLM_PDF_VISION_MAX_TOKENS', '12000'))
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
@@ -79,6 +86,9 @@ class Config:
     REPORT_AGENT_MAX_TOOL_CALLS = int(os.environ.get('REPORT_AGENT_MAX_TOOL_CALLS', '5'))
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))
     REPORT_AGENT_TEMPERATURE = float(os.environ.get('REPORT_AGENT_TEMPERATURE', '0.5'))
+    REPORT_AGENT_LLM_RETRY_ATTEMPTS = int(
+        os.environ.get('REPORT_AGENT_LLM_RETRY_ATTEMPTS', str(LLM_JSON_RETRY_ATTEMPTS))
+    )
     
     @classmethod
     def validate(cls):

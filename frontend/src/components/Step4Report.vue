@@ -136,6 +136,14 @@
             </svg>
           </button>
 
+          <div v-if="generationError" class="report-error-banner">
+            <strong>Report generation failed.</strong>
+            <span>{{ generationError }}</span>
+            <button class="retry-btn" :disabled="isRetrying" @click="handleRetry">
+              {{ isRetrying ? 'Retrying...' : 'Retry from failed point' }}
+            </button>
+          </div>
+
           <div class="workflow-divider"></div>
         </div>
 
@@ -337,6 +345,17 @@
                       <span>Report Generation Complete</span>
                     </div>
                   </template>
+
+                  <template v-if="log.action === 'error'">
+                    <div class="error-banner">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                      <span>{{ log.details?.error || log.details?.message || 'Unknown error' }}</span>
+                    </div>
+                  </template>
                 </div>
 
                 <!-- Footer: Elapsed Time + Action Buttons -->
@@ -392,7 +411,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAgentLog, getConsoleLog } from '../api/report'
+import { getAgentLog, getConsoleLog, generateReport } from '../api/report'
 
 const router = useRouter()
 
@@ -423,6 +442,8 @@ const expandedContent = ref(new Set())
 const expandedLogs = ref(new Set())
 const collapsedSections = ref(new Set())
 const isComplete = ref(false)
+const generationError = ref('')
+const isRetrying = ref(false)
 const startTime = ref(null)
 const leftPanel = ref(null)
 const rightPanel = ref(null)
@@ -1702,12 +1723,14 @@ const QuickSearchDisplay = {
 
 // Computed
 const statusClass = computed(() => {
+  if (generationError.value) return 'error'
   if (isComplete.value) return 'completed'
   if (agentLogs.value.length > 0) return 'processing'
   return 'pending'
 })
 
 const statusText = computed(() => {
+  if (generationError.value) return 'Failed'
   if (isComplete.value) return 'Completed'
   if (agentLogs.value.length > 0) return 'Generating...'
   return 'Waiting'
@@ -1746,6 +1769,7 @@ const displayLogs = computed(() => {
 
 // Workflow steps overview (status-based, no nested cards)
 const activeSectionIndex = computed(() => {
+  if (generationError.value) return null
   if (isComplete.value) return null
   if (currentSectionIndex.value) return currentSectionIndex.value
   if (totalSections.value > 0 && completedSections.value < totalSections.value) return completedSections.value + 1
@@ -1761,12 +1785,14 @@ const isPlanningStarted = computed(() => {
 })
 
 const isFinalizing = computed(() => {
-  return !isComplete.value && isPlanningDone.value && totalSections.value > 0 && completedSections.value >= totalSections.value
+  return !generationError.value && !isComplete.value && isPlanningDone.value && totalSections.value > 0 && completedSections.value >= totalSections.value
 })
 
 // 当前活跃的步骤（用于顶部显示）
 const activeStep = computed(() => {
   const steps = workflowSteps.value
+  const failed = steps.find(s => s.status === 'error')
+  if (failed) return failed
   // 找到当前 active 的步骤
   const active = steps.find(s => s.status === 'active')
   if (active) return active
@@ -1788,8 +1814,8 @@ const workflowSteps = computed(() => {
     key: 'planning',
     noLabel: 'PL',
     title: 'Planning / Outline',
-    status: planningStatus,
-    meta: planningStatus === 'active' ? 'IN PROGRESS' : ''
+    status: generationError.value ? 'error' : planningStatus,
+    meta: generationError.value ? 'FAILED' : (planningStatus === 'active' ? 'IN PROGRESS' : '')
   })
 
   // Sections (if outline exists)
@@ -1798,25 +1824,25 @@ const workflowSteps = computed(() => {
     const idx = i + 1
     const status = (isComplete.value || !!generatedSections.value[idx])
       ? 'done'
-      : (activeSectionIndex.value === idx ? 'active' : 'todo')
+      : (generationError.value && activeSectionIndex.value === null ? 'error' : (activeSectionIndex.value === idx ? 'active' : 'todo'))
 
     steps.push({
       key: `section-${idx}`,
       noLabel: String(idx).padStart(2, '0'),
       title: section.title,
       status,
-      meta: status === 'active' ? 'IN PROGRESS' : ''
+      meta: status === 'error' ? 'FAILED' : (status === 'active' ? 'IN PROGRESS' : '')
     })
   })
 
   // Complete
-  const completeStatus = isComplete.value ? 'done' : (isFinalizing.value ? 'active' : 'todo')
+  const completeStatus = generationError.value ? 'error' : (isComplete.value ? 'done' : (isFinalizing.value ? 'active' : 'todo'))
   steps.push({
     key: 'complete',
     noLabel: 'OK',
     title: 'Complete',
     status: completeStatus,
-    meta: completeStatus === 'active' ? 'FINALIZING' : ''
+    meta: completeStatus === 'error' ? 'FAILED' : (completeStatus === 'active' ? 'FINALIZING' : '')
   })
 
   return steps
@@ -1825,6 +1851,35 @@ const workflowSteps = computed(() => {
 // Methods
 const addLog = (msg) => {
   emit('add-log', msg)
+}
+
+const handleRetry = async () => {
+  if (!props.simulationId || !props.reportId || isRetrying.value) return
+
+  isRetrying.value = true
+  try {
+    addLog(`Retrying failed report from checkpoint: ${props.reportId}`)
+    const res = await generateReport({
+      simulation_id: props.simulationId,
+      report_id: props.reportId,
+      resume_failed: true,
+      force_regenerate: false
+    })
+
+    if (res.success && res.data) {
+      generationError.value = ''
+      emit('update-status', 'processing')
+      startPolling()
+    } else {
+      generationError.value = res.error || 'Retry failed'
+      emit('update-status', 'error')
+    }
+  } catch (err) {
+    generationError.value = err.message || 'Retry failed'
+    emit('update-status', 'error')
+  } finally {
+    isRetrying.value = false
+  }
 }
 
 const isSectionCompleted = (sectionIndex) => {
@@ -1972,9 +2027,10 @@ const renderMarkdown = (content) => {
 }
 
 const getTimelineItemClass = (log, idx, total) => {
-  const isLatest = idx === total - 1 && !isComplete.value
+  const isLatest = idx === total - 1 && !isComplete.value && !generationError.value
   const isMilestone = log.action === 'section_complete' || log.action === 'report_complete'
   return {
+    'node--error': log.action === 'error',
     'node--active': isLatest,
     'node--done': !isLatest && isMilestone,
     'node--muted': !isLatest && !isMilestone,
@@ -1983,8 +2039,9 @@ const getTimelineItemClass = (log, idx, total) => {
 }
 
 const getConnectorClass = (log, idx, total) => {
-  const isLatest = idx === total - 1 && !isComplete.value
+  const isLatest = idx === total - 1 && !isComplete.value && !generationError.value
   if (isLatest) return 'dot-active'
+  if (log.action === 'error') return 'dot-error'
   if (log.action === 'section_complete' || log.action === 'report_complete') return 'dot-done'
   return 'dot-muted'
 }
@@ -1992,6 +2049,7 @@ const getConnectorClass = (log, idx, total) => {
 const getActionLabel = (action) => {
   const labels = {
     'report_start': 'Report Started',
+    'resume_start': 'Resume',
     'planning_start': 'Planning',
     'planning_complete': 'Plan Complete',
     'section_start': 'Section Start',
@@ -2000,7 +2058,8 @@ const getActionLabel = (action) => {
     'tool_call': 'Tool Call',
     'tool_result': 'Tool Result',
     'llm_response': 'LLM Response',
-    'report_complete': 'Complete'
+    'report_complete': 'Complete',
+    'error': 'Failed'
   }
   return labels[action] || action
 }
@@ -2054,6 +2113,13 @@ const fetchAgentLog = async () => {
             stopPolling()
             // 滚动逻辑统一在循环结束后的 nextTick 中处理
           }
+
+          if (log.action === 'error') {
+            generationError.value = log.details?.error || log.details?.message || 'Report generation failed'
+            currentSectionIndex.value = null
+            emit('update-status', 'error')
+            stopPolling()
+          }
           
           if (log.action === 'report_start') {
             startTime.value = new Date(log.timestamp)
@@ -2065,7 +2131,7 @@ const fetchAgentLog = async () => {
         nextTick(() => {
           if (rightPanel.value) {
             // 如果任务Completed，滚动到顶部；否则滚动到底部跟随最新日志
-            if (isComplete.value) {
+            if (isComplete.value || generationError.value) {
               rightPanel.value.scrollTop = 0
             } else {
               rightPanel.value.scrollTop = rightPanel.value.scrollHeight
@@ -2195,6 +2261,8 @@ watch(() => props.reportId, (newId) => {
     expandedLogs.value = new Set()
     collapsedSections.value = new Set()
     isComplete.value = false
+    generationError.value = ''
+    isRetrying.value = false
     startTime.value = null
     
     startPolling()
@@ -2308,6 +2376,17 @@ watch(() => props.reportId, (newId) => {
 
 .panel-header--done .header-index {
   color: #10B981;
+}
+
+.panel-header--error {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+.panel-header--error .header-index,
+.panel-header--error .header-title,
+.panel-header--error .header-meta {
+  color: #B91C1C;
 }
 
 .panel-header--todo .header-index,
@@ -2777,6 +2856,12 @@ watch(() => props.reportId, (newId) => {
   color: #6B7280;
 }
 
+.metric-pill.pill--error {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #B91C1C;
+}
+
 .workflow-steps {
   display: flex;
   flex-direction: column;
@@ -2810,6 +2895,11 @@ watch(() => props.reportId, (newId) => {
   border-style: dashed;
 }
 
+.wf-step--error {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
 .wf-step-connector {
   display: flex;
   flex-direction: column;
@@ -2841,6 +2931,10 @@ watch(() => props.reportId, (newId) => {
 
 .wf-step--done .wf-step-dot {
   background: var(--wf-done-dot);
+}
+
+.wf-step--error .wf-step-dot {
+  background: #EF4444;
 }
 
 .wf-step-title-row {
@@ -2934,6 +3028,12 @@ watch(() => props.reportId, (newId) => {
   border-color: var(--wf-done-border);
 }
 
+.timeline-item.node--error,
+.timeline-item.node--error:hover {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
 .timeline-connector {
   display: flex;
   flex-direction: column;
@@ -2966,6 +3066,10 @@ watch(() => props.reportId, (newId) => {
 
 .dot-done {
   background: var(--wf-done-dot);
+}
+
+.dot-error {
+  background: #EF4444;
 }
 
 .dot-muted {
@@ -3395,6 +3499,47 @@ watch(() => props.reportId, (newId) => {
   color: #065F46;
   font-weight: 600;
   font-size: 14px;
+}
+
+.error-banner,
+.report-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  color: #B91C1C;
+  font-size: 14px;
+}
+
+.report-error-banner {
+  margin: 4px 20px 0 20px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.retry-btn {
+  margin-top: 6px;
+  align-self: flex-start;
+  padding: 8px 12px;
+  border: 1px solid #FCA5A5;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #B91C1C;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.retry-btn:hover:not(:disabled) {
+  background: #FFF5F5;
+}
+
+.retry-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .next-step-btn {

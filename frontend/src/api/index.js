@@ -65,6 +65,13 @@ export const requestWithRetry = async (requestFn, maxRetries = 3, delay = 1000) 
     try {
       return await requestFn()
     } catch (error) {
+      const status = error?.response?.status
+      const isClientError = typeof status === 'number' && status >= 400 && status < 500
+
+      if (isClientError) {
+        throw error
+      }
+
       if (i === maxRetries - 1) throw error
       
       console.warn(`Request failed, retrying (${i + 1}/${maxRetries})...`)

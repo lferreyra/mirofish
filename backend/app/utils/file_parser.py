@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
+from ..config import Config
 from .llm_client import LLMClient
 
 
@@ -238,6 +239,7 @@ class FileParser:
                 mime_type="image/png",
                 prompt=prompt,
                 system_prompt=PDF_VISION_SYSTEM_PROMPT,
+                max_tokens=Config.INPUT_LLM_PDF_VISION_MAX_TOKENS,
                 request_label=f"input_pdf_page_{page_number}_vision",
             ).strip()
 
@@ -283,6 +285,7 @@ class FileParser:
             mime_type=mime_type,
             prompt=prompt,
             system_prompt=IMAGE_VISION_SYSTEM_PROMPT,
+            max_tokens=Config.INPUT_LLM_IMAGE_MAX_TOKENS,
             request_label=f"input_image_{path.name}",
         ).strip()
 

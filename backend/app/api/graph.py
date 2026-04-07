@@ -14,7 +14,7 @@ from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
 from ..utils.file_parser import FileParser, TEXT_ONLY_MODE, TEXT_PLUS_VISION_MODE
-from ..utils.llm_client import LLMClient
+from ..utils.llm_client import LLMClient, describe_llm_failure
 from ..utils.logger import get_logger
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
@@ -286,12 +286,20 @@ def generate_ontology():
                 "input_parse_mode": input_parse_mode,
             }
         })
-        
+
     except Exception as e:
+        logger.error("本体生成失败: %s\n%s", str(e), traceback.format_exc())
+        failure_meta = describe_llm_failure(
+            e,
+            request_label="ontology.generate",
+            model=Config.LLM_MODEL_NAME,
+            base_url=Config.LLM_BASE_URL,
+        )
         return jsonify({
             "success": False,
             "error": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
+            **failure_meta,
         }), 500
 
 
