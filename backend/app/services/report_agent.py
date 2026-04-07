@@ -2559,7 +2559,39 @@ class ReportManager:
                 summary=outline_data['summary'],
                 sections=sections
             )
-        
+        else:
+            # Fallback: carregar outline.json quando report.json estiver desatualizado
+            outline_path = cls._get_outline_path(report_id)
+            if os.path.exists(outline_path):
+                try:
+                    with open(outline_path, 'r', encoding='utf-8') as f:
+                        outline_data = json.load(f)
+                    sections = []
+                    for s in outline_data.get('sections', []):
+                        sections.append(ReportSection(
+                            title=s.get('title', ''),
+                            content=s.get('content', '')
+                        ))
+                    outline = ReportOutline(
+                        title=outline_data.get('title', 'Relatório de Previsão'),
+                        summary=outline_data.get('summary', ''),
+                        sections=sections
+                    )
+                except Exception:
+                    outline = None
+
+        # Hidratar conteúdo de seções a partir dos arquivos section_XX.md
+        # Isso evita tela vazia no primeiro carregamento enquanto report.json ainda não refletiu tudo.
+        if outline and outline.sections:
+            generated_sections = cls.get_generated_sections(report_id)
+            if generated_sections:
+                by_index = {s.get("section_index"): s.get("content", "") for s in generated_sections}
+                for i, section in enumerate(outline.sections, start=1):
+                    if not (section.content or '').strip():
+                        content = by_index.get(i, "")
+                        if content:
+                            section.content = content
+
         # markdown_contentfull_report.md
         markdown_content = data.get('markdown_content', '')
         if not markdown_content:
