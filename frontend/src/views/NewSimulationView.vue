@@ -159,6 +159,92 @@ async function gerarHipotese() {
   } finally {
     gerandoHipotese.value = false
   }
+]
+
+const segmentoAtual = computed(() => segmentos.find(s => s.id === segmento.value))
+const exemplosAtuais = computed(() => segmentoAtual.value?.exemplos || [])
+
+// ─── Estimativas em tempo real ──────────────────────────────────
+const estimativaMinutos = computed(() => {
+  const base = agentes.value * rodadas.value * 0.04
+  return Math.round(Math.max(2, base))
+})
+const estimativaCusto = computed(() => {
+  const custo = agentes.value * rodadas.value * 0.0008
+  return custo.toFixed(2)
+})
+const descricaoAgentes = computed(() => {
+  if (agentes.value <= 20) return 'Teste rápido — ideal para validar a hipótese'
+  if (agentes.value <= 100) return 'Bom equilíbrio entre velocidade e precisão'
+  if (agentes.value <= 250) return 'Alta fidelidade — captura nuances importantes'
+  return 'Máxima riqueza — simulação de alta complexidade'
+})
+const descricaoRodadas = computed(() => {
+  if (rodadas.value <= 5) return 'Instantâneo — reação imediata ao evento'
+  if (rodadas.value <= 25) return 'Captura tendências de curto prazo'
+  if (rodadas.value <= 60) return 'Evolução completa da opinião ao longo do tempo'
+  return 'Análise profunda — evolução de longo prazo'
+})
+const prontidaoDecisao = computed(() => {
+  const base = Math.min(40, titulo.value.trim().length >= 8 ? 40 : titulo.value.trim().length * 5)
+  const hipoteseScore = Math.min(30, Math.floor(hipotese.value.trim().length / 8))
+  const materiaisScore = Math.min(20, arquivos.value.length * 5)
+  const simulacaoScore = Math.min(10, agentes.value >= 50 && rodadas.value >= 20 ? 10 : 6)
+  return Math.min(100, base + hipoteseScore + materiaisScore + simulacaoScore)
+})
+const prontidaoLabel = computed(() => {
+  if (prontidaoDecisao.value < 45) return 'Inicial'
+  if (prontidaoDecisao.value < 75) return 'Estruturada'
+  if (prontidaoDecisao.value < 90) return 'Alta'
+  return 'Executiva'
+})
+
+// ─── Qualidade dos materiais ────────────────────────────────────
+const qualidadeMateriais = computed(() => {
+  const n = arquivos.value.length
+  if (n === 0) return { label: 'Sem materiais', cor: '#6b6b80', desc: 'Os agentes usarão apenas a hipótese como base' }
+  if (n === 1) return { label: 'Básico', cor: '#f5a623', desc: 'Um documento fornece contexto inicial' }
+  if (n <= 3) return { label: 'Bom', cor: '#7c6ff7', desc: 'Múltiplos documentos enriquecem os agentes' }
+  return { label: 'Excelente', cor: '#00e5c3', desc: 'Base de conhecimento robusta para simulação precisa' }
+})
+
+// ─── Validações ─────────────────────────────────────────────────
+const etapa1Valida = computed(() => titulo.value.trim().length >= 3 && hipotese.value.trim().length >= 10)
+const etapa3Valida = computed(() => agentes.value >= 5 && rodadas.value >= 1)
+
+// ─── Gerar hipótese com IA ──────────────────────────────────────
+async function gerarHipotese() {
+  if (!cenario.value.trim()) return
+  gerandoHipotese.value = true
+  error.value = ''
+  try {
+    const res = await service.post('/api/graph/generate-hypothesis', {
+      cenario: cenario.value,
+      segmento: segmento.value
+    })
+    const data = res.data || res
+    if (data.titulo) titulo.value = data.titulo
+    if (data.hipotese) hipotese.value = data.hipotese
+  } catch (e) {
+    // fallback: estruturar localmente
+    titulo.value = cenario.value.slice(0, 60)
+    hipotese.value = `Como ${cenario.value.toLowerCase()} vai impactar a opinião pública nos próximos meses?`
+  } finally {
+    gerandoHipotese.value = false
+  }
+}
+
+// ─── Upload de arquivos ─────────────────────────────────────────
+function onFileChange(event) {
+  const files = Array.from(event.target.files || [])
+  adicionarArquivos(files)
+}
+
+function onDrop(event) {
+  event.preventDefault()
+  dragOver.value = false
+  const files = Array.from(event.dataTransfer.files || [])
+  adicionarArquivos(files)
 }
 
 function onFileChange(event) {
