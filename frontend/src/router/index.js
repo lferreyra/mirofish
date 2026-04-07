@@ -10,6 +10,7 @@ import GraphView        from '../views/GraphView.vue'
 import AgentesView      from '../views/AgentesView.vue'
 import InfluentesView   from '../views/InfluentesView.vue'
 import CompararView     from '../views/CompararView.vue'
+import PublicReportView  from '../views/PublicReportView.vue'
 import AgentProfileView from '../views/AgentProfileView.vue'
 import PostsTimelineView from '../views/PostsTimelineView.vue'
 
@@ -97,6 +98,14 @@ const routes = [
     path: '/comparar',
     name: 'Comparar',
     component: CompararView
+  },
+  {
+    // Link público do relatório (sem sidebar, sem auth)
+    path: '/r/:token',
+    name: 'PublicReport',
+    component: PublicReportView,
+    props: true,
+    meta: { public: true }
   },
   {
     path: '/:pathMatch(.*)*',
