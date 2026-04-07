@@ -58,6 +58,7 @@ def describe_llm_failure(
             "quota_or_credit_exhausted",
             "provider_unavailable",
             "auth_error",
+            "malformed_provider_response",
         }
 
     return {
@@ -227,6 +228,7 @@ class LLMClient:
                         "rate_limit",
                         "quota_or_credit_exhausted",
                         "provider_unavailable",
+                        "malformed_provider_response",
                     }
 
                 should_retry = retryable_error and attempt < total_attempts

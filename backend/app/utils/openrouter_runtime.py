@@ -74,6 +74,9 @@ _CONNECTION_ERROR_TEXT_HINTS = (
     "temporary failure in name resolution",
     "dns",
 )
+_MALFORMED_RESPONSE_CLASS_NAMES = {
+    "jsondecodeerror",
+}
 
 _POOL_SINGLETON: Optional["OpenRouterKeyPool"] = None
 _POOL_LOCK = threading.Lock()
@@ -96,6 +99,8 @@ def classify_openrouter_error(exc: Exception) -> str:
         return "provider_unavailable"
     if _is_connection_failure(exc, error_text):
         return "connection_error"
+    if _is_malformed_response_failure(exc):
+        return "malformed_provider_response"
     if status_code == 403:
         if any(hint in error_text for hint in _NON_ROTATABLE_403_HINTS):
             return "non_rotatable_403"
@@ -253,6 +258,13 @@ def _is_connection_failure(exc: Exception, error_text: Optional[str] = None) -> 
     return any(hint in normalized_error_text for hint in _CONNECTION_ERROR_TEXT_HINTS)
 
 
+def _is_malformed_response_failure(exc: Exception) -> bool:
+    if isinstance(exc, json.JSONDecodeError):
+        return True
+
+    return type(exc).__name__.strip().lower() in _MALFORMED_RESPONSE_CLASS_NAMES
+
+
 def should_rotate_openrouter_key(exc: Exception) -> tuple[bool, str]:
     """Decide whether a failure should trigger key rotation."""
     status_code = getattr(exc, "status_code", None)
@@ -263,6 +275,9 @@ def should_rotate_openrouter_key(exc: Exception) -> tuple[bool, str]:
 
     if _is_connection_failure(exc, error_text):
         return True, "connection-failure"
+
+    if _is_malformed_response_failure(exc):
+        return True, "malformed-response"
 
     if status_code == 403:
         if any(hint in error_text for hint in _NON_ROTATABLE_403_HINTS):

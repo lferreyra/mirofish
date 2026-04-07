@@ -136,11 +136,11 @@
             </svg>
           </button>
 
-          <div v-if="generationError" class="report-error-banner">
+          <div v-if="showRetryBanner" class="report-error-banner">
             <strong>Report generation failed.</strong>
-            <span>{{ generationError }}</span>
-            <button class="retry-btn" :disabled="isRetrying" @click="handleRetry">
-              {{ isRetrying ? 'Retrying...' : 'Retry from failed point' }}
+            <span>{{ retryBannerMessage }}</span>
+            <button class="retry-btn" :disabled="isRetrying || retryPending" @click="handleRetry">
+              {{ retryButtonText }}
             </button>
           </div>
 
@@ -444,11 +444,25 @@ const collapsedSections = ref(new Set())
 const isComplete = ref(false)
 const generationError = ref('')
 const isRetrying = ref(false)
+const retryPending = ref(false)
 const startTime = ref(null)
 const leftPanel = ref(null)
 const rightPanel = ref(null)
 const logContent = ref(null)
 const showRawResult = reactive({})
+
+const showRetryBanner = computed(() => Boolean(generationError.value) || isRetrying.value || retryPending.value)
+const retryBannerMessage = computed(() => {
+  if (generationError.value) return generationError.value
+  if (retryPending.value) return 'Retry request accepted. Waiting for report generation to resume...'
+  if (isRetrying.value) return 'Submitting retry request...'
+  return 'Report generation failed'
+})
+const retryButtonText = computed(() => {
+  if (isRetrying.value) return 'Retrying...'
+  if (retryPending.value) return 'Waiting for retry...'
+  return 'Retry from failed point'
+})
 
 // Toggle functions
 const toggleRawResult = (timestamp, event) => {
@@ -1854,7 +1868,7 @@ const addLog = (msg) => {
 }
 
 const handleRetry = async () => {
-  if (!props.simulationId || !props.reportId || isRetrying.value) return
+  if (!props.simulationId || !props.reportId || isRetrying.value || retryPending.value) return
 
   isRetrying.value = true
   try {
@@ -1867,14 +1881,16 @@ const handleRetry = async () => {
     })
 
     if (res.success && res.data) {
-      generationError.value = ''
+      retryPending.value = true
       emit('update-status', 'processing')
       startPolling()
     } else {
+      retryPending.value = false
       generationError.value = res.error || 'Retry failed'
       emit('update-status', 'error')
     }
   } catch (err) {
+    retryPending.value = false
     generationError.value = err.message || 'Retry failed'
     emit('update-status', 'error')
   } finally {
@@ -2087,6 +2103,11 @@ const fetchAgentLog = async () => {
       if (newLogs.length > 0) {
         newLogs.forEach(log => {
           agentLogs.value.push(log)
+
+          if (retryPending.value && log.action !== 'error') {
+            retryPending.value = false
+            generationError.value = ''
+          }
           
           if (log.action === 'planning_complete' && log.details?.outline) {
             reportOutline.value = log.details.outline
@@ -2108,6 +2129,7 @@ const fetchAgentLog = async () => {
           
           if (log.action === 'report_complete') {
             isComplete.value = true
+            retryPending.value = false
             currentSectionIndex.value = null  // 确保清除 loading 状态
             emit('update-status', 'completed')
             stopPolling()
@@ -2115,6 +2137,7 @@ const fetchAgentLog = async () => {
           }
 
           if (log.action === 'error') {
+            retryPending.value = false
             generationError.value = log.details?.error || log.details?.message || 'Report generation failed'
             currentSectionIndex.value = null
             emit('update-status', 'error')
@@ -2263,6 +2286,7 @@ watch(() => props.reportId, (newId) => {
     isComplete.value = false
     generationError.value = ''
     isRetrying.value = false
+    retryPending.value = false
     startTime.value = null
     
     startPolling()

@@ -1462,13 +1462,13 @@ Return a JSON-formatted list of sub-questions."""
         except ValueError as e:
             # 模拟环境未运行
             logger.warning(t("console.interviewApiCallFailed", error=e))
-            result.summary = f"采访失败：{str(e)}。模拟环境可能已关闭，请确保OASIS环境正在运行。"
+            result.summary = t("console.interviewFailedEnvClosed", error=str(e))
             return result
         except Exception as e:
             logger.error(t("console.interviewApiCallException", error=e))
             import traceback
             logger.error(traceback.format_exc())
-            result.summary = f"采访过程发生错误：{str(e)}"
+            result.summary = t("console.interviewProcessError", error=str(e))
             return result
         
         # Step 6: 生成采访摘要

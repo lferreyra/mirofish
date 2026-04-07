@@ -3,6 +3,7 @@ import unittest
 import importlib
 import tempfile
 import types
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -125,9 +126,31 @@ class LLMClientTests(unittest.TestCase):
         self.assertEqual(classify_openrouter_error(exc), "connection_error")
         self.assertEqual(should_rotate_openrouter_key(exc), (True, "connection-failure"))
 
+    def test_openrouter_json_decode_error_is_classified_and_rotatable(self):
+        exc = json.JSONDecodeError("Expecting value", "", 0)
+
+        self.assertEqual(classify_openrouter_error(exc), "malformed_provider_response")
+        self.assertEqual(should_rotate_openrouter_key(exc), (True, "malformed-response"))
+
     def test_chat_retries_openrouter_connection_error_then_succeeds(self):
         client, create = build_client([
             APIConnectionError("Connection error."),
+            make_response(content="Recovered response"),
+        ])
+
+        with patch("app.utils.llm_client.time.sleep", lambda *_: None):
+            result = client.chat(
+                messages=[{"role": "user", "content": "hello"}],
+                request_label="report_generation",
+                retry_attempts=2,
+            )
+
+        self.assertEqual(result, "Recovered response")
+        self.assertEqual(create.calls, 2)
+
+    def test_chat_retries_openrouter_json_decode_error_then_succeeds(self):
+        client, create = build_client([
+            json.JSONDecodeError("Expecting value", "", 0),
             make_response(content="Recovered response"),
         ])
 
