@@ -57,7 +57,7 @@ def t(key: str, **kwargs) -> str:
     locale = get_locale()
     # Fallback chain: locale → pt → en → zh
     value = None
-    for fallback in [locale, DEFAULT_LOCALE, 'en', 'zh']:
+    for fallback in [locale, DEFAULT_LOCALE, 'en']:  # sem zh  # zh removido — nunca retornar chinês
         messages = _translations.get(fallback, {})
         v = messages
         for part in key.split('.'):
