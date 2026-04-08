@@ -1,8 +1,6 @@
 services:
   mirofish:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/666ghj/mirofish:latest
     container_name: mirofish
     env_file:
       - .env
@@ -12,5 +10,3 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/backend/uploads
-      - ./frontend/src:/app/frontend/src
-      - ./frontend/index.html:/app/frontend/index.html
