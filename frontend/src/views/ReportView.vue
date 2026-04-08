@@ -131,6 +131,8 @@ function categ(title) {
   if (t.includes('anomal') || t.includes('未来') || t.includes('潜在')) return 'deep_anomalias'
   if (t.includes('emocio') || t.includes('emotion') || t.includes('sentimento')) return 'emocional'
   if (t.includes('comunica') || t.includes('mensag') || t.includes('comunicação') || t.includes('messaging')) return 'comunicacao'
+  if (t.includes('posicionamento') || t.includes('perceb') || t.includes('positioning') || t.includes('gap')) return 'posicionamento'
+  if (t.includes('valor da analise') || t.includes('valor da análise') || t.includes('roi') || t.includes('investimento')) return 'valor_analise'
   if (t.includes('timeline') || t.includes('linha do tempo')) return 'timeline'
   return 'generic'
 }
@@ -144,6 +146,8 @@ const secPrevisoes = computed(() => secoes.value.find(s => categ(s.title) === 'p
 const secInsights = computed(() => secoes.value.find(s => categ(s.title) === 'insights'))
 const secEmocional = computed(() => secoes.value.find(s => categ(s.title) === 'emocional'))
 const secComunicacao = computed(() => secoes.value.find(s => categ(s.title) === 'comunicacao'))
+const secPosicionamento = computed(() => secoes.value.find(s => categ(s.title) === 'posicionamento'))
+const secValorAnalise = computed(() => secoes.value.find(s => categ(s.title) === 'valor_analise'))
 
 const deepSections = computed(() => {
   const types = ['deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias']
@@ -162,7 +166,7 @@ const deepSections = computed(() => {
 // Seções genéricas (que não foram categorizadas)
 const genericSections = computed(() => {
   const knownTypes = ['resumo','cenarios','riscos','recomendacoes','previsoes','insights',
-    'deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias','timeline','emocional','comunicacao']
+    'deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias','timeline','emocional','comunicacao','posicionamento','valor_analise']
   return secoes.value.filter(s => !knownTypes.includes(categ(s.title)))
 })
 
@@ -710,6 +714,9 @@ function abrirChat() {
         </div>
       </header>
 
+      <!-- ═══ CAMADA 1: DECISÃO EM 30 SEGUNDOS ═══ -->
+      <div class="layer-label"><span class="ll-icon">⚡</span> Decisão em 30 segundos</div>
+
       <!-- ═══ 1. HERO: RESUMO EXECUTIVO ═══ -->
       <section class="rpt-hero">
         <div class="hero-gauge">
@@ -832,6 +839,9 @@ function abrirChat() {
         </div>
       </section>
 
+      <!-- ═══ CAMADA 2: ANÁLISE EXECUTIVA — 5 MINUTOS ═══ -->
+      <div class="layer-label"><span class="ll-icon">📊</span> Análise executiva — 5 minutos</div>
+
       <!-- ═══ 5. CENÁRIOS FUTUROS ═══ -->
       <section class="rpt-section" v-if="cenarios.length">
         <div class="sec-header"><span class="sec-icon">🎯</span><h3>Cenários Futuros</h3><span class="sec-count">{{ cenarios.length }}</span></div>
@@ -900,7 +910,7 @@ function abrirChat() {
       <section class="rpt-section" v-if="parsedRecomendacoes.length">
         <div class="sec-header"><span class="sec-icon">⚡</span><h3>Recomendações Estratégicas</h3><span class="sec-count">{{ parsedRecomendacoes.length }}</span></div>
         <div class="rec-cards">
-          <div v-for="(r, i) in parsedRecomendacoes" :key="i" class="rec-card">
+          <div v-for="(r, i) in parsedRecomendacoes" :key="i" class="rec-card" :class="{'rec-top': i === 0}">
             <div class="rec-num">{{ i + 1 }}</div>
             <div class="rec-body">
               <div class="rec-top">
@@ -920,6 +930,12 @@ function abrirChat() {
         <div class="md-body" v-html="md(secComunicacao.content)"></div>
       </section>
 
+      <!-- ═══ POSICIONAMENTO PERCEBIDO vs DESEJADO ═══ -->
+      <section class="rpt-section" v-if="secPosicionamento?.content">
+        <div class="sec-header"><span class="sec-icon">🎯</span><h3>Posicionamento Percebido vs Desejado</h3></div>
+        <div class="md-body" v-html="md(secPosicionamento.content)"></div>
+      </section>
+
       <!-- ═══ 9. PREVISÕES ═══ -->
       <section class="rpt-section" v-if="parsedPrevisoes.length">
         <div class="sec-header"><span class="sec-icon">🔮</span><h3>Previsões</h3><span class="sec-count">{{ parsedPrevisoes.length }}</span></div>
@@ -930,6 +946,9 @@ function abrirChat() {
           </div>
         </div>
       </section>
+
+      <!-- ═══ CAMADA 3: ANÁLISE PROFUNDA — 30 MINUTOS ═══ -->
+      <div class="layer-label"><span class="ll-icon">🔬</span> Análise profunda — 30 minutos</div>
 
       <!-- ═══ 10. ANÁLISE PROFUNDA ═══ -->
       <section class="rpt-section" v-if="deepSections.length">
@@ -963,6 +982,12 @@ function abrirChat() {
             <p class="pc-text">{{ truncar(p.content || p.text || '', 180) }}</p>
           </div>
         </div>
+      </section>
+
+      <!-- ═══ VALOR DA ANÁLISE ═══ -->
+      <section class="rpt-section valor-section" v-if="secValorAnalise?.content">
+        <div class="sec-header"><span class="sec-icon">💎</span><h3>Valor da Análise</h3></div>
+        <div class="md-body" v-html="md(secValorAnalise.content)"></div>
       </section>
 
       <!-- ═══ SEÇÕES GENÉRICAS ═══ -->
@@ -1162,6 +1187,19 @@ function abrirChat() {
 .md-body :deep(li) { margin-bottom:4px; color:var(--c-muted); font-size:13px; line-height:1.6; }
 .md-body :deep(h1), .md-body :deep(h2), .md-body :deep(h3), .md-body :deep(h4) { color:var(--c-text); margin:16px 0 8px; }
 
+/* ═══ LAYER LABELS ═══ */
+.layer-label { display:flex; align-items:center; gap:8px; padding:8px 16px; margin:28px 0 12px; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--c-dim); border-left:3px solid var(--c-accent); background:linear-gradient(90deg, rgba(0,229,195,0.04), transparent); border-radius:0 8px 8px 0; }
+.ll-icon { font-size:14px; }
+
+/* ═══ STACK RANKING — #1 HIGHLIGHTED ═══ */
+.rec-top { border:2px solid var(--c-accent) !important; background:linear-gradient(135deg, rgba(0,229,195,0.06), rgba(124,111,247,0.03)) !important; position:relative; }
+.rec-top::after { content:'#1 PRIORIDADE'; position:absolute; top:-10px; right:16px; background:var(--c-accent); color:#09090f; font-size:9px; font-weight:800; padding:2px 10px; border-radius:10px; letter-spacing:1px; }
+.rec-top .rec-num { background:var(--c-accent) !important; color:#09090f !important; font-size:18px; width:40px; height:40px; }
+
+/* ═══ VALOR DA ANÁLISE ═══ */
+.valor-section { background:linear-gradient(135deg, rgba(245,166,35,0.04), rgba(0,229,195,0.03)) !important; border-color:rgba(245,166,35,0.2) !important; }
+
+/* ═══ PRINT ═══ */
 /* ═══ PRINT ═══ */
 @media print {
   .rpt-topbar, .tb-actions, .rpt-cta { display:none !important; }
