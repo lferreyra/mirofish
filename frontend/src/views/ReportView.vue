@@ -129,6 +129,8 @@ function categ(title) {
   if (t.includes('padro') || t.includes('pattern') || t.includes('消费') || t.includes('行为') || t.includes('转变')) return 'deep_padroes'
   if (t.includes('hipotes') || t.includes('hypothes') || t.includes('品牌') || t.includes('叙事') || t.includes('机会')) return 'deep_hipoteses'
   if (t.includes('anomal') || t.includes('未来') || t.includes('潜在')) return 'deep_anomalias'
+  if (t.includes('emocio') || t.includes('emotion') || t.includes('sentimento')) return 'emocional'
+  if (t.includes('comunica') || t.includes('mensag') || t.includes('comunicação') || t.includes('messaging')) return 'comunicacao'
   if (t.includes('timeline') || t.includes('linha do tempo')) return 'timeline'
   return 'generic'
 }
@@ -140,6 +142,8 @@ const secRiscos = computed(() => secoes.value.find(s => categ(s.title) === 'risc
 const secRecomendacoes = computed(() => secoes.value.find(s => categ(s.title) === 'recomendacoes') || secoes.value.find(s => categ(s.title) === 'previsoes'))
 const secPrevisoes = computed(() => secoes.value.find(s => categ(s.title) === 'previsoes') || secoes.value.find(s => categ(s.title) === 'recomendacoes'))
 const secInsights = computed(() => secoes.value.find(s => categ(s.title) === 'insights'))
+const secEmocional = computed(() => secoes.value.find(s => categ(s.title) === 'emocional'))
+const secComunicacao = computed(() => secoes.value.find(s => categ(s.title) === 'comunicacao'))
 
 const deepSections = computed(() => {
   const types = ['deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias']
@@ -158,7 +162,7 @@ const deepSections = computed(() => {
 // Seções genéricas (que não foram categorizadas)
 const genericSections = computed(() => {
   const knownTypes = ['resumo','cenarios','riscos','recomendacoes','previsoes','insights',
-    'deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias','timeline']
+    'deep_mapa','deep_crono','deep_padroes','deep_hipoteses','deep_anomalias','timeline','emocional','comunicacao']
   return secoes.value.filter(s => !knownTypes.includes(categ(s.title)))
 })
 
@@ -210,6 +214,17 @@ const briefingCEO = computed(() => {
     risco: riscoTop,
     tom
   }
+})
+
+// Veredicto GO/NO-GO extraído do resumo
+const veredicto = computed(() => {
+  const sum = (report.value?.outline?.summary || '').toUpperCase()
+  const content = (secResumo.value?.content || '').toUpperCase()
+  const all = sum + ' ' + content
+  if (all.includes('NÃO LANÇAR') || all.includes('NO-GO') || all.includes('NOGO')) return { label: 'NÃO LANÇAR', color: '#ff5a5a', icon: '🔴' }
+  if (all.includes('AJUSTAR') || all.includes('ADJUST')) return { label: 'AJUSTAR ANTES', color: '#f5a623', icon: '🟡' }
+  if (all.includes('LANÇAR') || all.includes('GO')) return { label: 'LANÇAR', color: '#00e5c3', icon: '🟢' }
+  return { label: 'EM ANÁLISE', color: '#8888aa', icon: '⚪' }
 })
 
 const resumoRodadas = computed(() => {
@@ -643,83 +658,15 @@ const gerandoPDF = ref(false)
 const pageRef = ref(null)
 
 async function exportarPDF() {
-  if (gerandoPDF.value) return
-  gerandoPDF.value = true
-  try {
-    const el = pageRef.value
-    if (!el) {
-      window.print()
-      return
-    }
-
-    const clone = el.cloneNode(true)
-    clone.querySelectorAll('.np,.cta-bar,.page-head').forEach(n => n.remove())
-    clone.querySelectorAll('.deep-tabs,.deep-content').forEach(n => (n.style.display = 'none'))
-    clone.querySelectorAll('.deep-print-all').forEach(n => (n.style.display = 'block'))
-    clone.querySelectorAll('.sec-body-inner').forEach(n => (n.style.display = 'block'))
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-up.')
-      return
-    }
-
-    const css = `
-      <style>
-        @page { size: A4; margin: 12mm; }
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { margin: 0; background: #fff; color: #1f2430; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 11pt; }
-        .page { padding: 0; display: flex; flex-direction: column; gap: 10px; }
-        .bloco,.kpi-card,.chart-bloco,.cen-card,.risk-card,.rec-card,.insight-card,.pred-card,.sent-card,.post-card,.achado-card,.agent-card {
-          background: #fff !important; border: 1px solid #e4e6eb !important; break-inside: avoid; page-break-inside: avoid;
-        }
-        .bloco { border-radius: 10px; padding: 14px 16px; }
-        .bloco-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .cen-grid,.agents-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        .insights-grid,.pred-grid,.posts-grid,.sentiment-grid { grid-template-columns: 1fr 1fr !important; }
-        .resumo-inner { grid-template-columns: auto 1fr !important; gap: 14px; }
-        .resumo-badges { flex-direction: row !important; flex-wrap: wrap !important; }
-        .doc-foot { border-top: 1px solid #e4e6eb; color: #69707d; padding-top: 8px; }
-        .md-body, .md-body * { color: #252b37 !important; }
-        .bloco-label,.bloco-label-sm,.cb-label,.kpi-label,.prob-title { color: #69707d !important; }
-      </style>
-    `
-
-    printWindow.document.open()
-    printWindow.document.write(`
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>${(titulo.value || 'Relatório AUGUR').replace(/</g, '&lt;')}</title>
-          ${css}
-        </head>
-        <body></body>
-      </html>
-    `)
-    printWindow.document.close()
-    printWindow.document.body.appendChild(clone)
-
-    setTimeout(() => {
-      printWindow.focus()
-      printWindow.print()
-      printWindow.close()
-    }, 250)
-  } finally {
-    gerandoPDF.value = false
-  }
+  const reportId = route.params.reportId
+  const downloadUrl = (import.meta.env.VITE_API_BASE_URL || '') + '/api/report/' + reportId + '/download'
+  window.open(downloadUrl, '_blank')
 }
+
 function abrirChat() {
   // Navigate to interaction/chat view if available
   const rid = route.params.reportId
   router.push(`/agentes/${rid}`)
-}
-
-// ─── Export PDF ───────────────────────────────────────────────
-function exportarPDF() {
-  const reportId = route.params.reportId
-  // Backend gera Markdown — abrir em nova aba para download
-  const downloadUrl = (import.meta.env.VITE_API_BASE_URL || '') + '/api/report/' + reportId + '/download'
-  window.open(downloadUrl, '_blank')
 }
 </script>
 
@@ -775,7 +722,10 @@ function exportarPDF() {
           </svg>
         </div>
         <div class="hero-content">
-          <h2 class="hero-label">RESUMO EXECUTIVO</h2>
+          <div class="hero-veredicto" :style="{background: veredicto.color + '15', borderColor: veredicto.color + '44', color: veredicto.color}">
+              {{ veredicto.icon }} {{ veredicto.label }}
+            </div>
+            <h2 class="hero-label">RESUMO EXECUTIVO</h2>
           <div v-if="secResumo?.content" class="hero-text md-body" v-html="md(secResumo.content)"></div>
           <div v-if="simReq" class="hero-hipotese">
             <strong>Hipótese:</strong> {{ truncar(simReq, 300) }}
@@ -921,6 +871,12 @@ function exportarPDF() {
         </div>
       </section>
 
+      <!-- ═══ 6b. ANÁLISE EMOCIONAL ═══ -->
+      <section class="rpt-section" v-if="secEmocional?.content">
+        <div class="sec-header"><span class="sec-icon">🎭</span><h3>Análise Emocional</h3></div>
+        <div class="md-body" v-html="md(secEmocional.content)"></div>
+      </section>
+
       <!-- ═══ 7. FATORES DE RISCO ═══ -->
       <section class="rpt-section" v-if="parsedRiscos.length">
         <div class="sec-header"><span class="sec-icon">⚠️</span><h3>Fatores de Risco</h3><span class="sec-count">{{ parsedRiscos.length }}</span></div>
@@ -956,6 +912,12 @@ function exportarPDF() {
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- ═══ 8b. ESTRATÉGIA DE COMUNICAÇÃO ═══ -->
+      <section class="rpt-section" v-if="secComunicacao?.content">
+        <div class="sec-header"><span class="sec-icon">📣</span><h3>Estratégia de Comunicação</h3></div>
+        <div class="md-body" v-html="md(secComunicacao.content)"></div>
       </section>
 
       <!-- ═══ 9. PREVISÕES ═══ -->
@@ -1066,6 +1028,9 @@ function exportarPDF() {
 .hb-icon { font-size:16px; margin-bottom:2px; }
 .hb-val { font-size:22px; font-weight:800; color:var(--bc); font-family:'JetBrains Mono',monospace; }
 .hb-label { font-size:9px; color:var(--c-dim); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+
+/* ═══ VEREDICTO ═══ */
+.hero-veredicto { display:inline-flex; align-items:center; gap:6px; padding:6px 18px; border-radius:20px; font-size:13px; font-weight:800; letter-spacing:1px; border:2px solid; text-transform:uppercase; margin-bottom:10px; }
 
 /* ═══ CEO BRIEFING ═══ */
 .ceo-section { background:linear-gradient(135deg, rgba(0,229,195,0.04), rgba(124,111,247,0.03)); }
