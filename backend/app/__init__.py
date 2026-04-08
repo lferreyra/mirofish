@@ -21,7 +21,6 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # JSON \uXXXX
-    # Flask >= 2.3  app.json.ensure_ascii JSON_AS_ASCII Configuração
     if hasattr(app, 'json') and hasattr(app.json, 'ensure_ascii'):
         app.json.ensure_ascii = False
     
@@ -39,6 +38,20 @@ def create_app(config_class=Config):
     
     # CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}})
+    
+    # ═══ JWT Auth (opcional — não quebra se flask-jwt-extended não estiver instalado) ═══
+    try:
+        from .auth import init_jwt, auth_bp
+        jwt = init_jwt(app)
+        app.register_blueprint(auth_bp)
+        if should_log_startup:
+            if jwt:
+                logger.info("JWT Auth configurado ✅")
+            else:
+                logger.info("JWT Auth não disponível (flask-jwt-extended não instalado)")
+    except Exception as e:
+        if should_log_startup:
+            logger.warning(f"Auth não carregado: {e}")
     
     # SimulaçãoSimulação
     from .services.simulation_runner import SimulationRunner
