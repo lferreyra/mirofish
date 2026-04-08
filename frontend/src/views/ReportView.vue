@@ -691,855 +691,496 @@ function abrirChat() {
 }
 </script>
 
+
 <template>
-  <AppShell :title="titulo">
-    <template #actions>
-      <AugurButton variant="ghost" @click="voltar" class="np">← Projeto</AugurButton>
-      <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/agentes`)" class="np" v-if="report?.simulation_id">🧠 Agentes</AugurButton>
-      <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/posts`)" class="np" v-if="report?.simulation_id">📝 Posts</AugurButton>
-      <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/influentes`)" class="np" v-if="report?.simulation_id">👑 Influentes</AugurButton>
-      <AugurButton variant="ghost" @click="router.push('/comparar')" class="np">📊 Comparar</AugurButton>
-      <AugurButton @click="exportarPDF" :disabled="gerandoPDF" class="np">
-        <span v-if="gerandoPDF">⏳ Gerando PDF...</span>
-        <span v-else>⬇ Exportar PDF</span>
-      </AugurButton>
-    </template>
-
-    <div v-if="carregando" class="loading np">
-      <div class="spin"></div>
-      <div><div class="ld-t">Carregando relatório...</div><div class="ld-s">Processando análises</div></div>
+  <AppShell>
+    <!-- Loading -->
+    <div v-if="carregando" class="rpt-loading">
+      <div class="ld-spinner"></div>
+      <p>Gerando relatório de previsão...</p>
     </div>
 
-    <div v-else-if="erro" class="erro-st np">
-      <div style="font-size:48px">⚠️</div>
-      <div style="color:var(--danger);font-size:14px">{{ erro }}</div>
-      <button class="btn-g" @click="voltar">← Voltar</button>
+    <!-- Error -->
+    <div v-else-if="erro" class="rpt-error">
+      <div class="err-icon">⚠️</div>
+      <h3>Não foi possível carregar o relatório</h3>
+      <p>{{ erro }}</p>
+      <AugurButton @click="$router.go(-1)">Voltar</AugurButton>
     </div>
 
-    <div v-else-if="report" ref="pageRef" class="page">
+    <!-- Report -->
+    <div v-else class="rpt-wrap">
 
-      <!-- Print-only header -->
-      <div class="print-header">
-        <div class="print-logo">AUGUR</div>
-        <div class="print-title">{{ titulo }}</div>
-        <div class="print-meta">
-          <span v-if="geradoEm">{{ geradoEm }}</span>
-          <span>Análise Preditiva — AUGUR by itcast</span>
-        </div>
-      </div>
-
-      <!-- Breadcrumb -->
-      <div class="page-head np">
-        <div class="bc">
-          <span class="bc-link" @click="voltar">← Projeto</span>
-          <span class="bc-sep">›</span>
-          <span class="bc-cur">Relatório</span>
-        </div>
-        <div class="page-meta">
-          <span class="meta-item" v-if="geradoEm">🕐 {{ geradoEm }}</span>
-          <span class="meta-item">📊 Análise Preditiva — AUGUR by itcast</span>
-        </div>
-      </div>
-
-      <!-- ══════════ 1. RESUMO EXECUTIVO ══════════ -->
-      <div class="bloco resumo-bloco">
-        <div class="bloco-label">RESUMO EXECUTIVO</div>
-        <div class="resumo-inner">
-          <div class="gauge-wrap">
-            <svg viewBox="0 0 120 80" class="gauge-svg">
-              <path d="M 16 65 A 44 44 0 0 1 104 65" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="8" stroke-linecap="round"/>
-              <path :d="gaugePath(confianca)" fill="none" stroke="url(#gaugeGrad)" stroke-width="8" stroke-linecap="round"/>
-              <defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c6ff7"/><stop offset="100%" stop-color="#00e5c3"/></linearGradient></defs>
-              <text x="60" y="56" text-anchor="middle" fill="var(--text-primary)" font-size="24" font-weight="800">{{ confianca }}%</text>
-              <text x="60" y="72" text-anchor="middle" fill="var(--text-muted)" font-size="8" font-weight="600" letter-spacing="1">CONFIANÇA</text>
-            </svg>
+      <!-- ═══ TOP BAR ═══ -->
+      <header class="rpt-topbar">
+        <div class="tb-left">
+          <div class="tb-breadcrumb">
+            <span class="bc-link" @click="router.push('/')">Dashboard</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-current">Relatório</span>
           </div>
+          <h1 class="tb-title">{{ titulo }}</h1>
+          <p class="tb-date" v-if="geradoEm">Relatório de Previsão · {{ geradoEm }}</p>
+        </div>
+        <div class="tb-actions">
+          <AugurButton variant="ghost" @click="router.push(`/projeto/${report?.project_id}`)" class="tb-btn" v-if="report?.project_id">← Projeto</AugurButton>
+          <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/agentes`)" class="tb-btn" v-if="report?.simulation_id">🧠 Agentes</AugurButton>
+          <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/posts`)" class="tb-btn" v-if="report?.simulation_id">📝 Posts</AugurButton>
+          <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/influentes`)" class="tb-btn" v-if="report?.simulation_id">👑 Influentes</AugurButton>
+          <AugurButton variant="primary" @click="window.print()" class="tb-btn">📄 Exportar PDF</AugurButton>
+        </div>
+      </header>
 
-          <div class="resumo-texto">
-            <div v-if="secResumo?.content" class="resumo-md md-body" v-html="md(secResumo.content)"></div>
-            <div v-if="simReq" class="resumo-hip">
-              <span class="hip-lbl">Hipótese:</span> {{ truncar(simReq, 250) }}
-            </div>
-          </div>
-
-          <div class="resumo-badges">
-            <div v-for="b in countBadges" :key="b.label" class="count-badge" :style="{borderColor: b.color+'44'}">
-              <div class="cb-icon">{{ b.icon }}</div>
-              <div class="cb-val" :style="{color: b.color}">{{ b.val }}</div>
-              <div class="cb-label">{{ b.label }}</div>
-            </div>
+      <!-- ═══ 1. HERO: RESUMO EXECUTIVO ═══ -->
+      <section class="rpt-hero">
+        <div class="hero-gauge">
+          <svg viewBox="0 0 120 90" class="gauge-svg">
+            <path d="M 16 75 A 52 52 0 0 1 104 75" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-linecap="round"/>
+            <path :d="gaugePath(confianca)" fill="none" stroke="url(#gGrad)" stroke-width="10" stroke-linecap="round" class="gauge-fill"/>
+            <defs><linearGradient id="gGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c6ff7"/><stop offset="100%" stop-color="#00e5c3"/></linearGradient></defs>
+            <text x="60" y="62" text-anchor="middle" fill="var(--c-text)" font-size="28" font-weight="800">{{ confianca }}%</text>
+            <text x="60" y="78" text-anchor="middle" fill="var(--c-muted)" font-size="9" font-weight="600" letter-spacing="1.5">CONFIANÇA</text>
+          </svg>
+        </div>
+        <div class="hero-content">
+          <h2 class="hero-label">RESUMO EXECUTIVO</h2>
+          <div v-if="secResumo?.content" class="hero-text md-body" v-html="md(secResumo.content)"></div>
+          <div v-if="simReq" class="hero-hipotese">
+            <strong>Hipótese:</strong> {{ truncar(simReq, 300) }}
           </div>
         </div>
-      </div>
+        <div class="hero-badges">
+          <div v-for="b in countBadges" :key="b.label" class="hb-item" :style="{'--bc': b.color}">
+            <span class="hb-icon">{{ b.icon }}</span>
+            <span class="hb-val">{{ b.val }}</span>
+            <span class="hb-label">{{ b.label }}</span>
+          </div>
+        </div>
+      </section>
 
-      <!-- ══════════ BRIEFING CEO (1 MINUTO) ══════════ -->
-      <div class="bloco ceo-brief">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🧭 Briefing CEO — 1 minuto</span>
+      <!-- ═══ 2. BRIEFING CEO ═══ -->
+      <section class="rpt-section ceo-section">
+        <div class="sec-header">
+          <span class="sec-icon">🧭</span>
+          <h3>Briefing CEO — 1 Minuto</h3>
         </div>
         <div class="ceo-grid">
-          <div class="ceo-item">
-            <div class="ceo-k">Decisão recomendada</div>
-            <div class="ceo-v">{{ briefingCEO.decisao }}</div>
+          <div class="ceo-card">
+            <div class="ceo-label">DECISÃO RECOMENDADA</div>
+            <div class="ceo-value">{{ briefingCEO.decisao }}</div>
           </div>
-          <div class="ceo-item">
-            <div class="ceo-k">Cenário mais provável</div>
-            <div class="ceo-v">{{ briefingCEO.cenario }}</div>
+          <div class="ceo-card">
+            <div class="ceo-label">CENÁRIO MAIS PROVÁVEL</div>
+            <div class="ceo-value">{{ briefingCEO.cenario }}</div>
           </div>
-          <div class="ceo-item">
-            <div class="ceo-k">Risco crítico agora</div>
-            <div class="ceo-v">{{ briefingCEO.risco }}</div>
+          <div class="ceo-card">
+            <div class="ceo-label">RISCO CRÍTICO AGORA</div>
+            <div class="ceo-value ceo-risk">{{ briefingCEO.risco }}</div>
           </div>
-          <div class="ceo-item">
-            <div class="ceo-k">Sentimento geral</div>
-            <div class="ceo-v">{{ briefingCEO.tom }}</div>
+          <div class="ceo-card">
+            <div class="ceo-label">SENTIMENTO GERAL</div>
+            <div class="ceo-value">{{ briefingCEO.tom }}</div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ RESUMO DAS RODADAS ══════════ -->
-      <div class="bloco" v-if="resumoRodadas.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🕐 Resumo das Rodadas (últimas 5)</span>
-        </div>
-        <div class="rod-table">
-          <div class="rod-head">
-            <span>Rodada</span><span>Total</span><span>Twitter</span><span>Reddit</span>
-          </div>
-          <div v-for="r in resumoRodadas" :key="r.rodada" class="rod-row">
-            <span>R{{ r.rodada }}</span>
-            <span>{{ r.total }}</span>
-            <span>{{ r.twitter }}</span>
-            <span>{{ r.reddit }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ 2. KPI CARDS ══════════ -->
-      <div v-if="kpiCards.length" class="kpi-row">
+      <!-- ═══ 3. KPI CARDS ═══ -->
+      <section v-if="kpiCards.length" class="kpi-strip">
         <div v-for="k in kpiCards" :key="k.label" class="kpi-card">
-          <div class="kpi-header">
-            <div class="kpi-label">{{ k.label }}</div>
-            <svg v-if="k.trend==='up'" viewBox="0 0 10 10" width="10" height="10"><polyline points="1,8 5,2 9,8" fill="none" stroke="#00e5c3" stroke-width="2"/></svg>
-            <svg v-else-if="k.trend==='down'" viewBox="0 0 10 10" width="10" height="10"><polyline points="1,2 5,8 9,2" fill="none" stroke="#ff5a5a" stroke-width="2"/></svg>
-            <svg v-else viewBox="0 0 10 10" width="10" height="10"><line x1="1" y1="5" x2="9" y2="5" stroke="#6b6b80" stroke-width="2"/></svg>
+          <div class="kpi-top">
+            <span class="kpi-name">{{ k.label }}</span>
+            <span class="kpi-trend" :class="k.trend">
+              <template v-if="k.trend==='up'">↗</template>
+              <template v-else-if="k.trend==='down'">↘</template>
+              <template v-else>→</template>
+            </span>
           </div>
-          <div class="kpi-valor">{{ k.valor }}</div>
+          <div class="kpi-val">{{ k.valor }}</div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 3. EVOLUÇÃO + RADAR ══════════ -->
-      <div class="bloco-2col" v-if="lineChart || analytics">
-        <div class="bloco chart-bloco" v-if="lineChart">
-          <div class="bloco-label-row">
-            <span class="bloco-label-sm">Evolução da Simulação</span>
-            <div class="chart-leg">
-              <span style="color:#1da1f2">■ Twitter</span>
-              <span style="color:#ff4500">■ Reddit</span>
-              <span style="color:#00e5c3">— Total</span>
+      <!-- ═══ 4. EVOLUÇÃO + RADAR ═══ -->
+      <section class="rpt-charts" v-if="lineChart || analytics">
+        <div class="chart-card" v-if="lineChart">
+          <div class="sec-header-sm">
+            <span>📈 Evolução da Simulação</span>
+            <div class="chart-legend">
+              <span class="leg-tw">● Twitter</span>
+              <span class="leg-rd">● Reddit</span>
+              <span class="leg-tot">● Total</span>
             </div>
           </div>
-          <div class="chart-axis-label">Métricas por rodada</div>
-          <svg :viewBox="`0 0 ${chartW} ${chartH}`" class="chart-svg" preserveAspectRatio="xMidYMid meet">
-            <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00e5c3" stop-opacity="0.18"/><stop offset="100%" stop-color="#00e5c3" stop-opacity="0"/></linearGradient></defs>
-            <g v-for="l in lineChart.yLines" :key="l.val"><line :x1="cp.l" :y1="l.y" :x2="chartW-cp.r" :y2="l.y" stroke="rgba(0,0,0,0.06)" stroke-width="1"/><text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(0,0,0,0.3)" font-size="9">{{ l.val }}</text></g>
-            <g v-for="lb in lineChart.labels" :key="lb.r"><text :x="lb.x" :y="chartH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="9">R{{ lb.r }}</text></g>
-            <path :d="lineChart.area" fill="url(#ag)" stroke="none"/>
-            <path :d="lineChart.tw" fill="none" stroke="#1da1f2" stroke-width="2" stroke-linejoin="round"/>
-            <path :d="lineChart.rd" fill="none" stroke="#ff4500" stroke-width="2" stroke-linejoin="round"/>
+          <svg :viewBox="`0 0 ${chartW} ${chartH}`" class="evo-chart" preserveAspectRatio="xMidYMid meet">
+            <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00e5c3" stop-opacity="0.15"/><stop offset="100%" stop-color="#00e5c3" stop-opacity="0"/></linearGradient></defs>
+            <g v-for="l in lineChart.yLines" :key="l.val"><line :x1="cp.l" :y1="l.y" :x2="chartW-cp.r" :y2="l.y" stroke="rgba(255,255,255,0.05)" stroke-width="1"/><text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(255,255,255,0.25)" font-size="9">{{ l.val }}</text></g>
+            <g v-for="lb in lineChart.labels" :key="lb.r"><text :x="lb.x" :y="chartH-cp.b+14" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="9">R{{ lb.r }}</text></g>
+            <path :d="lineChart.area" fill="url(#ag)"/>
+            <path :d="lineChart.tw" fill="none" stroke="#1da1f2" stroke-width="2" stroke-linejoin="round" opacity="0.8"/>
+            <path :d="lineChart.rd" fill="none" stroke="#ff4500" stroke-width="2" stroke-linejoin="round" opacity="0.8"/>
             <path :d="lineChart.total" fill="none" stroke="#00e5c3" stroke-width="2.5" stroke-linejoin="round"/>
           </svg>
         </div>
-        <div class="bloco chart-bloco" v-if="analytics">
-          <div class="bloco-label-sm" style="margin-bottom:8px">Radar de métricas</div>
-          <svg viewBox="0 0 220 220" class="radar-svg" preserveAspectRatio="xMidYMid meet">
-            <polygon :points="pts(radarData.grid100)" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
-            <polygon :points="pts(radarData.grid75)" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
-            <polygon :points="pts(radarData.grid50)" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
-            <polygon :points="pts(radarData.grid25)" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
-            <line v-for="ax in radarData.axes" :key="ax.label" :x1="ax.x1" :y1="ax.y1" :x2="ax.x2" :y2="ax.y2" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
-            <text v-for="ax in radarData.axes" :key="ax.label+'l'" :x="ax.lx" :y="ax.ly" text-anchor="middle" dominant-baseline="middle" fill="rgba(0,0,0,0.45)" font-size="9">{{ ax.label }}</text>
-            <polygon :points="pts(radarData.data)" fill="rgba(0,229,195,0.15)" stroke="#00e5c3" stroke-width="2"/>
-            <circle v-for="(pt,i) in radarData.data" :key="i" :cx="pt.x" :cy="pt.y" r="3" fill="#00e5c3"/>
-          </svg>
+        <div class="chart-card" v-if="sentimentData">
+          <div class="sec-header-sm"><span>💬 Sentimento</span></div>
+          <div class="sent-bars">
+            <div class="sent-row" v-if="sentimentData.twitter">
+              <span class="sent-plat">Twitter</span>
+              <div class="sent-bar-wrap">
+                <div class="sent-pos" :style="{width: sentimentData.twitter.pos+'%'}"></div>
+                <div class="sent-neu" :style="{width: sentimentData.twitter.neu+'%'}"></div>
+                <div class="sent-neg" :style="{width: sentimentData.twitter.neg+'%'}"></div>
+              </div>
+              <span class="sent-pct">{{ sentimentData.twitter.pos }}%</span>
+            </div>
+            <div class="sent-row" v-if="sentimentData.reddit">
+              <span class="sent-plat">Reddit</span>
+              <div class="sent-bar-wrap">
+                <div class="sent-pos" :style="{width: sentimentData.reddit.pos+'%'}"></div>
+                <div class="sent-neu" :style="{width: sentimentData.reddit.neu+'%'}"></div>
+                <div class="sent-neg" :style="{width: sentimentData.reddit.neg+'%'}"></div>
+              </div>
+              <span class="sent-pct">{{ sentimentData.reddit.pos }}%</span>
+            </div>
+          </div>
+          <div class="sent-legend">
+            <span class="sl-pos">● Positivo</span>
+            <span class="sl-neu">● Neutro</span>
+            <span class="sl-neg">● Negativo</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 4. CENÁRIOS FUTUROS ══════════ -->
-      <div class="bloco" v-if="secCenarios">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🔭 Cenários Futuros</span>
-          <span class="bloco-count">{{ cenarios.length }}</span>
+      <!-- ═══ 5. CENÁRIOS FUTUROS ═══ -->
+      <section class="rpt-section" v-if="cenarios.length">
+        <div class="sec-header"><span class="sec-icon">🎯</span><h3>Cenários Futuros</h3><span class="sec-count">{{ cenarios.length }}</span></div>
+        <div class="prob-bar-wrap">
+          <div class="prob-label">Probabilidade por cenário</div>
+          <div class="prob-bar">
+            <div v-for="c in cenarios" :key="c.nome" class="prob-seg" :style="{width: c.prob+'%', background: c.cor}" :title="c.nome+': '+c.prob+'%'"></div>
+          </div>
+          <div class="prob-legend">
+            <span v-for="c in cenarios" :key="c.nome"><span class="pl-dot" :style="{background: c.cor}"></span>{{ c.nome }} {{ c.prob }}%</span>
+          </div>
         </div>
-        <div class="prob-section">
-          <div class="prob-title">Probabilidade por cenário</div>
-          <div class="prob-bars">
-            <div v-for="c in cenarios" :key="c.nome" class="prob-bar-row">
-              <div class="pb-label">{{ truncar(c.nome, 24) }}</div>
-              <div class="pb-track"><div class="pb-fill" :style="{width: c.prob+'%', background: c.cor}"></div></div>
-              <div class="pb-pct" :style="{color: c.cor}">{{ c.prob }}%</div>
+        <div class="cenario-cards">
+          <div v-for="c in cenarios" :key="c.nome" class="cenario-card" :style="{'--cc': c.cor, '--cci': c.corI}">
+            <div class="cc-header">
+              <h4>{{ c.nome }}</h4>
+              <span class="cc-badge" :style="{background: c.corI, color: c.cor, borderColor: c.cor+'44'}">{{ c.impacto }}</span>
+            </div>
+            <p class="cc-desc" v-if="c.desc">{{ c.desc }}</p>
+            <div class="cc-prob">
+              <span>Probabilidade</span>
+              <div class="cc-prob-bar"><div :style="{width: c.prob+'%', background: c.cor}"></div></div>
+              <strong :style="{color: c.cor}">{{ c.prob }}%</strong>
             </div>
           </div>
         </div>
-        <div class="cen-grid">
-          <div v-for="c in cenarios" :key="c.nome" class="cen-card" :style="{borderColor: c.cor+'44', background: c.corI}">
-            <div class="cen-top">
-              <div class="cen-nome">{{ c.nome }}</div>
-              <div class="cen-impacto" :style="{background: c.cor+'22', color: c.cor}">{{ c.impacto }}</div>
-            </div>
-            <div v-if="c.desc" class="cen-desc">{{ c.desc }}</div>
-            <div class="cen-prob-bar"><div class="cpb-fill" :style="{width: c.prob+'%', background: c.cor}"></div></div>
-            <div class="cen-probval" :style="{color: c.cor}">Probabilidade <strong>{{ c.prob }}%</strong></div>
+      </section>
+
+      <!-- ═══ 6. INSIGHTS PRINCIPAIS ═══ -->
+      <section class="rpt-section" v-if="achadosRelevantes.length">
+        <div class="sec-header"><span class="sec-icon">💡</span><h3>Insights Principais</h3><span class="sec-count">{{ achadosRelevantes.length }}</span></div>
+        <div class="insights-list">
+          <div v-for="(a, i) in achadosRelevantes" :key="i" class="insight-item">
+            <span class="ins-num">{{ i + 1 }}</span>
+            <p>{{ a.text }}</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 5. INSIGHTS PRINCIPAIS ══════════ -->
-      <div class="bloco" v-if="parsedInsights.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">💡 Insights Principais</span>
-          <span class="bloco-count">{{ parsedInsights.length }}</span>
-        </div>
-        <div class="insights-grid">
-          <div v-for="(ins, i) in parsedInsights" :key="i" class="insight-card">
-            <div class="insight-num" :style="{background: i%2===0 ? 'rgba(124,111,247,0.15)' : 'rgba(0,229,195,0.15)', color: i%2===0 ? '#7c6ff7' : '#00e5c3'}">{{ i + 1 }}</div>
-            <div class="insight-text">{{ ins.text }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ 6. FATORES DE RISCO ══════════ -->
-      <div class="bloco" v-if="parsedRiscos.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">⚠️ Fatores de Risco</span>
-          <span class="bloco-count">{{ parsedRiscos.length }}</span>
-        </div>
-        <div class="risk-list">
-          <div v-for="(r, i) in parsedRiscos" :key="i" class="risk-card">
-            <div class="risk-top">
-              <div class="risk-name">{{ r.name }}</div>
-              <div class="risk-badge" :style="{background: r.color+'22', color: r.color}">{{ r.impacto }}</div>
+      <!-- ═══ 7. FATORES DE RISCO ═══ -->
+      <section class="rpt-section" v-if="parsedRiscos.length">
+        <div class="sec-header"><span class="sec-icon">⚠️</span><h3>Fatores de Risco</h3><span class="sec-count">{{ parsedRiscos.length }}</span></div>
+        <div class="risk-cards">
+          <div v-for="(r, i) in parsedRiscos" :key="i" class="risk-card" :style="{'--rc': r.color}">
+            <div class="rc-header">
+              <h4>{{ r.name }}</h4>
+              <span class="rc-badge" :style="{background: r.color+'18', color: r.color, border: '1px solid '+r.color+'44'}">{{ r.impacto }}</span>
             </div>
-            <div class="risk-desc" v-if="r.desc">{{ r.desc }}</div>
-            <div class="risk-prob-row">
-              <span class="risk-prob-label">Probabilidade de ocorrência</span>
-              <div class="risk-prob-track"><div class="risk-prob-fill" :style="{width: r.prob+'%', background: r.color}"></div></div>
-              <span class="risk-prob-pct" :style="{color: r.color}">{{ r.prob }}%</span>
+            <p class="rc-desc">{{ r.desc }}</p>
+            <div class="rc-prob">
+              <span>Probabilidade de ocorrência</span>
+              <div class="rc-prob-bar"><div :style="{width: r.prob+'%', background: r.color}"></div></div>
+              <strong>{{ r.prob }}%</strong>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 7. RECOMENDAÇÕES ESTRATÉGICAS ══════════ -->
-      <div class="bloco" v-if="parsedRecomendacoes.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🎯 Recomendações Estratégicas</span>
-          <span class="bloco-count">{{ parsedRecomendacoes.length }}</span>
-        </div>
-        <div class="rec-list">
+      <!-- ═══ 8. RECOMENDAÇÕES ESTRATÉGICAS ═══ -->
+      <section class="rpt-section" v-if="parsedRecomendacoes.length">
+        <div class="sec-header"><span class="sec-icon">⚡</span><h3>Recomendações Estratégicas</h3><span class="sec-count">{{ parsedRecomendacoes.length }}</span></div>
+        <div class="rec-cards">
           <div v-for="(r, i) in parsedRecomendacoes" :key="i" class="rec-card">
             <div class="rec-num">{{ i + 1 }}</div>
             <div class="rec-body">
               <div class="rec-top">
-                <div class="rec-name">{{ r.name }}</div>
-                <div v-if="r.urgencia" class="rec-urg" :style="{background: r.urgColor+'22', color: r.urgColor}">{{ r.urgencia }}</div>
+                <h4>{{ r.name }}</h4>
+                <span v-if="r.urgencia" class="rec-urg" :style="{background: r.urgColor+'18', color: r.urgColor, border: '1px solid '+r.urgColor+'44'}">{{ r.urgencia }}</span>
               </div>
-              <div class="rec-desc" v-if="r.desc">{{ r.desc }}</div>
+              <p>{{ r.desc }}</p>
               <div class="rec-prazo" v-if="r.prazo">🕐 {{ r.prazo }}</div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 8. PREVISÕES ══════════ -->
-      <div class="bloco" v-if="parsedPrevisoes.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🚀 Previsões</span>
-          <span class="bloco-count">{{ parsedPrevisoes.length }}</span>
-        </div>
-        <div class="pred-grid">
-          <div v-for="(p, i) in parsedPrevisoes" :key="i" class="pred-card">
-            <div class="pred-num" :style="{background: ['rgba(0,229,195,0.15)','rgba(124,111,247,0.15)','rgba(29,161,242,0.15)','rgba(245,166,35,0.15)'][i%4], color: ['#00e5c3','#7c6ff7','#1da1f2','#f5a623'][i%4]}">{{ i + 1 }}</div>
-            <div class="pred-text">{{ p.text }}</div>
+      <!-- ═══ 9. PREVISÕES ═══ -->
+      <section class="rpt-section" v-if="parsedPrevisoes.length">
+        <div class="sec-header"><span class="sec-icon">🔮</span><h3>Previsões</h3><span class="sec-count">{{ parsedPrevisoes.length }}</span></div>
+        <div class="prev-list">
+          <div v-for="(p, i) in parsedPrevisoes" :key="i" class="prev-item">
+            <span class="prev-num">{{ i + 1 }}</span>
+            <p>{{ p.text }}</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ 9. TIMELINE DE EVENTOS ══════════ -->
-      <div class="bloco" v-if="parsedTimeline.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🕐 Timeline de Eventos</span>
-          <span class="bloco-count">{{ parsedTimeline.length }}</span>
-        </div>
-        <div class="timeline">
-          <div v-for="(ev, i) in parsedTimeline" :key="i" class="tl-item">
-            <div class="tl-dot"></div>
-            <div class="tl-content">
-              <div class="tl-top">
-                <div class="tl-date">{{ ev.date }}</div>
-                <div v-if="ev.prob" class="tl-prob">{{ ev.prob }}% de probabilidade</div>
-              </div>
-              <div class="tl-desc">{{ ev.desc }}</div>
-              <div v-if="ev.prob" class="tl-bar"><div class="tl-bar-fill" :style="{width: ev.prob+'%'}"></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ SENTIMENTO DA SIMULAÇÃO ══════════ -->
-      <div class="bloco" v-if="sentimentData">
-        <div class="bloco-label-row">
-          <span class="bloco-label">💭 Análise de Sentimento</span>
-          <span class="bloco-count">{{ sentimentData.geral.total }} posts</span>
-        </div>
-        <div class="sentiment-grid">
-          <div class="sent-card">
-            <div class="sent-title">Geral</div>
-            <div class="sent-bars">
-              <div class="sent-row">
-                <span class="sent-label">Positivo</span>
-                <div class="sent-track"><div class="sent-fill sent-pos" :style="{width: sentimentData.geral.pos+'%'}"></div></div>
-                <span class="sent-pct" style="color:#00e5c3">{{ sentimentData.geral.pos }}%</span>
-              </div>
-              <div class="sent-row">
-                <span class="sent-label">Neutro</span>
-                <div class="sent-track"><div class="sent-fill sent-neu" :style="{width: sentimentData.geral.neu+'%'}"></div></div>
-                <span class="sent-pct" style="color:#6b6b80">{{ sentimentData.geral.neu }}%</span>
-              </div>
-              <div class="sent-row">
-                <span class="sent-label">Negativo</span>
-                <div class="sent-track"><div class="sent-fill sent-neg" :style="{width: sentimentData.geral.neg+'%'}"></div></div>
-                <span class="sent-pct" style="color:#ff5a5a">{{ sentimentData.geral.neg }}%</span>
-              </div>
-            </div>
-          </div>
-          <div class="sent-card" v-if="sentimentData.twitter.total">
-            <div class="sent-title">🐦 Twitter <span class="sent-count">{{ sentimentData.twitter.total }}</span></div>
-            <div class="sent-bars">
-              <div class="sent-row"><span class="sent-label">Positivo</span><div class="sent-track"><div class="sent-fill sent-pos" :style="{width: sentimentData.twitter.pos+'%'}"></div></div><span class="sent-pct" style="color:#00e5c3">{{ sentimentData.twitter.pos }}%</span></div>
-              <div class="sent-row"><span class="sent-label">Neutro</span><div class="sent-track"><div class="sent-fill sent-neu" :style="{width: sentimentData.twitter.neu+'%'}"></div></div><span class="sent-pct" style="color:#6b6b80">{{ sentimentData.twitter.neu }}%</span></div>
-              <div class="sent-row"><span class="sent-label">Negativo</span><div class="sent-track"><div class="sent-fill sent-neg" :style="{width: sentimentData.twitter.neg+'%'}"></div></div><span class="sent-pct" style="color:#ff5a5a">{{ sentimentData.twitter.neg }}%</span></div>
-            </div>
-          </div>
-          <div class="sent-card" v-if="sentimentData.reddit.total">
-            <div class="sent-title">🔴 Reddit <span class="sent-count">{{ sentimentData.reddit.total }}</span></div>
-            <div class="sent-bars">
-              <div class="sent-row"><span class="sent-label">Positivo</span><div class="sent-track"><div class="sent-fill sent-pos" :style="{width: sentimentData.reddit.pos+'%'}"></div></div><span class="sent-pct" style="color:#00e5c3">{{ sentimentData.reddit.pos }}%</span></div>
-              <div class="sent-row"><span class="sent-label">Neutro</span><div class="sent-track"><div class="sent-fill sent-neu" :style="{width: sentimentData.reddit.neu+'%'}"></div></div><span class="sent-pct" style="color:#6b6b80">{{ sentimentData.reddit.neu }}%</span></div>
-              <div class="sent-row"><span class="sent-label">Negativo</span><div class="sent-track"><div class="sent-fill sent-neg" :style="{width: sentimentData.reddit.neg+'%'}"></div></div><span class="sent-pct" style="color:#ff5a5a">{{ sentimentData.reddit.neg }}%</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ TOP POSTS DOS AGENTES ══════════ -->
-      <div class="bloco" v-if="topPosts.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">📝 Posts Mais Relevantes dos Agentes</span>
-          <span class="bloco-count">{{ topPosts.length }}</span>
-        </div>
-        <div class="posts-grid">
-          <div v-for="(p, i) in topPosts" :key="i" class="post-card">
-            <div class="post-header">
-              <div class="post-author">{{ p.author || p.username || p.user_name || 'Agente' }}</div>
-              <div class="post-platform" :class="p.platform">{{ p.platform === 'twitter' ? '🐦' : '🔴' }}</div>
-            </div>
-            <div class="post-content">{{ (p.content || p.text || '').slice(0, 180) }}{{ (p.content || p.text || '').length > 180 ? '...' : '' }}</div>
-            <div class="post-stats">
-              <span class="ps-like">❤️ {{ p.num_likes || 0 }}</span>
-              <span class="ps-dislike" v-if="p.num_dislikes">👎 {{ p.num_dislikes }}</span>
-              <span class="ps-comments" v-if="p.num_comments">💬 {{ p.num_comments }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ ACHADOS RELEVANTES ══════════ -->
-      <div class="bloco" v-if="achadosRelevantes.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">⭐ Achados Relevantes</span>
-          <span class="bloco-count">{{ achadosRelevantes.length }}</span>
-        </div>
-        <div class="achados-list">
-          <div v-for="(a, i) in achadosRelevantes" :key="i" class="achado-card">
-            <div class="achado-badge" :class="a.tipo">{{ a.tipo === 'achado' ? '🔍 Achado' : '⭐ Destaque' }}</div>
-            <div class="achado-text">{{ a.text }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ NUVEM DE PALAVRAS ══════════ -->
-      <div class="bloco" v-if="wordCloud.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">☁️ Nuvem de Palavras — Tópicos Mais Mencionados</span>
-          <span class="bloco-count">{{ wordCloud.length }}</span>
-        </div>
-        <div class="wordcloud">
-          <span v-for="(w, i) in wordCloud" :key="i" class="wc-word"
-            :style="{fontSize: w.size+'px', color: w.color, opacity: w.opacity}">
-            {{ w.word }}
-          </span>
-        </div>
-      </div>
-
-      <!-- ══════════ MAPA DE CALOR — ATIVIDADE POR RODADA ══════════ -->
-      <div class="bloco" v-if="heatmapData">
-        <div class="bloco-label-row">
-          <span class="bloco-label">🔥 Mapa de Atividade por Rodada</span>
-        </div>
-        <div class="heatmap">
-          <div class="hm-labels">
-            <div class="hm-lbl">Twitter</div>
-            <div class="hm-lbl">Reddit</div>
-            <div class="hm-lbl">Total</div>
-          </div>
-          <div class="hm-grid">
-            <div class="hm-row">
-              <div v-for="r in heatmapData.rounds" :key="'tw'+r.round" class="hm-cell"
-                :style="{background: `rgba(29,161,242,${Math.min(r.twitter/heatmapData.maxVal, 1) * 0.8 + 0.1})`}"
-                :title="`R${r.round}: ${r.twitter} interações (Twitter)`">
-                <span v-if="r.twitter">{{ r.twitter }}</span>
-              </div>
-            </div>
-            <div class="hm-row">
-              <div v-for="r in heatmapData.rounds" :key="'rd'+r.round" class="hm-cell"
-                :style="{background: `rgba(255,69,0,${Math.min(r.reddit/heatmapData.maxVal, 1) * 0.8 + 0.1})`}"
-                :title="`R${r.round}: ${r.reddit} interações (Reddit)`">
-                <span v-if="r.reddit">{{ r.reddit }}</span>
-              </div>
-            </div>
-            <div class="hm-row">
-              <div v-for="r in heatmapData.rounds" :key="'tot'+r.round" class="hm-cell"
-                :style="{background: `rgba(0,229,195,${r.intensity * 0.8 + 0.1})`}"
-                :title="`R${r.round}: ${r.total} total`">
-                <span v-if="r.total">{{ r.total }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="hm-rounds">
-            <span v-for="r in heatmapData.rounds" :key="'lbl'+r.round" class="hm-rlbl">R{{ r.round }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══════════ 10. ANÁLISE PROFUNDA ══════════ -->
-      <div class="bloco deep-bloco" v-if="deepSections.length">
-        <div class="bloco-label-row">
-          <span class="bloco-label">ℹ️ Análise Profunda</span>
-        </div>
+      <!-- ═══ 10. ANÁLISE PROFUNDA ═══ -->
+      <section class="rpt-section" v-if="deepSections.length">
+        <div class="sec-header"><span class="sec-icon">🔬</span><h3>Análise Profunda</h3></div>
         <div class="deep-tabs">
-          <button v-for="(ds, i) in deepSections" :key="i" class="deep-tab" :class="{active: deepTab === i}" @click="deepTab = i">
-            <span class="deep-tab-icon">{{ ds.icon }}</span>
-            <span class="deep-tab-label">{{ ds.label }}</span>
-            <!-- Badges for Hipóteses -->
-            <template v-if="ds.label === 'Hipóteses Causais' && hipotesesBadges.length">
-              <span v-for="(b, bi) in hipotesesBadges.slice(0,5)" :key="bi" class="hyp-badge" :style="{background: b.color+'22', color: b.color}">{{ b.label }}</span>
-            </template>
+          <button v-for="(d, i) in deepSections" :key="i" class="dt-btn" :class="{active: deepTab === i}" @click="deepTab = i">
+            {{ d.icon }} {{ d.label }}
           </button>
         </div>
-        <div class="deep-content" v-if="deepSections[deepTab]">
-          <div class="md-body" v-html="md(deepSections[deepTab].content || '')"></div>
-        </div>
-        <!-- Print: show ALL sections (hidden on screen, visible in print) -->
-        <div class="deep-print-all">
-          <div v-for="(ds, i) in deepSections" :key="'print-'+i" class="deep-print-section">
-            <div class="deep-print-header">{{ ds.icon }} {{ ds.label }}</div>
-            <div class="md-body" v-html="md(ds.content || '')"></div>
-          </div>
-        </div>
-      </div>
+        <div class="deep-content md-body" v-if="deepSections[deepTab]" v-html="md(deepSections[deepTab].content || '')"></div>
+      </section>
 
-      <!-- ══════════ SEÇÕES GENÉRICAS (se houver) ══════════ -->
-      <div v-for="(s, idx) in genericSections" :key="'gen-'+idx" class="bloco secao-bloco">
-        <div class="sec-head" @click="s._open = !s._open">
-          <div class="toggle-left">
-            <span class="sec-num">{{ String(idx+1).padStart(2,'0') }}</span>
-            <span class="sec-nom">{{ s.title }}</span>
-          </div>
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" :style="{transform: s._open ? 'rotate(180deg)' : '', transition:'transform .2s'}"><polyline points="2,4 6,8 10,4"/></svg>
+      <!-- ═══ 11. NUVEM DE PALAVRAS ═══ -->
+      <section class="rpt-section" v-if="wordCloud.length">
+        <div class="sec-header"><span class="sec-icon">☁️</span><h3>Nuvem de Palavras</h3></div>
+        <div class="wc-wrap">
+          <span v-for="w in wordCloud" :key="w.word" class="wc-word" :style="{fontSize: w.size+'px', color: w.color, opacity: w.opacity}">{{ w.word }}</span>
         </div>
-        <div v-if="!s._open" class="sec-body-inner">
-          <div v-if="s.content" class="md-body" v-html="md(s.content)"></div>
-          <div v-else-if="s.description" class="sec-desc">{{ s.description }}</div>
-        </div>
-      </div>
+      </section>
 
-      <!-- ══════════ TOP AGENTES ══════════ -->
-      <div v-if="analytics && twTopAgents.length" class="bloco">
-        <div class="bloco-label">TOP AGENTES — ANÁLISE DE INFLUÊNCIA</div>
-        <div class="agents-grid">
-          <div v-for="(ag,i) in twTopAgents.slice(0,6)" :key="ag.user_id||i" class="agent-card">
-            <div class="ag-rank">#{{ i+1 }}</div>
-            <div class="ag-nome">{{ ag.name || ag.user_name }}</div>
-            <div class="ag-bio">{{ truncar(ag.bio, 70) }}</div>
-            <div class="ag-stats">
-              <span>📝 {{ ag.posts_count }}</span>
-              <span>❤️ {{ ag.total_likes_received }}</span>
-              <span>👥 {{ ag.num_followers }}</span>
+      <!-- ═══ 12. POSTS RELEVANTES ═══ -->
+      <section class="rpt-section" v-if="topPosts.length">
+        <div class="sec-header"><span class="sec-icon">📱</span><h3>Posts Relevantes</h3></div>
+        <div class="posts-grid">
+          <div v-for="(p, i) in topPosts" :key="i" class="post-card">
+            <div class="pc-head">
+              <span class="pc-plat" :class="p.platform">{{ p.platform === 'twitter' ? '𝕏' : '🔴' }}</span>
+              <span class="pc-user">{{ p.user_name || p.username || 'Agente' }}</span>
+              <span class="pc-likes">❤️ {{ p.num_likes || 0 }}</span>
             </div>
+            <p class="pc-text">{{ truncar(p.content || p.text || '', 180) }}</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ══════════ CTA — CONVERSAR COM REPORTAGENT ══════════ -->
-      <div class="cta-bar np">
-        <div class="cta-inner">
-          <div class="cta-text">
-            <div class="cta-title">Quer aprofundar a análise?</div>
-            <div class="cta-sub">Converse com o ReportAgent ou com agentes individuais para explorar cenários alternativos, questionar previsões e obter insights adicionais.</div>
-          </div>
-          <button class="cta-btn" @click="abrirChat">💬 Conversar com ReportAgent</button>
-        </div>
-      </div>
+      <!-- ═══ SEÇÕES GENÉRICAS ═══ -->
+      <section v-for="s in genericSections" :key="s.title" class="rpt-section">
+        <div class="sec-header"><h3>{{ s.title }}</h3></div>
+        <div class="md-body" v-html="md(s.content || '')"></div>
+      </section>
 
-      <!-- Rodapé -->
-      <div class="doc-foot">
-        <div>AUGUR by itcast — Documento Confidencial</div>
-        <div v-if="geradoEm">{{ geradoEm }}</div>
-      </div>
+      <!-- ═══ CTA: ANÁLISE PROFUNDA ═══ -->
+      <section class="rpt-cta" v-if="report?.simulation_id">
+        <h3>Quer aprofundar a análise?</h3>
+        <p>Converse com o ReportAgent ou com agentes individuais para explorar cenários alternativos, questionar previsões e obter insights adicionais.</p>
+        <AugurButton variant="primary" @click="router.push(`/simulacao/${report.simulation_id}/agentes`)">Conversar com Agentes</AugurButton>
+      </section>
     </div>
   </AppShell>
 </template>
 
 <style scoped>
-/* ─── Base ──────────────────────────────────────────────────── */
-.loading { display:flex;align-items:center;gap:16px;padding:60px; }
-.spin { width:28px;height:28px;border:3px solid var(--border-md);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0; }
-@keyframes sp { to{transform:rotate(360deg)} }
-.ld-t { font-size:15px;font-weight:600;color:var(--text-primary); }
-.ld-s { font-size:13px;color:var(--text-muted);margin-top:4px; }
-.erro-st { text-align:center;padding:60px;display:flex;flex-direction:column;align-items:center;gap:14px; }
-.btn-g { background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer; }
-.page { display:flex;flex-direction:column;gap:16px;padding-bottom:40px; }
+/* ═══ AUGUR REPORT — CEO GRADE ═══ */
+:root { --c-bg: #09090f; --c-surface: #111118; --c-card: #16161f; --c-border: rgba(255,255,255,0.06);
+  --c-text: #f0f0ff; --c-muted: #8888aa; --c-dim: #555570; --c-accent: #00e5c3; --c-purple: #7c6ff7;
+  --c-danger: #ff5a5a; --c-gold: #f5a623; --c-blue: #1da1f2; --c-radius: 16px; }
 
-.page-head { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:4px; }
-.bc { display:flex;align-items:center;gap:6px;font-size:13px; }
-.bc-link { color:var(--accent2);cursor:pointer; }
-.bc-link:hover { text-decoration:underline; }
-.bc-sep { color:var(--text-muted); }
-.bc-cur { color:var(--text-secondary); }
-.page-meta { display:flex;gap:14px;font-size:11px;color:var(--text-muted); }
-.meta-item { display:flex;align-items:center;gap:5px; }
+/* Loading & Error */
+.rpt-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:16px; color:var(--c-muted); }
+.ld-spinner { width:40px; height:40px; border:3px solid var(--c-border); border-top-color:var(--c-accent); border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg) } }
+.rpt-error { text-align:center; padding:80px 20px; }
+.rpt-error h3 { color:var(--c-text); margin:16px 0 8px; }
+.rpt-error p { color:var(--c-muted); margin-bottom:20px; }
+.err-icon { font-size:48px; }
 
-/* ─── Blocos ─────────────────────────────────────────────────── */
-.bloco { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:16px; }
-.bloco-label { font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase; }
-.bloco-label-row { display:flex;align-items:center;justify-content:space-between; }
-.bloco-label-sm { font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase; }
-.bloco-count { font-size:11px;font-weight:700;color:var(--accent2);background:var(--accent2-dim);border-radius:20px;padding:2px 10px; }
+/* Wrap */
+.rpt-wrap { max-width:1100px; margin:0 auto; padding:0 20px 60px; }
 
-/* ─── Resumo Executivo ──────────────────────────────────────── */
-.resumo-bloco { background:linear-gradient(135deg,var(--bg-surface) 0%,rgba(124,111,247,0.04) 100%);border-color:rgba(124,111,247,0.15); }
-.resumo-inner { display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:start; }
-.gauge-wrap { display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0; }
-.gauge-svg { width:130px;height:auto; }
-.resumo-texto { display:flex;flex-direction:column;gap:10px; }
-.resumo-md { font-size:13px;line-height:1.8; }
-.resumo-hip { font-size:12px;color:var(--text-muted);background:var(--bg-raised);border-left:3px solid var(--accent2);padding:8px 12px;border-radius:0 6px 6px 0;line-height:1.6; }
-.hip-lbl { font-weight:600;color:var(--accent2);margin-right:4px; }
-.resumo-badges { display:flex;flex-direction:column;gap:8px;flex-shrink:0; }
-.count-badge { border:1px solid;border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:76px; }
-.cb-icon { font-size:16px; }
-.cb-val { font-size:22px;font-weight:800;font-family:monospace; }
-.cb-label { font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px; }
+/* ═══ TOP BAR ═══ */
+.rpt-topbar { display:flex; justify-content:space-between; align-items:flex-start; padding:24px 0 20px; border-bottom:1px solid var(--c-border); margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+.tb-breadcrumb { display:flex; gap:6px; font-size:12px; color:var(--c-dim); margin-bottom:6px; }
+.bc-link { cursor:pointer; color:var(--c-muted); transition:color .2s; }
+.bc-link:hover { color:var(--c-accent); }
+.bc-sep { opacity:0.4; }
+.bc-current { color:var(--c-muted); }
+.tb-title { font-size:clamp(16px,2.5vw,22px); font-weight:700; color:var(--c-text); line-height:1.3; }
+.tb-date { font-size:12px; color:var(--c-dim); margin-top:4px; }
+.tb-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.tb-btn { font-size:12px !important; padding:6px 12px !important; }
 
-/* ─── Briefing CEO ───────────────────────────────────────────── */
-.ceo-brief { border-color: rgba(0,229,195,0.25); background: linear-gradient(135deg,var(--bg-surface) 0%,rgba(0,229,195,0.05) 100%); }
-.ceo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.ceo-item { background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; padding:12px; }
-.ceo-k { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
-.ceo-v { font-size:13px; font-weight:700; color:var(--text-primary); line-height:1.45; }
+/* ═══ HERO: RESUMO EXECUTIVO ═══ */
+.rpt-hero { display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:start;
+  background:linear-gradient(135deg, rgba(124,111,247,0.06), rgba(0,229,195,0.04));
+  border:1px solid var(--c-border); border-radius:var(--c-radius); padding:clamp(20px,3vw,32px); margin-bottom:24px; }
+.hero-gauge { display:flex; align-items:center; justify-content:center; }
+.gauge-svg { width:clamp(100px,14vw,140px); height:auto; filter:drop-shadow(0 0 20px rgba(0,229,195,0.15)); }
+.gauge-fill { transition:stroke-dashoffset 1.5s cubic-bezier(0.16,1,0.3,1); }
+.hero-content { min-width:0; }
+.hero-label { font-size:11px; font-weight:700; letter-spacing:2px; color:var(--c-accent); margin-bottom:8px; text-transform:uppercase; }
+.hero-text { font-size:14px; color:var(--c-muted); line-height:1.75; }
+.hero-text :deep(strong) { color:var(--c-text); font-weight:600; }
+.hero-hipotese { font-size:12px; color:var(--c-dim); margin-top:12px; padding:10px 14px; background:rgba(124,111,247,0.06); border-left:3px solid var(--c-purple); border-radius:0 8px 8px 0; }
+.hero-badges { display:flex; flex-direction:column; gap:10px; }
+.hb-item { display:flex; flex-direction:column; align-items:center; padding:10px 14px; border-radius:12px; background:var(--c-card); border:1px solid var(--c-border); min-width:70px; }
+.hb-icon { font-size:16px; margin-bottom:2px; }
+.hb-val { font-size:22px; font-weight:800; color:var(--bc); font-family:'JetBrains Mono',monospace; }
+.hb-label { font-size:9px; color:var(--c-dim); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
 
-/* ─── Resumo das rodadas ───────────────────────────────────── */
-.rod-table { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-.rod-head,.rod-row { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; padding:10px 12px; font-size:12px; }
-.rod-head { background:var(--bg-raised); color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px; font-size:10px; }
-.rod-row { border-top:1px solid var(--border); color:var(--text-secondary); }
-.rod-row span:first-child { color:var(--text-primary); font-weight:700; }
+/* ═══ CEO BRIEFING ═══ */
+.ceo-section { background:linear-gradient(135deg, rgba(0,229,195,0.04), rgba(124,111,247,0.03)); }
+.ceo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.ceo-card { background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:16px; transition:border-color .2s; }
+.ceo-card:hover { border-color:var(--c-accent); }
+.ceo-label { font-size:9px; font-weight:700; letter-spacing:1.5px; color:var(--c-dim); text-transform:uppercase; margin-bottom:8px; }
+.ceo-value { font-size:14px; font-weight:600; color:var(--c-text); line-height:1.4; }
+.ceo-risk { color:var(--c-danger); }
 
-/* ─── KPI Cards ─────────────────────────────────────────────── */
-.kpi-row { display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px; }
-.kpi-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;transition:border-color .2s; }
-.kpi-card:hover { border-color:var(--border-md); }
-.kpi-header { display:flex;align-items:center;justify-content:space-between; }
-.kpi-label { font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:500; }
-.kpi-valor { font-size:18px;font-weight:700;color:var(--text-primary);line-height:1.3;font-family:monospace; }
+/* ═══ KPI STRIP ═══ */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+.kpi-card { background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:16px 18px; }
+.kpi-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.kpi-name { font-size:11px; color:var(--c-muted); font-weight:500; }
+.kpi-trend { font-size:14px; font-weight:700; }
+.kpi-trend.up { color:var(--c-accent); }
+.kpi-trend.down { color:var(--c-danger); }
+.kpi-trend.stable { color:var(--c-dim); }
+.kpi-val { font-size:clamp(18px,2.5vw,24px); font-weight:800; color:var(--c-text); font-family:'JetBrains Mono',monospace; }
 
-/* ─── Charts ─────────────────────────────────────────────────── */
-.bloco-2col { display:grid;grid-template-columns:60% 40%;gap:12px; }
-.chart-bloco { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:8px; }
-.chart-axis-label { font-size:10px;color:var(--text-muted);margin-bottom:2px; }
-.chart-leg { display:flex;gap:12px;font-size:11px;font-weight:600; }
-.chart-svg { width:100%;height:auto;display:block; }
-.radar-svg { width:100%;height:auto;max-width:220px;margin:0 auto;display:block; }
+/* ═══ SECTION COMMON ═══ */
+.rpt-section { background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--c-radius); padding:clamp(20px,3vw,28px); margin-bottom:20px; }
+.sec-header { display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--c-border); }
+.sec-header h3 { font-size:clamp(15px,2vw,18px); font-weight:700; color:var(--c-text); flex:1; }
+.sec-icon { font-size:20px; }
+.sec-count { background:var(--c-accent); color:#09090f; font-size:12px; font-weight:800; width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.sec-header-sm { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:13px; font-weight:600; color:var(--c-text); }
 
-/* ─── Cenários ──────────────────────────────────────────────── */
-.prob-section { background:var(--bg-raised);border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:10px; }
-.prob-title { font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-weight:500; }
-.prob-bars { display:flex;flex-direction:column;gap:8px; }
-.prob-bar-row { display:flex;align-items:center;gap:12px; }
-.pb-label { font-size:12px;color:var(--text-secondary);min-width:140px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.pb-track { flex:1;height:8px;background:var(--bg-overlay);border-radius:4px;overflow:hidden; }
-.pb-fill { height:100%;border-radius:4px;transition:width .6s ease; }
-.pb-pct { font-size:12px;font-weight:700;min-width:36px;text-align:right;font-family:monospace; }
-.cen-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
-.cen-card { border:1px solid;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px; }
-.cen-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px; }
-.cen-nome { font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.3; }
-.cen-desc { font-size:12px;color:var(--text-muted);line-height:1.6; }
-.cen-impacto { font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0; }
-.cen-prob-bar { height:5px;background:rgba(0,0,0,0.06);border-radius:3px;overflow:hidden; }
-.cpb-fill { height:100%;border-radius:3px; }
-.cen-probval { font-size:12px;color:var(--text-muted); }
+/* ═══ CHARTS ═══ */
+.rpt-charts { display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:24px; }
+.chart-card { background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--c-radius); padding:20px; }
+.evo-chart { width:100%; height:auto; }
+.chart-legend { display:flex; gap:12px; font-size:11px; color:var(--c-muted); }
+.leg-tw { color:#1da1f2; } .leg-rd { color:#ff4500; } .leg-tot { color:#00e5c3; }
 
-/* ─── Insights ──────────────────────────────────────────────── */
-.insights-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px; }
-.insight-card { display:flex;gap:14px;align-items:flex-start;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:16px; }
-.insight-num { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0; }
-.insight-text { font-size:13px;color:var(--text-secondary);line-height:1.6; }
+/* Sentiment */
+.sent-bars { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+.sent-row { display:flex; align-items:center; gap:8px; }
+.sent-plat { font-size:11px; color:var(--c-muted); width:50px; font-weight:600; }
+.sent-bar-wrap { flex:1; height:20px; border-radius:10px; background:var(--c-card); display:flex; overflow:hidden; }
+.sent-pos { background:var(--c-accent); transition:width .5s; } .sent-neu { background:#6b6b80; transition:width .5s; } .sent-neg { background:var(--c-danger); transition:width .5s; }
+.sent-pct { font-size:11px; color:var(--c-muted); font-weight:600; width:32px; text-align:right; font-family:'JetBrains Mono',monospace; }
+.sent-legend { display:flex; gap:12px; margin-top:10px; font-size:10px; color:var(--c-dim); }
+.sl-pos { color:var(--c-accent); } .sl-neu { color:#6b6b80; } .sl-neg { color:var(--c-danger); }
 
-/* ─── Riscos ──────────────────────────────────────────────── */
-.risk-list { display:flex;flex-direction:column;gap:12px; }
-.risk-card { background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s; }
-.risk-card:hover { border-color:var(--border-md); }
-.risk-top { display:flex;align-items:center;justify-content:space-between;gap:12px; }
-.risk-name { font-size:14px;font-weight:700;color:var(--text-primary); }
-.risk-badge { font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap; }
-.risk-desc { font-size:12.5px;color:var(--text-muted);line-height:1.6; }
-.risk-prob-row { display:flex;align-items:center;gap:10px; }
-.risk-prob-label { font-size:11px;color:var(--text-muted);white-space:nowrap; }
-.risk-prob-track { flex:1;height:6px;background:var(--bg-overlay);border-radius:3px;overflow:hidden; }
-.risk-prob-fill { height:100%;border-radius:3px;transition:width .6s ease; }
-.risk-prob-pct { font-size:12px;font-weight:700;min-width:30px;text-align:right;font-family:monospace; }
+/* ═══ CENÁRIOS ═══ */
+.prob-bar-wrap { margin-bottom:20px; }
+.prob-label { font-size:11px; color:var(--c-dim); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
+.prob-bar { display:flex; height:28px; border-radius:14px; overflow:hidden; background:var(--c-card); }
+.prob-seg { transition:width .8s cubic-bezier(0.16,1,0.3,1); min-width:2%; }
+.prob-legend { display:flex; gap:16px; margin-top:8px; font-size:11px; color:var(--c-muted); flex-wrap:wrap; }
+.pl-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+.cenario-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.cenario-card { background:var(--cci); border:1px solid var(--cc); border-left:4px solid var(--cc); border-radius:12px; padding:18px; }
+.cc-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+.cc-header h4 { font-size:14px; font-weight:700; color:var(--c-text); line-height:1.3; }
+.cc-badge { font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; border:1px solid; white-space:nowrap; }
+.cc-desc { font-size:12px; color:var(--c-muted); line-height:1.6; margin-bottom:12px; }
+.cc-prob { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--c-dim); }
+.cc-prob-bar { flex:1; height:6px; background:var(--c-card); border-radius:3px; overflow:hidden; }
+.cc-prob-bar div { height:100%; border-radius:3px; transition:width .8s; }
 
-/* ─── Recomendações ──────────────────────────────────────────── */
-.rec-list { display:flex;flex-direction:column;gap:12px; }
-.rec-card { display:flex;gap:16px;align-items:flex-start;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:18px 20px;transition:border-color .2s; }
-.rec-card:hover { border-color:var(--border-md); }
-.rec-num { width:32px;height:32px;background:rgba(29,161,242,0.12);color:#1da1f2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0; }
-.rec-body { flex:1;display:flex;flex-direction:column;gap:6px; }
-.rec-top { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
-.rec-name { font-size:14px;font-weight:700;color:var(--text-primary); }
-.rec-urg { font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap; }
-.rec-desc { font-size:12.5px;color:var(--text-muted);line-height:1.6; }
-.rec-prazo { font-size:11px;color:var(--text-muted);opacity:.7; }
+/* ═══ INSIGHTS ═══ */
+.insights-list { display:flex; flex-direction:column; gap:10px; }
+.insight-item { display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:var(--c-card); border-radius:10px; border:1px solid var(--c-border); }
+.ins-num { font-size:14px; font-weight:800; color:var(--c-purple); background:rgba(124,111,247,0.1); width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.insight-item p { font-size:13px; color:var(--c-muted); line-height:1.6; }
 
-/* ─── Previsões ──────────────────────────────────────────────── */
-.pred-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px; }
-.pred-card { display:flex;gap:14px;align-items:flex-start;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:16px; }
-.pred-num { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0; }
-.pred-text { font-size:13px;color:var(--text-secondary);line-height:1.6; }
+/* ═══ RISKS ═══ */
+.risk-cards { display:flex; flex-direction:column; gap:12px; }
+.risk-card { background:var(--c-card); border:1px solid var(--c-border); border-left:4px solid var(--rc); border-radius:12px; padding:18px; }
+.rc-header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+.rc-header h4 { font-size:14px; font-weight:700; color:var(--c-text); }
+.rc-badge { font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.rc-desc { font-size:12px; color:var(--c-muted); line-height:1.6; margin-bottom:12px; }
+.rc-prob { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--c-dim); }
+.rc-prob-bar { flex:1; height:6px; background:rgba(255,255,255,0.04); border-radius:3px; overflow:hidden; }
+.rc-prob-bar div { height:100%; border-radius:3px; transition:width .8s; }
 
-/* ─── Timeline ──────────────────────────────────────────────── */
-.timeline { display:flex;flex-direction:column;gap:0;padding-left:20px;border-left:2px solid var(--border); }
-.tl-item { position:relative;padding:16px 0 16px 24px; }
-.tl-dot { position:absolute;left:-27px;top:22px;width:12px;height:12px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--accent2); }
-.tl-content { display:flex;flex-direction:column;gap:6px; }
-.tl-top { display:flex;align-items:center;justify-content:space-between;gap:8px; }
-.tl-date { font-size:12px;font-weight:700;color:var(--accent);text-transform:capitalize; }
-.tl-prob { font-size:11px;color:var(--text-muted); }
-.tl-desc { font-size:13px;color:var(--text-secondary);line-height:1.6; }
-.tl-bar { height:5px;background:var(--bg-overlay);border-radius:3px;overflow:hidden;margin-top:4px; }
-.tl-bar-fill { height:100%;background:var(--accent2);border-radius:3px;transition:width .6s ease; }
+/* ═══ RECOMMENDATIONS ═══ */
+.rec-cards { display:flex; flex-direction:column; gap:12px; }
+.rec-card { display:flex; gap:14px; background:var(--c-card); border:1px solid var(--c-border); border-radius:12px; padding:18px; }
+.rec-num { font-size:16px; font-weight:800; color:var(--c-accent); background:rgba(0,229,195,0.08); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'JetBrains Mono',monospace; }
+.rec-body { flex:1; min-width:0; }
+.rec-top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+.rec-top h4 { font-size:14px; font-weight:700; color:var(--c-text); }
+.rec-urg { font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.rec-body p { font-size:12px; color:var(--c-muted); line-height:1.6; }
+.rec-prazo { font-size:11px; color:var(--c-dim); margin-top:8px; }
 
-/* ─── Análise Profunda ──────────────────────────────────────── */
-.deep-bloco { gap:0;padding:0;overflow:hidden; }
-.deep-bloco .bloco-label-row { padding:18px 22px 0; }
-.deep-tabs { display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto;padding:12px 22px 0; }
-.deep-tab { background:none;border:none;color:var(--text-muted);font-size:12px;font-weight:600;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap; }
-.deep-tab:hover { color:var(--text-secondary); }
-.deep-tab.active { color:var(--accent2);border-bottom-color:var(--accent2); }
-.deep-tab-icon { font-size:14px; }
-.deep-tab-label { font-size:12px; }
-.hyp-badge { font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px; }
-.deep-content { padding:20px 22px; }
+/* ═══ PREDICTIONS ═══ */
+.prev-list { display:flex; flex-direction:column; gap:10px; }
+.prev-item { display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:var(--c-card); border-radius:10px; border:1px solid var(--c-border); }
+.prev-num { font-size:14px; font-weight:800; color:var(--c-gold); background:rgba(245,166,35,0.1); width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'JetBrains Mono',monospace; }
+.prev-item p { font-size:13px; color:var(--c-muted); line-height:1.6; }
 
-/* ─── Seções genéricas ──────────────────────────────────────── */
-.secao-bloco { gap:0;padding:0;overflow:hidden; }
-.sec-head { width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:none;border:none;cursor:pointer;text-align:left;color:var(--text-primary);transition:background .15s; }
-.sec-head:hover { background:var(--bg-raised); }
-.toggle-left { display:flex;align-items:center;gap:12px; }
-.sec-num { font-size:11px;font-weight:800;color:var(--accent2);background:rgba(124,111,247,0.12);border:1px solid rgba(124,111,247,0.2);padding:3px 9px;border-radius:5px;font-family:monospace;flex-shrink:0; }
-.sec-nom { font-size:15px;font-weight:600;color:var(--text-primary); }
-.sec-body-inner { padding:4px 22px 20px; }
-.sec-desc { color:var(--text-muted);font-size:13px;font-style:italic;padding:8px 0; }
+/* ═══ DEEP ANALYSIS ═══ */
+.deep-tabs { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+.dt-btn { background:var(--c-card); border:1px solid var(--c-border); border-radius:8px; padding:8px 14px; font-size:12px; color:var(--c-muted); cursor:pointer; transition:all .2s; font-weight:500; }
+.dt-btn.active { background:var(--c-accent); color:#09090f; font-weight:700; border-color:var(--c-accent); }
+.dt-btn:hover:not(.active) { border-color:var(--c-accent); color:var(--c-text); }
+.deep-content { font-size:13px; color:var(--c-muted); line-height:1.8; }
 
-/* ─── Agents ─────────────────────────────────────────────────── */
-.agents-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:10px; }
-.agent-card { background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px; }
-.ag-rank { font-size:10px;font-weight:700;color:var(--accent2);font-family:monospace; }
-.ag-nome { font-size:13px;font-weight:600;color:var(--text-primary); }
-.ag-bio { font-size:11px;color:var(--text-muted);line-height:1.5; }
-.ag-stats { display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);margin-top:2px; }
-
-/* ─── CTA ─────────────────────────────────────────────────── */
-.cta-bar { background:linear-gradient(135deg,rgba(124,111,247,0.08) 0%,rgba(0,229,195,0.06) 100%);border:1px solid rgba(124,111,247,0.2);border-radius:14px;padding:24px; }
-.cta-inner { display:flex;align-items:center;justify-content:space-between;gap:20px; }
-.cta-text { flex:1; }
-.cta-title { font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px; }
-.cta-sub { font-size:12.5px;color:var(--text-muted);line-height:1.5; }
-.cta-btn { background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .15s; }
-.cta-btn:hover { opacity:.85; }
-
-/* ─── Markdown ──────────────────────────────────────────────── */
-.md-body { color:var(--text-secondary);font-size:13.5px;line-height:1.88; }
-.md-body :deep(h1),.md-body :deep(h2) { font-size:15px;font-weight:700;color:var(--text-primary);margin:18px 0 9px;border-bottom:1px solid var(--border);padding-bottom:5px; }
-.md-body :deep(h3),.md-body :deep(h4) { font-size:13px;font-weight:600;color:var(--accent2);margin:14px 0 6px; }
-.md-body :deep(strong) { color:var(--text-primary); }
-.md-body :deep(em) { color:var(--accent);font-style:normal;font-weight:500; }
-.md-body :deep(blockquote) { border-left:3px solid var(--accent2);background:rgba(124,111,247,0.06);padding:9px 14px;margin:12px 0;border-radius:0 8px 8px 0;color:var(--text-secondary);font-style:italic; }
-.md-body :deep(ul) { padding-left:20px;margin:9px 0; }
-.md-body :deep(li) { margin-bottom:7px; }
-.md-body :deep(p) { margin:0 0 12px; }
-
-/* ─── Sentiment ──────────────────────────────────────────────── */
-.sentiment-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
-.sent-card { background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:14px; }
-.sent-title { font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px; }
-.sent-count { font-size:11px;color:var(--text-muted);font-weight:400;margin-left:6px; }
-.sent-bars { display:flex;flex-direction:column;gap:6px; }
-.sent-row { display:flex;align-items:center;gap:8px; }
-.sent-label { font-size:11px;color:var(--text-muted);min-width:55px; }
-.sent-track { flex:1;height:6px;background:var(--bg-overlay);border-radius:3px;overflow:hidden; }
-.sent-fill { height:100%;border-radius:3px;transition:width .6s ease; }
-.sent-pos { background:#00e5c3; }
-.sent-neu { background:#6b6b80; }
-.sent-neg { background:#ff5a5a; }
-.sent-pct { font-size:11px;font-weight:700;min-width:30px;text-align:right;font-family:monospace; }
-
-/* ─── Posts ──────────────────────────────────────────────── */
-.posts-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:10px; }
-.post-card { background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px; }
-.post-header { display:flex;align-items:center;justify-content:space-between; }
-.post-author { font-size:13px;font-weight:700;color:var(--text-primary); }
-.post-platform { font-size:14px; }
-.post-content { font-size:12.5px;color:var(--text-secondary);line-height:1.6; }
-.post-stats { display:flex;gap:12px;font-size:11px;color:var(--text-muted); }
-.ps-like { color:#ff5a5a; }
-
-/* ─── Achados Relevantes ─────────────────────────────────── */
-.achados-list { display:flex;flex-direction:column;gap:10px; }
-.achado-card { background:var(--bg-raised);border:1px solid var(--border);border-left:3px solid #f5a623;border-radius:0 10px 10px 0;padding:14px 16px;display:flex;flex-direction:column;gap:6px; }
-.achado-badge { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px; }
-.achado-badge.achado { color:#f5a623; }
-.achado-badge.destaque { color:#7c6ff7; }
-.achado-text { font-size:13px;color:var(--text-secondary);line-height:1.7; }
-
-/* ─── Word Cloud ─────────────────────────────────────── */
-.wordcloud { display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;padding:20px 10px;min-height:80px; }
-.wc-word { font-weight:700;line-height:1.3;cursor:default;transition:transform .15s; }
+/* ═══ WORD CLOUD ═══ */
+.wc-wrap { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline; justify-content:center; padding:20px; }
+.wc-word { font-weight:600; transition:transform .2s; cursor:default; }
 .wc-word:hover { transform:scale(1.15); }
 
-/* ─── Heatmap ─────────────────────────────────────── */
-.heatmap { display:flex;flex-direction:column;gap:4px; }
-.hm-labels { display:flex;flex-direction:column;gap:4px;position:absolute;left:0;top:0; }
-.heatmap { position:relative;padding-left:60px; }
-.hm-lbl { font-size:10px;color:var(--text-muted);height:32px;display:flex;align-items:center;position:absolute;left:0; }
-.hm-lbl:nth-child(1) { top:0; }
-.hm-lbl:nth-child(2) { top:36px; }
-.hm-lbl:nth-child(3) { top:72px; }
-.hm-grid { display:flex;flex-direction:column;gap:4px; }
-.hm-row { display:flex;gap:3px; }
-.hm-cell { height:32px;flex:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;min-width:24px;cursor:default;transition:transform .1s; }
-.hm-cell:hover { transform:scale(1.1);z-index:1; }
-.hm-cell span { text-shadow:0 1px 2px rgba(0,0,0,0.5); }
-.hm-rounds { display:flex;gap:3px;margin-top:2px; }
-.hm-rlbl { flex:1;text-align:center;font-size:9px;color:var(--text-muted);font-weight:600; }
+/* ═══ POSTS ═══ */
+.posts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.post-card { background:var(--c-card); border:1px solid var(--c-border); border-radius:10px; padding:14px; }
+.pc-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.pc-plat { font-size:14px; } .pc-plat.twitter { color:#1da1f2; } .pc-plat.reddit { color:#ff4500; }
+.pc-user { font-size:12px; font-weight:600; color:var(--c-text); flex:1; }
+.pc-likes { font-size:11px; color:var(--c-muted); }
+.pc-text { font-size:12px; color:var(--c-muted); line-height:1.5; }
 
-/* ─── Doc footer ─────────────────────────────────────────────── */
-.doc-foot { display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);padding:12px 4px;border-top:1px solid var(--border); }
+/* ═══ CTA ═══ */
+.rpt-cta { text-align:center; padding:40px; background:linear-gradient(135deg, rgba(124,111,247,0.06), rgba(0,229,195,0.04)); border:1px solid var(--c-border); border-radius:var(--c-radius); margin-top:8px; }
+.rpt-cta h3 { font-size:18px; color:var(--c-text); margin-bottom:8px; }
+.rpt-cta p { font-size:13px; color:var(--c-muted); margin-bottom:20px; max-width:500px; margin-left:auto; margin-right:auto; line-height:1.6; }
 
-/* ─── Print-only elements ─────────────────────────────────── */
-.print-header { display:none; }
-.deep-print-all { display:none; }
-.deep-print-section { margin-bottom:24px; }
-.deep-print-header { font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--accent2); }
+/* ═══ MARKDOWN BODY ═══ */
+.md-body :deep(p) { margin-bottom:10px; color:var(--c-muted); font-size:13px; line-height:1.75; }
+.md-body :deep(strong) { color:var(--c-text); font-weight:600; }
+.md-body :deep(blockquote) { border-left:3px solid var(--c-purple); padding:8px 14px; margin:12px 0; background:rgba(124,111,247,0.05); border-radius:0 8px 8px 0; font-style:italic; }
+.md-body :deep(ul), .md-body :deep(ol) { padding-left:20px; margin:8px 0; }
+.md-body :deep(li) { margin-bottom:4px; color:var(--c-muted); font-size:13px; line-height:1.6; }
+.md-body :deep(h1), .md-body :deep(h2), .md-body :deep(h3), .md-body :deep(h4) { color:var(--c-text); margin:16px 0 8px; }
 
-/* ─── PRINT ─────────────────────────────────────────────────── */
+/* ═══ PRINT ═══ */
 @media print {
-  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  .np { display:none !important; }
-  @page { size:A4; margin:12mm 15mm; }
-  .page { gap:10px; }
-
-  /* Show print header */
-  .print-header { display:block !important;text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #7c6ff7; }
-  .print-logo { font-size:28px;font-weight:900;color:#7c6ff7;letter-spacing:4px; }
-  .print-title { font-size:16px;font-weight:700;color:#1a1a2e;margin-top:6px; }
-  .print-meta { font-size:10px;color:#6b6b80;margin-top:4px;display:flex;justify-content:center;gap:16px; }
-
-  /* Page breaks */
-  .bloco { page-break-inside:avoid;break-inside:avoid; }
-  .deep-bloco { page-break-inside:auto; }
-  .deep-print-section { page-break-inside:avoid;break-inside:avoid; }
-  .risk-card,.rec-card { page-break-inside:avoid; }
-
-  /* Layout fixes */
-  .bloco-2col { grid-template-columns:1fr 1fr; }
-  .cen-grid { grid-template-columns:repeat(3,1fr); }
-  .resumo-inner { grid-template-columns:auto 1fr auto; }
-  .agents-grid { grid-template-columns:repeat(3,1fr); }
-  .insights-grid,.pred-grid { grid-template-columns:repeat(2,1fr); }
-  .sec-body-inner { display:block !important; }
-  .doc-foot { display:flex !important; }
-
-  /* Deep analysis: hide tabs, show ALL content */
-  .deep-tabs { display:none !important; }
-  .deep-content { display:none !important; }
-  .deep-print-all { display:block !important; }
-  .deep-print-header { color:#7c6ff7 !important;border-color:#7c6ff7 !important; }
-
-  /* White background for ALL cards */
-  .bloco,.kpi-card,.chart-bloco,.cen-card,.agent-card,.prob-section,
-  .risk-card,.rec-card,.insight-card,.pred-card,.cta-bar,.deep-bloco,.sent-card,.post-card,.achado-card { background:#fff !important;border-color:#e0e0ee !important; }
-
-  /* Text colors for readability */
-  .md-body,.md-body :deep(*) { color:#2a2a3e !important; }
-  .sec-nom,.cb-val,.kpi-valor,.cen-nome,.risk-name,.rec-name,.cta-title,.deep-print-header { color:#1a1a2e !important; }
-  .bloco-label,.bloco-label-sm,.sec-num,.cb-label,.kpi-label,.prob-title,
-  .risk-prob-label,.rec-prazo,.tl-prob,.tl-date { color:#6b6b80 !important; }
-  .cen-desc,.risk-desc,.rec-desc,.insight-text,.pred-text,.tl-desc,.ag-bio,.cta-sub { color:#3a3a4e !important; }
-  .doc-foot { color:#9898b0 !important;border-color:#e0e0ee !important; }
-  .page-head { display:none !important; }
-
-  /* Timeline fix for print */
-  .timeline { border-left-color:#ccc !important; }
-  .tl-dot { border-color:#7c6ff7 !important;background:#fff !important; }
-  .tl-bar { background:#eee !important; }
-  .tl-bar-fill { background:#7c6ff7 !important; }
+  .rpt-topbar, .tb-actions, .rpt-cta { display:none !important; }
+  .rpt-wrap { max-width:100%; padding:0; }
+  .rpt-section, .rpt-hero, .chart-card { break-inside:avoid; border:1px solid #ddd; }
+  * { color:#222 !important; background:white !important; }
+  .prob-seg, .sent-pos, .sent-neg, .cc-prob-bar div, .rc-prob-bar div { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
 }
 
-/* ─── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 1080px) {
-  .ceo-grid { grid-template-columns:repeat(2,1fr); }
-  .resumo-inner { grid-template-columns:auto 1fr; }
-  .resumo-badges { flex-direction:row;flex-wrap:wrap; }
-  .bloco-2col { grid-template-columns:1fr; }
-  .cen-grid { grid-template-columns:1fr; }
-  .insights-grid,.pred-grid { grid-template-columns:1fr; }
-  .sentiment-grid { grid-template-columns:1fr; }
+/* ═══ RESPONSIVE ═══ */
+@media (max-width:768px) {
+  .rpt-hero { grid-template-columns:1fr; text-align:center; }
+  .hero-badges { flex-direction:row; justify-content:center; }
+  .ceo-grid { grid-template-columns:1fr 1fr; }
+  .cenario-cards { grid-template-columns:1fr; }
+  .rpt-charts { grid-template-columns:1fr; }
   .posts-grid { grid-template-columns:1fr; }
-  .agents-grid { grid-template-columns:repeat(2,1fr); }
-  .deep-tabs { flex-wrap:wrap; }
-  .cta-inner { flex-direction:column;text-align:center; }
-}
-@media (max-width: 680px) {
-  .ceo-grid { grid-template-columns:1fr; }
-  .bloco { padding:16px 16px; }
-  .kpi-row { grid-template-columns:repeat(2,1fr); }
-  .resumo-inner { grid-template-columns:1fr; }
-  .gauge-wrap { width:100%;align-items:center; }
-}
-
-/* Print styles */
-@media print {
-  .app-shell { display:block !important; }
-  .sidebar, .topbar, .breadcrumbs, .np, .cta-bar { display:none !important; }
-  .app-main { margin:0 !important; }
-  .app-content { height:auto !important; overflow:visible !important; padding:10px !important; }
-  .bloco { break-inside:avoid; page-break-inside:avoid; border:1px solid #ddd !important; margin-bottom:12px !important; }
-  body { background:#fff !important; color:#000 !important; font-size:11pt !important; }
-  .bloco-label { color:#333 !important; }
-  .md-body { color:#222 !important; }
 }
 </style>
