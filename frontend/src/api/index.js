@@ -13,7 +13,8 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    config.headers['Accept-Language'] = i18n.global.locale.value
+    const locale = i18n.global.locale.value || 'pt-BR'
+    config.headers['Accept-Language'] = locale.split('-')[0]
     return config
   },
   error => {

@@ -28,7 +28,15 @@ def set_locale(locale: str):
 def get_locale() -> str:
     if has_request_context():
         raw = request.headers.get('Accept-Language', 'zh')
-        return raw if raw in _translations else 'zh'
+        # Normalize values like "pt-BR,pt;q=0.9,en;q=0.8" -> "pt"
+        candidate = raw.split(',')[0].strip()
+        base = candidate.split(';')[0].strip()
+        if base in _translations:
+            return base
+        short = base.split('-')[0]
+        if short in _translations:
+            return short
+        return 'zh'
     return getattr(_thread_local, 'locale', 'zh')
 
 
