@@ -109,6 +109,11 @@ const routes = [
     meta: { public: true }
   },
   {
+    path: '/agentes-biblioteca',
+    name: 'AgentLibrary',
+    component: AgentLibraryView
+  },
+  {
     path: '/demo',
     name: 'Demo',
     component: DemoReportView
