@@ -281,14 +281,35 @@ async function runPipeline() {
   const simData = await createSimulation(pid, updated.graph_id)
   simulationId.value = simData.simulation_id
 
-  // ── Preparar agentes ─────────────────────────────────────────
+  // ── Seleção de Agentes ─────────────────────────────────────
+  if (abortado.value) return
+  phase.value = 'selecting_agents'
+  statusMsg.value = 'Selecione os agentes da simulação'
+  detalhe.value = ''
+  progress.value = 45
+  
+  // Carregar entity types do ontology do projeto
+  const ont = projectData.value?.ontology?.entity_types || []
+  entityTypes.value = ont.map(et => ({
+    name: et.name || et,
+    description: et.description || '',
+    examples: et.examples || [],
+    selected: true
+  }))
+  
+  // Mostrar painel e PAUSAR pipeline até o usuário confirmar
+  showAgentSelection.value = true
+  await new Promise(resolve => { window._resolveAgentSelection = resolve })
+  showAgentSelection.value = false
+
+  // ── Preparar agentes com tipos selecionados ──────────────────
   if (abortado.value) return
   phase.value     = 'preparing'
   statusMsg.value = 'Gerando perfis dos agentes com IA...'
   detalhe.value   = `Criando ${cfgAgentes.value} agentes únicos...`
   progress.value  = 50
 
-  const prep = await prepareSimulation(simData.simulation_id)
+  const prep = await prepareSimulation(simData.simulation_id, selectedTypes.value)
   if (prep.already_prepared) {
     progress.value = 85
   } else if (prep.task_id) {
