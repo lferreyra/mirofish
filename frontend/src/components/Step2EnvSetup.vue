@@ -440,7 +440,7 @@
             <div class="rounds-header">
               <div class="header-left">
                 <span class="section-title">Simulation Round Setting</span>
-                <span class="section-desc">MiroFish automatically plans the simulation timeline: <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours of simulated time, with each round representing <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutes.</span>
+                <span class="section-desc">Shinsung AI automatically plans the simulation timeline: <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours of simulated time, with each round representing <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutes.</span>
               </div>
               <label class="switch-control">
                 <input type="checkbox" v-model="useCustomRounds">

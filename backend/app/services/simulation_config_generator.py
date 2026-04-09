@@ -210,14 +210,14 @@ class SimulationConfigGenerator:
     3. 生成平台配置
     """
     
-    # 上下文最大字符数
-    MAX_CONTEXT_LENGTH = 50000
+    # 上下文最大字符数（字符级保护，按 1M context 目标放宽）
+    MAX_CONTEXT_LENGTH = Config.SIMULATION_CONFIG_MAX_CONTEXT_CHARS
     # 每批生成的Agent数量
     AGENTS_PER_BATCH = 15
     
     # 各步骤的上下文截断长度（字符数）
-    TIME_CONFIG_CONTEXT_LENGTH = 10000   # 时间配置
-    EVENT_CONFIG_CONTEXT_LENGTH = 8000   # 事件配置
+    TIME_CONFIG_CONTEXT_LENGTH = Config.SIMULATION_CONFIG_TIME_CONTEXT_CHARS   # 时间配置
+    EVENT_CONFIG_CONTEXT_LENGTH = Config.SIMULATION_CONFIG_EVENT_CONTEXT_CHARS   # 事件配置
     ENTITY_SUMMARY_LENGTH = 300          # 实体摘要
     AGENT_SUMMARY_LENGTH = 300           # Agent配置中的实体摘要
     ENTITIES_PER_TYPE_DISPLAY = 20       # 每类实体显示数量

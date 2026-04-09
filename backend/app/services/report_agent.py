@@ -584,16 +584,16 @@ Write a "Future Prediction Report" that answers:
 - Section structure should be autonomously designed based on prediction results
 
 Please output the report outline in JSON format as follows:
-{
+{{
     "title": "Report Title",
     "summary": "Report summary (one sentence summarizing the core prediction finding)",
     "sections": [
-        {
+        {{
             "title": "Section Title",
             "description": "Section content description"
-        }
+        }}
     ]
-}
+}}
 
 Note: The sections array must have a minimum of 2 and a maximum of 5 elements!"""
 
@@ -1418,7 +1418,7 @@ class ReportAgent:
             response = self.llm.chat(
                 messages=messages,
                 temperature=0.5,
-                max_tokens=4096,
+                max_tokens=Config.REPORT_AGENT_MAX_TOKENS,
                 request_label="report_generation",
                 retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
@@ -1642,7 +1642,7 @@ class ReportAgent:
         response = self.llm.chat(
             messages=messages,
             temperature=0.5,
-            max_tokens=4096,
+            max_tokens=Config.REPORT_AGENT_MAX_TOKENS,
             request_label="report_generation_force_final",
             retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
         )

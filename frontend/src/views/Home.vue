@@ -2,7 +2,10 @@
   <div class="home-container">
     <!-- 顶部导航栏 -->
     <nav class="navbar">
-      <div class="nav-brand">MIROFISH</div>
+      <div class="nav-brand">
+        <img src="../assets/logo/msedge_6awqVCJCts-removebg-preview.png" alt="Shinsung AI logo" class="brand-logo" />
+        <span class="brand-text">Shinsung AI</span>
+      </div>
       <div class="nav-links">
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           Visit our GitHub <span class="arrow">↗</span>
@@ -19,14 +22,12 @@
             <span class="version-text">/ v0.1 Preview</span>
           </div>
           
-          <h1 class="main-title">
-            Upload any report<br>
-            <span class="gradient-text">simulate the future instantly</span>
-          </h1>
+          <h1 class="main-title">Shinsung's AI Forecasting Simulation Project</h1>
           
           <div class="hero-desc">
-            <p>
-              Even with only a short passage of text, <span class="highlight-bold">MiroFish</span> can turn those real-world seeds into a parallel world of up to <span class="highlight-orange">millions of agents</span>. Inject variables from a god-view perspective and search for the <span class="highlight-code">"local optimum"</span> in a complex, dynamic environment.
+            <p class="hero-desc-intro">
+              <span class="desc-headline">Upload any report<br><span class="gradient-text">simulate the future instantly</span></span><br><br>
+              Even with only a short passage of text, <span class="highlight-bold">Shinsung AI</span> can turn those real-world seeds into a parallel world of up to <span class="highlight-orange">millions of agents</span>. Inject variables from a god-view perspective and search for the <span class="highlight-code">"local optimum"</span> in a complex, dynamic environment.
             </p>
             <p class="slogan-text">
               Rehearse the future in agent swarms, and let better decisions emerge after a hundred battles<span class="blinking-cursor">_</span>
@@ -39,7 +40,7 @@
         <div class="hero-right">
           <!-- Logo 区域 -->
           <div class="logo-container">
-            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
+            <img src="../assets/logo/shinsung_logo_left.png" alt="Shinsung AI logo" class="hero-logo" />
           </div>
           
           <button class="scroll-down-btn" @click="scrollToBottom">
@@ -207,7 +208,7 @@
                   rows="6"
                   :disabled="loading"
                 ></textarea>
-                <div class="model-badge">Engine: MiroFish-V1.0</div>
+                <div class="model-badge">Engine: Shinsung AI-V1.0</div>
               </div>
             </div>
 
@@ -374,10 +375,26 @@ const startSimulation = () => {
 }
 
 .nav-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-family: var(--font-mono);
   font-weight: 800;
   letter-spacing: 1px;
   font-size: 1.2rem;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .nav-links {
@@ -477,6 +494,19 @@ const startSimulation = () => {
 
 .hero-desc p {
   margin-bottom: 1.5rem;
+}
+
+.hero-desc-intro {
+  color: var(--gray-text);
+}
+
+.desc-headline {
+  display: inline-block;
+  font-size: 1.9rem;
+  line-height: 1.25;
+  font-weight: 560;
+  color: var(--black);
+  letter-spacing: -0.03em;
 }
 
 .highlight-bold {

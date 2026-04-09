@@ -2,7 +2,10 @@
   <div class="process-page">
     <!-- 顶部导航栏 -->
     <nav class="navbar">
-      <div class="nav-brand" @click="goHome">MIROFISH</div>
+      <div class="nav-brand" @click="goHome">
+        <img src="../assets/logo/msedge_6awqVCJCts-removebg-preview.png" alt="Shinsung AI logo" class="brand-logo" />
+        <span class="brand-text">Shinsung AI</span>
+      </div>
       
       <!-- 中间步骤指示器 -->
       <div class="nav-center">
@@ -1123,11 +1126,27 @@ onUnmounted(() => {
 }
 
 .nav-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: opacity 0.2s;
+}
+
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .nav-brand:hover {

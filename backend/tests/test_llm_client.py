@@ -73,6 +73,27 @@ class APIConnectionError(Exception):
 
 
 class LLMClientTests(unittest.TestCase):
+    def test_chat_uses_configured_default_max_tokens(self):
+        captured = {}
+
+        class CaptureCreate:
+            def __call__(self, **kwargs):
+                captured.update(kwargs)
+                return make_response(content="ok")
+
+        client = LLMClient(api_key="test-key", base_url="https://openrouter.ai/api/v1", model="test-model")
+        client.client = SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(create=CaptureCreate())
+            )
+        )
+
+        with patch.object(Config, "LLM_MAX_OUTPUT_TOKENS", 98765):
+            result = client.chat(messages=[{"role": "user", "content": "hello"}], request_label="default-max")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(captured["max_tokens"], 98765)
+
     def test_describe_llm_failure_reports_structured_metadata(self):
         metadata = describe_llm_failure(
             LLMJSONParseError("bad json"),

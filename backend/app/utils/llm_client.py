@@ -160,7 +160,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, Any]],
         temperature: float = 0.7,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = None,
         response_format: Optional[Dict] = None,
         request_label: Optional[str] = None,
         retry_attempts: int = 1,
@@ -177,11 +177,12 @@ class LLMClient:
         Returns:
             模型响应文本
         """
+        resolved_max_tokens = max_tokens or Config.LLM_MAX_OUTPUT_TOKENS
         kwargs = {
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_tokens": resolved_max_tokens,
         }
         
         if response_format:
@@ -260,7 +261,7 @@ class LLMClient:
         mime_type: str = "image/png",
         system_prompt: Optional[str] = None,
         temperature: float = 0.1,
-        max_tokens: int = 1800,
+        max_tokens: Optional[int] = None,
         request_label: Optional[str] = None,
     ) -> str:
         """
@@ -298,7 +299,7 @@ class LLMClient:
         return self.chat(
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_tokens=max_tokens or Config.LLM_MAX_OUTPUT_TOKENS,
             request_label=request_label,
         )
     
@@ -306,7 +307,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, Any]],
         temperature: float = 0.3,
-        max_tokens: int = 4096,
+        max_tokens: Optional[int] = None,
         request_label: Optional[str] = None,
         retry_attempts: int = 1,
     ) -> Dict[str, Any]:

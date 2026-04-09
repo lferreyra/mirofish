@@ -3,7 +3,10 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div class="brand" @click="router.push('/')">
+          <img src="../assets/logo/msedge_6awqVCJCts-removebg-preview.png" alt="Shinsung AI logo" class="brand-logo" />
+          <span class="brand-text">Shinsung AI</span>
+        </div>
       </div>
       
       <div class="header-center">
@@ -321,11 +324,27 @@ onMounted(async () => {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 800;
   font-size: 18px;
-  letter-spacing: 1px;
+  letter-spacing: 0.04em;
   cursor: pointer;
+}
+
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .header-center {

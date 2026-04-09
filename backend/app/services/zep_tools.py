@@ -1726,7 +1726,7 @@ Please generate an interview summary."""
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=800
+                max_tokens=Config.ZEP_INTERVIEW_SUMMARY_MAX_TOKENS
             )
             return summary
             
