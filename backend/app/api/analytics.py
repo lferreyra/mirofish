@@ -101,7 +101,13 @@ def get_analytics(simulation_id: str):
     try:
         sim_dir = _sim_dir(simulation_id)
         if not os.path.exists(sim_dir):
-            return jsonify({"success": False, "error": "Simulação não encontrada"}), 404
+            # Retornar dados vazios em vez de 404 para não quebrar o frontend
+            return jsonify({"success": True, "data": {
+                "simulation_id": simulation_id,
+                "twitter": {"rounds": [], "totals": {"posts": 0, "comments": 0, "likes": 0, "follows": 0}, "top_posts": [], "top_agents": [], "engagement": []},
+                "reddit": {"rounds": [], "totals": {"posts": 0, "comments": 0, "likes": 0}, "top_posts": [], "top_agents": []},
+                "combined": {"total_interactions": 0, "rounds": []}
+            }})
 
         # ─── Twitter ──────────────────────────────────────────
         tw_db    = os.path.join(sim_dir, 'twitter_simulation.db')
@@ -232,4 +238,9 @@ def get_analytics(simulation_id: str):
 
     except Exception as e:
         logger.error(f"Analytics error for {simulation_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": True, "data": {
+            "simulation_id": simulation_id,
+            "twitter": {"rounds": [], "totals": {"posts": 0, "comments": 0, "likes": 0, "follows": 0}, "top_posts": [], "top_agents": [], "engagement": []},
+            "reddit": {"rounds": [], "totals": {"posts": 0, "comments": 0, "likes": 0}, "top_posts": [], "top_agents": []},
+            "combined": {"total_interactions": 0, "rounds": []}
+        }})
