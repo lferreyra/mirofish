@@ -203,8 +203,23 @@ const sentimentData = computed(() => {
 // Briefing CEO: versão objetiva para decisão
 const briefingCEO = computed(() => {
   const cenarioPrincipal = cenarios.value?.[0]?.nome || 'Sem cenário dominante'
-  const recomendacaoTop = parsedRecomendacoes.value?.[0]?.name || 'Sem recomendação prioritária identificada'
-  const riscoTop = parsedRiscos.value?.[0]?.name || 'Sem risco crítico identificado'
+  
+  // Decisão: da recomendação OU extrair do resumo executivo
+  let decisao = parsedRecomendacoes.value?.[0]?.name || ''
+  if (!decisao) {
+    const resumo = secResumo.value?.content || ''
+    const decMatch = resumo.match(/(?:recomend|suger|deve|precis)[^.]*\./) 
+    decisao = decMatch ? decMatch[0].replace(/\*\*/g, '').trim().slice(0, 120) : 'Revisar detalhes no relatório completo'
+  }
+  
+  // Risco: do parser OU extrair do resumo
+  let risco = parsedRiscos.value?.[0]?.name || ''
+  if (!risco) {
+    const resumo = secResumo.value?.content || ''
+    const riskMatch = resumo.match(/(?:risco|desafio|ameaça|preocup)[^.]*\./)
+    risco = riskMatch ? riskMatch[0].replace(/\*\*/g, '').trim().slice(0, 120) : 'Ver seção de riscos'
+  }
+  
   const sentimento = sentimentData.value?.geral
   const tom = sentimento
     ? (sentimento.pos >= 50 ? 'Majoritariamente positivo'
@@ -213,9 +228,9 @@ const briefingCEO = computed(() => {
     : 'Sem base de sentimento suficiente'
 
   return {
-    decisao: recomendacaoTop,
+    decisao,
     cenario: cenarioPrincipal,
-    risco: riscoTop,
+    risco,
     tom
   }
 })
@@ -274,34 +289,51 @@ const wordCloud = computed(() => {
 
 // Achados Relevantes — extrair pontos-chave do relatório
 const achadosRelevantes = computed(() => {
+  // Tentar seção de insights dedicada primeiro, depois resumo
+  const insContent = secInsights.value?.content || ''
+  const resumoContent = secResumo.value?.content || ''
+  const src = insContent || resumoContent
+  if (!src) return []
+  
   const achados = []
-  const allContent = secoes.value.map(s => s.content || '').join('\n')
-  if (!allContent) return []
   
-  // Padrões que indicam achados relevantes
-  const patterns = [
-    /(?:importante|crucial|crítico|significativo|destaque|notável|surpreendente)[\s:]+([^.]+\.)/gi,
-    /(?:descobrimos|identificamos|observamos|constatamos|revelou)[\s:]+([^.]+\.)/gi,
-    /(?:ponto de inflexão|mudança significativa|virada)[\s:]+([^.]+\.)/gi,
-  ]
-  
-  patterns.forEach(re => {
-    let m
-    while ((m = re.exec(allContent)) !== null && achados.length < 5) {
-      const text = m[1]?.trim() || m[0]?.trim()
-      if (text.length > 20 && text.length < 250) {
-        achados.push({ text: text.replace(/\*\*/g, ''), tipo: 'achado' })
-      }
-    }
+  // Estratégia 1: itens numerados (1. 2. 3.)
+  const numbered = [...src.matchAll(/(?:^|\n)\s*\d+[.)\s]+(.{20,200}?)(?=\n\s*\d+[.)\s]|$)/gs)]
+  numbered.forEach(m => {
+    const text = m[1].replace(/\*\*/g, '').replace(/\n/g, ' ').trim()
+    if (text.length > 15) achados.push({ text })
   })
   
-  // Se não encontrou padrões, pegar frases com ** (negrito = destaque)
+  // Estratégia 2: bullets (- ou •)
   if (achados.length < 3) {
-    const boldPatterns = [...allContent.matchAll(/\*\*([^*]{15,120})\*\*/g)]
-    boldPatterns.slice(0, 5 - achados.length).forEach(m => {
+    const bullets = [...src.matchAll(/(?:^|\n)\s*[-•]\s+(.{15,200})/g)]
+    bullets.forEach(m => {
+      const text = m[1].replace(/\*\*/g, '').trim()
+      if (text.length > 15 && !achados.some(a => a.text.includes(text.slice(0, 30)))) {
+        achados.push({ text })
+      }
+    })
+  }
+  
+  // Estratégia 3: frases com negrito como destaque
+  if (achados.length < 3) {
+    const bolds = [...src.matchAll(/\*\*([^*]{10,100})\*\*/g)]
+    bolds.forEach(m => {
       const text = m[1].trim()
       if (!achados.some(a => a.text.includes(text.slice(0, 20)))) {
-        achados.push({ text, tipo: 'destaque' })
+        achados.push({ text })
+      }
+    })
+  }
+  
+  // Estratégia 4: parágrafos significativos (fallback)
+  if (achados.length < 3) {
+    const paragraphs = src.split(/\n\n+/).filter(p => p.trim().length > 40 && p.trim().length < 300)
+    paragraphs.slice(0, 5 - achados.length).forEach(p => {
+      const text = p.replace(/\*\*/g, '').replace(/\n/g, ' ').trim()
+      const firstSentence = text.match(/^[^.!?]+[.!?]/)?.[0] || text.slice(0, 200)
+      if (!achados.some(a => a.text.includes(firstSentence.slice(0, 30)))) {
+        achados.push({ text: firstSentence })
       }
     })
   }
@@ -382,10 +414,15 @@ function trendFrom(s) {
 const cenarios = computed(() => {
   const content = secCenarios.value?.content || ''
   if (!content) return defaultCenarios()
-  const headings = [...content.matchAll(/(?:###?\s+|^|\n)\*{0,2}(Cenário\s+\w+[^*\n]*)\*{0,2}/gi)]
-    .map(m => m[1].trim()).filter(n => n.length > 3).slice(0, 3)
+  
+  // Extrair nomes: bold, headings, ou "Cenário X"
+  const headings = [...content.matchAll(/\*\*([^*]{5,60})\*\*|(?:###?\s+)([^\n]{5,60})|(?:^|\n)(Cenário\s+[^\n]{3,50})/gim)]
+    .map(m => (m[1] || m[2] || m[3] || '').trim())
+    .filter(n => n.length > 3 && !n.toLowerCase().includes('probabilidade') && !n.toLowerCase().includes('impacto'))
+    .slice(0, 3)
+  
   const probs = [...content.matchAll(/(\d{1,3})\s*%/g)]
-    .map(m => parseInt(m[1])).filter(n => n >= 1 && n <= 100).slice(0, 6)
+    .map(m => parseInt(m[1])).filter(n => n >= 5 && n <= 95).slice(0, 6)
   const nomes = headings.length >= 3 ? headings : ['Crescimento Sustentável', 'Cenário Base', 'Crise Operacional']
   const ps = probs.length >= 3 ? probs.slice(0, 3) : [70, 20, 10]
   // Extrair descrições (texto entre cenários)
@@ -427,25 +464,57 @@ const parsedRiscos = computed(() => {
   const content = secRiscos.value?.content || ''
   if (!content) return []
   const risks = []
-  // Pattern: **Nome do Risco** seguido de descrição, probabilidade%, impacto
-  const blocks = content.split(/(?=\*\*[^*]+\*\*)/).filter(b => b.trim())
+  
+  // Split por múltiplos padrões: **bold**, numerados, ou parágrafos com probabilidade
+  const blocks = content.split(/(?=\*\*[^*]+\*\*|(?:^|\n)\d+[.)\s])/m).filter(b => b.trim().length > 20)
+  
   for (const block of blocks) {
-    const nameMatch = block.match(/\*\*([^*]+)\*\*/)
+    // Extrair nome: bold OU primeira frase significativa
+    const nameMatch = block.match(/\*\*#?\d*\s*([^*]+)\*\*/) || block.match(/\d+[.)\s]+([^\n.]{10,80})/) || block.match(/^([^\n.]{10,80})/)
     if (!nameMatch) continue
-    const name = nameMatch[1].trim()
-    if (name.length < 5 || name.length > 80) continue
+    let name = nameMatch[1].trim().replace(/^[-•]\s*/, '')
+    if (name.length < 5 || name.length > 100) continue
+    // Skip se é parágrafo genérico (não um risco nomeado)
+    if (name.toLowerCase().startsWith('por meio') || name.toLowerCase().startsWith('a análise') || name.toLowerCase().startsWith('no futuro')) continue
+    
     const probMatch = block.match(/(\d{1,3})\s*%/)
-    const prob = probMatch ? parseInt(probMatch[1]) : null
+    const prob = probMatch ? parseInt(probMatch[1]) : 30
     const impMatch = block.match(/\b(alto|médio|medio|baixo)\b/i)
     const impacto = impMatch ? impMatch[1].charAt(0).toUpperCase() + impMatch[1].slice(1).toLowerCase() : 'Médio'
-    const desc = block.replace(/\*\*[^*]+\*\*/,'').replace(/\d{1,3}\s*%/,'').replace(/\b(alto|médio|medio|baixo)\b/gi,'')
-      .replace(/[-•*]\s/g,'').replace(/\n+/g,' ').trim().slice(0, 200)
-    if (name.toLowerCase().includes('risco') || name.toLowerCase().includes('fator') || prob || risks.length < 5) {
-      risks.push({ name, desc, prob: prob || 30, impacto: impacto.replace('Medio','Médio'), color: impacto.toLowerCase().includes('alt') ? '#ff5a5a' : '#f5a623' })
-    }
+    
+    // Descrição: tudo após o nome, limpo
+    let desc = block.replace(/\*\*[^*]*\*\*/g, '').replace(/\d+[.)\s]/, '')
+      .replace(/probabilidade[^\n]*/gi, '').replace(/impacto[^\n]*/gi, '')
+      .replace(/\n+/g, ' ').trim().slice(0, 250)
+    if (desc.length < 10) desc = block.replace(/\*\*/g, '').replace(/\n+/g, ' ').trim().slice(0, 250)
+    
+    risks.push({
+      name: name.replace(/\*\*/g, ''),
+      desc,
+      prob: Math.min(prob, 100),
+      impacto: impacto.replace('Medio', 'Médio'),
+      color: impacto.toLowerCase().includes('alt') ? '#ff5a5a' : '#f5a623'
+    })
     if (risks.length >= 5) break
   }
-  return risks.length ? risks : fallbackItems(content, 3, 5)
+  
+  // Fallback: se não parseou nada, dividir por parágrafos
+  if (risks.length === 0) {
+    const paras = content.split(/\n\n+/).filter(p => p.trim().length > 30)
+    paras.slice(0, 4).forEach((p, i) => {
+      const firstLine = p.split('\n')[0].replace(/\*\*/g, '').trim()
+      const probM = p.match(/(\d{1,3})\s*%/)
+      risks.push({
+        name: firstLine.slice(0, 80) || `Risco ${i+1}`,
+        desc: p.replace(/\*\*/g, '').replace(/\n/g, ' ').trim().slice(0, 250),
+        prob: probM ? parseInt(probM[1]) : 30,
+        impacto: 'Médio',
+        color: '#f5a623'
+      })
+    })
+  }
+  
+  return risks
 })
 
 // Recomendações parser
@@ -453,26 +522,52 @@ const parsedRecomendacoes = computed(() => {
   const content = secRecomendacoes.value?.content || ''
   if (!content) return []
   const recs = []
-  const blocks = content.split(/(?=\*\*[^*]+\*\*|\d+\.\s)/).filter(b => b.trim())
+  
+  // Split por bold, numerados ou parágrafos
+  const blocks = content.split(/(?=\*\*#?\d*\s*[^*]+\*\*|(?:^|\n)\d+[.)\s])/m).filter(b => b.trim().length > 15)
+  
   for (const block of blocks) {
-    const nameMatch = block.match(/\*\*([^*]+)\*\*/) || block.match(/\d+\.\s+(.+?)(?:\n|$)/)
+    const nameMatch = block.match(/\*\*#?\d*\s*([^*]+)\*\*/) || block.match(/\d+[.)\s]+([^\n]{10,80})/) || block.match(/^([^\n.]{10,80})/)
     if (!nameMatch) continue
-    const name = nameMatch[1].trim()
+    let name = nameMatch[1].trim().replace(/^[-•]\s*/, '')
     if (name.length < 5 || name.length > 100) continue
-    const urgMatch = block.match(/\b(urgente|alta|média|media|baixa)\b/i)
-    const urgencia = urgMatch ? urgMatch[1].charAt(0).toUpperCase() + urgMatch[1].slice(1).toLowerCase() : null
-    const prazoMatch = block.match(/(?:prazo|próximos?)\s*:?\s*([^\n.]+)/i)
-    const prazo = prazoMatch ? prazoMatch[1].trim().slice(0, 40) : null
-    const desc = block.replace(/\*\*[^*]+\*\*/,'').replace(/\d+\.\s/,'')
-      .replace(/\b(urgente|alta|média|media|baixa)\b/gi,'').replace(/[-•*]\s/g,'')
-      .replace(/\n+/g,' ').trim().slice(0, 250)
+    if (name.toLowerCase().startsWith('para ') || name.toLowerCase().startsWith('a ') || name.toLowerCase().startsWith('os ')) continue
+    
+    const urgMatch = block.match(/\b(urgente|alta|média|media|baixa|critical|high|medium|low)\b/i)
+    const urgencia = urgMatch ? urgMatch[1].charAt(0).toUpperCase() + urgMatch[1].slice(1).toLowerCase() : 'Média'
+    const prazoMatch = block.match(/(?:prazo|próximos?|timeline|meses?)\s*:?\s*([^\n.]{5,40})/i)
+    const prazo = prazoMatch ? prazoMatch[1].trim() : 'Próximos 3 meses'
+    
+    let desc = block.replace(/\*\*[^*]*\*\*/g, '').replace(/\d+[.)\s]/, '')
+      .replace(/urgência[^\n]*/gi, '').replace(/prazo[^\n]*/gi, '')
+      .replace(/\n+/g, ' ').trim().slice(0, 300)
+    if (desc.length < 10) desc = block.replace(/\*\*/g, '').replace(/\n/g, ' ').trim().slice(0, 300)
+    
     recs.push({
-      name, desc, urgencia: urgencia?.replace('Media','Média'),
-      prazo: prazo || 'Próximos 3 meses',
-      urgColor: urgencia?.toLowerCase() === 'urgente' ? '#ff5a5a' : urgencia?.toLowerCase() === 'alta' ? '#f5a623' : '#00e5c3'
+      name: name.replace(/\*\*/g, ''),
+      desc,
+      urgencia: urgencia.replace('Media', 'Média'),
+      prazo,
+      urgColor: ['urgente','critical'].includes(urgencia.toLowerCase()) ? '#ff5a5a' : ['alta','high'].includes(urgencia.toLowerCase()) ? '#f5a623' : '#00e5c3'
     })
     if (recs.length >= 5) break
   }
+  
+  // Fallback
+  if (recs.length === 0) {
+    const paras = content.split(/\n\n+/).filter(p => p.trim().length > 30)
+    paras.slice(0, 4).forEach((p, i) => {
+      const firstLine = p.split('\n')[0].replace(/\*\*/g, '').trim()
+      recs.push({
+        name: firstLine.slice(0, 80) || `Recomendação ${i+1}`,
+        desc: p.replace(/\*\*/g, '').replace(/\n/g, ' ').trim().slice(0, 300),
+        urgencia: i === 0 ? 'Alta' : 'Média',
+        prazo: 'Próximos 3 meses',
+        urgColor: i === 0 ? '#f5a623' : '#00e5c3'
+      })
+    })
+  }
+  
   return recs
 })
 
@@ -481,16 +576,40 @@ const parsedPrevisoes = computed(() => {
   const content = secPrevisoes.value?.content || ''
   if (!content) return []
   const preds = []
-  // Split by numbered items or bold items
-  const items = content.split(/(?=\d+\.\s|\*\*[^*]+\*\*)/).filter(b => b.trim().length > 20)
-  for (const item of items) {
-    const text = item.replace(/\*\*/g,'').replace(/\d+\.\s/,'').replace(/[-•]\s/g,'').replace(/\n+/g,' ').trim()
-    if (text.length > 20) {
-      preds.push({ text: text.slice(0, 250) + (text.length > 250 ? '...' : '') })
+  
+  // Estratégia 1: itens numerados
+  const numbered = [...content.matchAll(/(?:^|\n)\s*\d+[.)\s]+(.{20,}?)(?=\n\s*\d+[.)\s]|\n\n|$)/gs)]
+  if (numbered.length >= 2) {
+    numbered.forEach(m => {
+      const text = m[1].replace(/\*\*/g, '').replace(/\n/g, ' ').trim()
+      if (text.length > 20) preds.push({ text: text.slice(0, 300) + (text.length > 300 ? '...' : '') })
+    })
+    return preds.slice(0, 5)
+  }
+  
+  // Estratégia 2: parágrafos com indicadores de previsão
+  const paras = content.split(/\n\n+/).filter(p => p.trim().length > 30)
+  for (const p of paras) {
+    const text = p.replace(/\*\*/g, '').replace(/\n/g, ' ').trim()
+    // Pegar primeiro período longo o suficiente
+    if (text.length > 30) {
+      preds.push({ text: text.slice(0, 300) + (text.length > 300 ? '...' : '') })
     }
     if (preds.length >= 4) break
   }
-  return preds
+  
+  // Estratégia 3: frases com datas/probabilidades
+  if (preds.length === 0) {
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 25)
+    sentences.forEach(s => {
+      const text = s.replace(/\*\*/g, '').trim()
+      if (text.length > 25 && preds.length < 4) {
+        preds.push({ text: text + '.' })
+      }
+    })
+  }
+  
+  return preds.slice(0, 5)
 })
 
 // Insights parser
