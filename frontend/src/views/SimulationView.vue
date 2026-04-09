@@ -37,9 +37,12 @@ const customAgents = ref([])         // Agentes adicionados da biblioteca
 const showAgentSelection = ref(false)
 const novoAgente = ref('')
 const activeCategory = ref(null)     // Categoria expandida
+const showNewCategory = ref(false)
+const novaCategoria = ref({ icon: '🏷', label: '', color: '#00e5c3' })
+const customCategories = ref([])
 
 // ─── Biblioteca de Agentes por Categoria ──────────────────────
-const AGENT_LIBRARY = [
+const AGENT_LIBRARY_BASE = [
   { id: 'consumidores', icon: '🛒', label: 'Consumidores', color: '#00e5c3', agents: [
     { name: 'Jovem Urbano (18-25)', desc: 'Digital native, compra por impulso, influenciado por redes sociais', tags: ['varejo','tech','moda'] },
     { name: 'Mãe com Filhos', desc: 'Prioriza qualidade e segurança, sensível a preço, busca praticidade', tags: ['varejo','alimentação','saúde'] },
@@ -107,10 +110,13 @@ const AGENT_LIBRARY = [
   ]},
 ]
 
+// Biblioteca completa = base + custom
+const AGENT_LIBRARY = computed(() => [...AGENT_LIBRARY_BASE, ...customCategories.value])
+
 // Contar agentes selecionados por categoria
 const agentCounts = computed(() => {
   const counts = {}
-  AGENT_LIBRARY.forEach(cat => { counts[cat.id] = 0 })
+  AGENT_LIBRARY.value.forEach(cat => { counts[cat.id] = 0 })
   customAgents.value.forEach(a => {
     if (a.categoryId) counts[a.categoryId] = (counts[a.categoryId] || 0) + 1
   })
@@ -461,6 +467,34 @@ function isAgentAdded(agentName) {
   return customAgents.value.some(a => a.name === agentName)
 }
 
+function adicionarCategoria() {
+  const label = novaCategoria.value.label.trim()
+  if (!label) return
+  const id = 'custom_' + label.toLowerCase().replace(/\s+/g, '_').slice(0, 20)
+  if (customCategories.value.some(c => c.id === id)) return
+  customCategories.value.push({
+    id,
+    icon: novaCategoria.value.icon || '🏷',
+    label,
+    color: novaCategoria.value.color || '#00e5c3',
+    agents: []
+  })
+  novaCategoria.value = { icon: '🏷', label: '', color: '#00e5c3' }
+  showNewCategory.value = false
+  activeCategory.value = id
+}
+
+function addAgentToCustomCategory(catId) {
+  const nome = novoAgente.value.trim()
+  if (!nome) return
+  const cat = customCategories.value.find(c => c.id === catId)
+  if (!cat) return
+  if (cat.agents.some(a => a.name === nome)) return
+  cat.agents.push({ name: nome, desc: 'Agente personalizado', tags: [] })
+  addAgentFromLibrary({ name: nome, desc: 'Agente personalizado' }, catId)
+  novoAgente.value = ''
+}
+
 function adicionarAgente() {
   const nome = novoAgente.value.trim()
   if (!nome) return
@@ -660,6 +694,24 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
                   <span v-else class="asp-agent-ok">✓ Adicionado</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nova Categoria -->
+        <div class="asp-section">
+          <div class="asp-new-cat-header">
+            <h4>🏷 Criar Nova Categoria</h4>
+            <button class="asp-toggle-cat" @click="showNewCategory = !showNewCategory">
+              {{ showNewCategory ? '✕ Fechar' : '+ Nova Categoria' }}
+            </button>
+          </div>
+          <div v-if="showNewCategory" class="asp-new-cat-form">
+            <div class="asp-new-cat-row">
+              <input v-model="novaCategoria.icon" class="asp-cat-icon-input" maxlength="2" placeholder="🏷"/>
+              <input v-model="novaCategoria.label" class="asp-input" placeholder="Nome da categoria (ex: Fornecedores de Tecnologia)" @keyup.enter="adicionarCategoria()"/>
+              <input v-model="novaCategoria.color" type="color" class="asp-color-input"/>
+              <button class="asp-add-btn" @click="adicionarCategoria()">Criar</button>
             </div>
           </div>
         </div>
@@ -931,4 +983,12 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .asp-confirm:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,229,195,0.3); }
 .asp-confirm:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
 
-@media (max-width:768px) { .asp-cat-agents { padding-left:20px; } .asp-title-row { flex-direction:column; align-items:flex-start; gap:8px; } }</style>
+.asp-new-cat-header { display:flex; justify-content:space-between; align-items:center; }
+.asp-toggle-cat { border:1px solid rgba(0,229,195,0.3); background:rgba(0,229,195,0.06); color:#00e5c3; font-size:12px; font-weight:600; padding:6px 14px; border-radius:8px; cursor:pointer; }
+.asp-toggle-cat:hover { background:rgba(0,229,195,0.12); }
+.asp-new-cat-form { margin-top:12px; }
+.asp-new-cat-row { display:flex; gap:8px; align-items:center; }
+.asp-cat-icon-input { width:44px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:18px; text-align:center; outline:none; }
+.asp-color-input { width:40px; height:40px; border:none; border-radius:8px; cursor:pointer; background:transparent; }
+
+@media (max-width:768px) { .asp-cat-agents { padding-left:20px; } .asp-title-row { flex-direction:column; align-items:flex-start; gap:8px; } .asp-new-cat-row { flex-wrap:wrap; } }</style>
