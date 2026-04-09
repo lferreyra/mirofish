@@ -111,7 +111,17 @@ const AGENT_LIBRARY_BASE = [
 ]
 
 // Biblioteca completa = base + custom
-const AGENT_LIBRARY = computed(() => [...AGENT_LIBRARY_BASE, ...customCategories.value])
+const AGENT_LIBRARY = computed(() => savedLibrary ? [...savedLibrary, ...customCategories.value] : [...AGENT_LIBRARY_BASE, ...customCategories.value])
+
+// Carregar biblioteca do localStorage (compartilhada com AgentLibraryView)
+function loadAgentLibrary() {
+  try {
+    const saved = localStorage.getItem('augur_agent_library')
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return null
+}
+const savedLibrary = loadAgentLibrary()
 
 // Contar agentes selecionados por categoria
 const agentCounts = computed(() => {
