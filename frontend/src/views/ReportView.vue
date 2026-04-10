@@ -896,7 +896,7 @@ function abrirChat() {
         </div>
         <div class="tb-actions">
           <AugurButton variant="ghost" @click="router.push(`/projeto/${report?.project_id}`)" class="tb-btn" v-if="report?.project_id">← Projeto</AugurButton>
-          <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/agentes`)" class="tb-btn" v-if="report?.simulation_id">🧠 Agentes</AugurButton>
+          <AugurButton variant="ghost" @click="router.push(`/agentes/${route.params.reportId}`)" class="tb-btn" v-if="report?.simulation_id">🧠 Agentes</AugurButton>
           <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/posts`)" class="tb-btn" v-if="report?.simulation_id">📝 Posts</AugurButton>
           <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/influentes`)" class="tb-btn" v-if="report?.simulation_id">👑 Influentes</AugurButton>
           <AugurButton variant="ghost" @click="compartilhar()" class="tb-btn" :disabled="shareLoading">🔗 {{ shareLoading ? 'Gerando...' : 'Compartilhar' }}</AugurButton>
@@ -1318,7 +1318,7 @@ function abrirChat() {
       <section class="rpt-cta" v-if="report?.simulation_id">
         <h3>Quer aprofundar a análise?</h3>
         <p>Converse com o ReportAgent ou com agentes individuais para explorar cenários alternativos, questionar previsões e obter insights adicionais.</p>
-        <AugurButton variant="primary" @click="router.push(`/simulacao/${report.simulation_id}/agentes`)">Conversar com Agentes</AugurButton>
+        <AugurButton variant="primary" @click="router.push(`/agentes/${route.params.reportId}`)">Conversar com Agentes</AugurButton>
       </section>
     </div>
   </AppShell>
