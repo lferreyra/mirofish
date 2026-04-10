@@ -61,11 +61,11 @@ Retorne JSON com a seguinte estrutura:
 {
     "entity_types": [
         {
-            "name": "NomeTipoEntidade (Inglês, PascalCase)",
+            "name": "NomeTipoEntidade (Português do Brasil, PascalCase. Ex: ConsumidorJovem, LojaLocal, InfluenciadorDigital)",
             "description": "Descrição breve em PORTUGUÊS DO BRASIL (máx 100 caracteres)",
             "attributes": [
                 {
-                    "name": "nome_atributo (inglês, snake_case)",
+                    "name": "nome_atributo (português, snake_case. Ex: faixa_etaria, poder_aquisitivo)",
                     "type": "text",
                     "description": "Descrição do atributo em português"
                 }
@@ -75,7 +75,7 @@ Retorne JSON com a seguinte estrutura:
     ],
     "edge_types": [
         {
-            "name": "NOME_RELACIONAMENTO (Inglês, UPPER_SNAKE_CASE)",
+            "name": "NOME_RELACIONAMENTO (Português, UPPER_SNAKE_CASE. Ex: COMPETE_COM, INFLUENCIA, REGULA)",
             "description": "Descrição breve em PORTUGUÊS DO BRASIL (máx 100 caracteres)",
             "source_targets": [
                 {"source": "TipoOrigem", "target": "TipoDestino"}
