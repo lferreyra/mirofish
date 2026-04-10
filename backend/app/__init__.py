@@ -78,6 +78,7 @@ def create_app(config_class=Config):
     from .api.public import public_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
+    app.register_blueprint(share_bp)
     app.register_blueprint(report_bp, url_prefix='/api/report')
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(public_bp, url_prefix='/api/public')
