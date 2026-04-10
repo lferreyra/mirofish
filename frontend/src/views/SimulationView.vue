@@ -288,10 +288,25 @@ async function runPipeline() {
   detalhe.value = ''
   progress.value = 45
   
-  // Carregar entity types do ontology do projeto
+  // Carregar entity types do ontology do projeto (traduzir para PT-BR)
+  const TRANSLATE = {
+    'Consumer':'Consumidor','LocalBusiness':'Negocio Local','Influencer':'Influenciador',
+    'RetailChain':'Rede de Varejo','EcommercePlatform':'Plataforma E-commerce',
+    'LocalInfluencer':'Influenciador Local','GovernmentAgency':'Orgao Governamental',
+    'Person':'Pessoa','Organization':'Organizacao','Competitor':'Concorrente',
+    'FinancialInstitution':'Instituicao Financeira','Media':'Midia',
+    'Supplier':'Fornecedor','Regulator':'Regulador','Investor':'Investidor',
+    'Student':'Estudante','PublicFigure':'Figura Publica','Professional':'Profissional',
+    'Company':'Empresa','Brand':'Marca','Product':'Produto','Service':'Servico',
+    'Market':'Mercado','Industry':'Industria','Technology':'Tecnologia',
+    'Community':'Comunidade','Association':'Associacao'
+  }
+  const traduzir = (name) => TRANSLATE[name] || name.replace(/([A-Z])/g, ' $1').trim()
+  
   const ont = projectData.value?.ontology?.entity_types || []
   entityTypes.value = ont.map(et => ({
-    name: et.name || et,
+    name: traduzir(et.name || et),
+    nameOriginal: et.name || et,
     description: et.description || '',
     examples: et.examples || [],
     selected: true
