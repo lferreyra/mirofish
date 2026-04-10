@@ -107,13 +107,31 @@ const sugestoes = computed(() => {
 onMounted(async () => {
   carregando.value = true
   try {
-    const rRes = await service.get(`/api/report/${route.params.reportId}`)
-    const raw = rRes?.data?.data || rRes?.data || rRes
-    report.value = raw
-    simulationId.value = raw?.simulation_id || ''
+    // Suportar AMBAS as rotas: /agentes/:reportId OU /simulacao/:simulationId/agentes
+    const reportId = route.params.reportId
+    const simIdFromRoute = route.params.simulationId
+    
+    if (reportId) {
+      // Rota por reportId
+      const rRes = await service.get(`/api/report/${reportId}`)
+      const raw = rRes?.data?.data || rRes?.data || rRes
+      report.value = raw
+      simulationId.value = raw?.simulation_id || ''
+    } else if (simIdFromRoute) {
+      // Rota por simulationId — buscar report pela simulacao
+      simulationId.value = simIdFromRoute
+      try {
+        const rRes = await service.get(`/api/report/by-simulation/${simIdFromRoute}`)
+        const raw = rRes?.data?.data || rRes?.data || rRes
+        report.value = raw
+      } catch {
+        // Sem report ainda, mas podemos carregar agentes direto
+        report.value = { simulation_id: simIdFromRoute }
+      }
+    }
 
     if (!simulationId.value) {
-      erro.value = 'Simulacao nao encontrada. O relatorio pode ainda estar sendo gerado. Tente novamente em alguns minutos.'
+      erro.value = 'Simulacao nao encontrada. Verifique se a simulacao foi concluida.'
       return
     }
 
