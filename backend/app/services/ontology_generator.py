@@ -168,7 +168,7 @@ class OntologyGenerator:
         result = self.llm_client.chat_json(
             messages=messages,
             temperature=0.3,
-            max_completion_tokens=4096
+            max_tokens=4096
         )
         
         result = self._validate_and_process(result)
