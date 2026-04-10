@@ -308,6 +308,19 @@ async function carregarStatus() {
 
     if ((s === 'completed' || s === 'finished') && !concluida.value) {
       concluida.value = true; poll.stop()
+      // Backfill chart data from analytics
+      try {
+        const aRes = await service.get('/api/analytics/' + route.params.simulationId)
+        const ana = aRes?.data?.data || {}
+        const twR = ana?.twitter?.rounds || []; const rdR = ana?.reddit?.rounds || []
+        if ((twR.length || rdR.length) && roundHistory.value.length <= 1) {
+          const byR = {}
+          twR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].tw += (r.actions||r.count||1) })
+          rdR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].rd += (r.actions||r.count||1) })
+          const rnds = Object.keys(byR).map(Number).sort((a,b)=>a-b)
+          roundHistory.value = rnds.map(r => ({ r, tw:byR[r].tw, rd:byR[r].rd, tot:byR[r].tw+byR[r].rd, c:75, iv:80, ts:12 }))
+        }
+      } catch {}
       toast.success('🎉 Simulação concluída! Gerando relatório...', 5000)
       await iniciarGeracaoRelatorio()
     } else if ((s === 'stopped' || s === 'paused') && !parada.value) {
@@ -427,6 +440,21 @@ onMounted(async () => {
             c: 80, iv: 70, ts: 15
           }))
           lastRound.value = rounds[rounds.length - 1]
+        }
+        
+        // Backfill events from top_posts
+        if (eventLog.value.length === 0) {
+          const twPosts = ana?.twitter?.top_posts || []
+          const rdPosts = ana?.reddit?.top_posts || []
+          ;[...twPosts.slice(0, 4), ...rdPosts.slice(0, 4)].forEach(p => {
+            eventLog.value.push({
+              round: 0,
+              platform: p.user_name ? 'Twitter' : 'Reddit',
+              agent: p.name || p.user_name || 'Agente',
+              tipo: 'publicou um post',
+              ts: Date.now()
+            })
+          })
         }
       } catch {}
     }
