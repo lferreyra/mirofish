@@ -8,6 +8,36 @@ import service from '../api'
 const route  = useRoute()
 const router = useRouter()
 const report     = ref(null)
+const activeTab = ref('decisao')
+const expandedSections = ref(new Set())
+const shareCode = ref('')
+const shareLoading = ref(false)
+
+function toggleSection(id) {
+  if (expandedSections.value.has(id)) expandedSections.value.delete(id)
+  else expandedSections.value.add(id)
+}
+function isExpanded(id) { return expandedSections.value.has(id) }
+
+async function compartilhar() {
+  const rid = route.params.reportId
+  if (!rid) return
+  shareLoading.value = true
+  try {
+    const clientName = prompt('Nome do cliente (aparece no relatorio):') || ''
+    const res = await service.post('/api/share/create', { report_id: rid, client_name: clientName })
+    const data = res?.data?.data || res?.data
+    shareCode.value = data.code
+    const url = window.location.origin + '/relatorio-publico/' + data.code
+    await navigator.clipboard.writeText(url)
+    alert('Link copiado!\n\n' + url + '\n\nCompartilhe com seu cliente.')
+  } catch (e) {
+    alert('Erro ao gerar link: ' + (e?.message || 'Tente novamente'))
+  } finally {
+    shareLoading.value = false
+  }
+}
+
 const analytics  = ref(null)
 const posts      = ref([])
 const carregando = ref(true)
