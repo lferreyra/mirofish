@@ -2203,8 +2203,18 @@ def interview_agent():
                 "error": t('api.invalidInterviewPlatform')
             }), 400
         
-        # Se simulacao esta viva, usar IPC
-        if SimulationRunner.check_env_alive(simulation_id):
+        # Verificar se simulacao ja concluiu (nao adianta IPC)
+        sim_completed = False
+        try:
+            run_state = SimulationRunner.get_run_state(simulation_id)
+            if run_state:
+                rs = run_state.runner_status.value if hasattr(run_state.runner_status, 'value') else str(run_state.runner_status)
+                sim_completed = rs.lower() in ('completed','finished','stopped','failed','idle')
+        except:
+            pass
+        
+        # Se simulacao esta viva E nao concluiu, usar IPC
+        if not sim_completed and SimulationRunner.check_env_alive(simulation_id):
             optimized_prompt = optimize_interview_prompt(prompt)
             result = SimulationRunner.interview_agent(
                 simulation_id=simulation_id,
@@ -2222,6 +2232,7 @@ def interview_agent():
         logger.info(f"Interview offline: sim={simulation_id}, agent={agent_id}")
         try:
             from ..utils.llm_client import LLMClient
+            from datetime import datetime
             
             # Carregar perfil do agente
             manager = SimulationManager()
@@ -2250,19 +2261,63 @@ def interview_agent():
             except:
                 pass
             
+            # Carregar posts/acoes deste agente na simulacao
+            agent_posts = ""
+            try:
+                import json, os
+                sim_dir = os.path.join(SimulationRunner.RUN_STATE_DIR, simulation_id)
+                for fname in ['twitter/actions.jsonl', 'reddit/actions.jsonl']:
+                    fpath = os.path.join(sim_dir, fname)
+                    if os.path.exists(fpath):
+                        with open(fpath, 'r') as af:
+                            for line in af:
+                                try:
+                                    ev = json.loads(line.strip())
+                                    if str(ev.get('agent_id','')) == str(agent_id) and ev.get('content'):
+                                        agent_posts += f"- {ev.get('content','')[:200]}\n"
+                                except:
+                                    pass
+                if agent_posts:
+                    agent_posts = agent_posts[:2000]  # Limitar tamanho
+            except:
+                pass
+            
+            # Carregar secoes-chave do relatorio para contexto completo
+            report_sections = ""
+            try:
+                if reports and reports[0].outline and reports[0].outline.sections:
+                    for sec in reports[0].outline.sections[:6]:  # Primeiras 6 secoes
+                        report_sections += f"\n## {sec.title}\n{(sec.content or '')[:800]}\n"
+                    report_sections = report_sections[:5000]
+            except:
+                pass
+            
             llm = LLMClient(model='gpt-5.4-mini')  # mini para chat rapido
             messages = [
-                {"role": "system", "content": f"""Voce e um agente de simulacao de opiniao publica. Responda em PT-BR como se fosse esta persona:
+                {"role": "system", "content": f"""Voce e um agente que participou de uma simulacao de opiniao publica. Voce TEM opinioes formadas porque VIVEU a simulacao e viu os dados.
 
+## Seu perfil:
 {profile_text}
 
-Contexto da simulacao: {report_context[:500]}
+## Resumo da simulacao:
+{report_context[:1000]}
 
-Responda de forma natural, como se fosse este agente sendo entrevistado sobre o tema. Seja especifico, use sua perspectiva unica como esta persona."""},
+## Dados completos da analise:
+{report_sections}
+
+## Seus posts durante a simulacao:
+{agent_posts if agent_posts else "Nenhum post registrado"}
+
+## Regras:
+- Responda em PT-BR como esta persona, com opiniao propria
+- Use dados CONCRETOS do relatorio para embasar sua resposta
+- Cite numeros, percentuais e fatos que voce observou na simulacao
+- Seja direto e pratico, como se estivesse sendo entrevistado
+- Nao invente dados que nao estao no contexto acima"""},
                 {"role": "user", "content": prompt}
             ]
             
-            response = llm.chat(messages=messages, temperature=0.7, max_tokens=1000)
+            response = llm.chat(messages=messages, temperature=0.7, max_tokens=1500)
             
             return jsonify({
                 "success": True,
