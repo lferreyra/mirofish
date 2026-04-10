@@ -792,6 +792,15 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
 .net-info { font-size:9px;color:var(--text-muted);margin-top:4px;text-align:center; }
 .np { animation:np 2.2s ease-in-out infinite; }
 @keyframes np { 0%,100%{opacity:1}50%{opacity:.45} }
+.rounds-section { grid-column:1/-1; margin-top:8px; }
+.rounds-title { font-size:10px; font-weight:700; letter-spacing:1.5px; color:var(--text-muted,#8888aa); margin-bottom:8px; }
+.rounds-list { display:flex; flex-direction:column; gap:4px; max-height:250px; overflow-y:auto; }
+.round-item { display:flex; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-raised, #f8f9fa); border-radius:8px; border:1px solid var(--border, #e5e7eb); }
+.ri-num { font-size:12px; font-weight:800; color:var(--accent, #00e5c3); font-family:'JetBrains Mono',monospace; min-width:30px; }
+.ri-body { flex:1; }
+.ri-stats { display:flex; gap:12px; flex-wrap:wrap; }
+.ri-stat { font-size:11px; color:var(--text-body, #555); }
+.ri-label { font-weight:700; color:var(--text-secondary, #888); margin-right:3px; }
 .feed-sep { height:1px;background:var(--border);margin:4px 0; }
 .feed-ph  { display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:11px; }
 .feed-list { display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-md) transparent; }
