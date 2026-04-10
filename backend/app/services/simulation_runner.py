@@ -479,7 +479,7 @@ class SimulationRunner:
         return state
     
     @classmethod
-    def _monitor_simulation(cls, simulation_id: str, locale: str = 'zh'):
+    def _monitor_simulation(cls, simulation_id: str, locale: str = 'en'):
         """监控模拟进程，解析动作日志"""
         set_locale(locale)
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
@@ -1524,6 +1524,21 @@ class SimulationRunner:
         if not ipc_client.check_env_alive():
             raise ValueError(f"模拟环境未运行或已关闭，无法执行Interview: {simulation_id}")
 
+        run_state = cls.get_run_state(simulation_id)
+        if run_state:
+            runner_inactive = run_state.runner_status in {
+                RunnerStatus.COMPLETED,
+                RunnerStatus.STOPPED,
+                RunnerStatus.FAILED,
+            }
+            platforms_running = run_state.twitter_running or run_state.reddit_running
+            if runner_inactive or not platforms_running:
+                raise ValueError(
+                    f"模拟环境当前不可用于Interview: {simulation_id} "
+                    f"(runner_status={run_state.runner_status.value}, "
+                    f"twitter_running={run_state.twitter_running}, reddit_running={run_state.reddit_running})"
+                )
+
         logger.info(f"发送批量Interview命令: simulation_id={simulation_id}, count={len(interviews)}, platform={platform}")
 
         response = ipc_client.send_batch_interview(
@@ -1765,4 +1780,3 @@ class SimulationRunner:
             results = results[:limit]
         
         return results
-

@@ -1,9 +1,18 @@
 import axios from 'axios'
 import i18n from '../i18n'
 
+const resolveDefaultApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+
+  // Use relative path so requests go through Vite proxy (dev) or reverse proxy (prod)
+  return ''
+}
+
 // 创建axios实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001',
+  baseURL: resolveDefaultApiBaseUrl(),
   timeout: 300000, // 5分钟超时（本体生成可能需要较长时间）
   headers: {
     'Content-Type': 'application/json'
@@ -58,6 +67,13 @@ export const requestWithRetry = async (requestFn, maxRetries = 3, delay = 1000) 
     try {
       return await requestFn()
     } catch (error) {
+      const status = error?.response?.status
+      const isClientError = typeof status === 'number' && status >= 400 && status < 500
+
+      if (isClientError) {
+        throw error
+      }
+
       if (i === maxRetries - 1) throw error
       
       console.warn(`Request failed, retrying (${i + 1}/${maxRetries})...`)

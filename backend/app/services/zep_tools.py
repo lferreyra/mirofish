@@ -10,6 +10,7 @@ Zep检索工具服务
 
 import time
 import json
+import re
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
@@ -44,10 +45,10 @@ class SearchResult:
     
     def to_text(self) -> str:
         """转换为文本格式，供LLM理解"""
-        text_parts = [f"搜索查询: {self.query}", f"找到 {self.total_count} 条相关信息"]
-        
+        text_parts = [f"Search query: {self.query}", f"Found {self.total_count} related items"]
+
         if self.facts:
-            text_parts.append("\n### 相关事实:")
+            text_parts.append("\n### Related facts:")
             for i, fact in enumerate(self.facts, 1):
                 text_parts.append(f"{i}. {fact}")
         
@@ -74,8 +75,8 @@ class NodeInfo:
     
     def to_text(self) -> str:
         """转换为文本格式"""
-        entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "未知类型")
-        return f"实体: {self.name} (类型: {entity_type})\n摘要: {self.summary}"
+        entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "Unknown type")
+        return f"Entity: {self.name} (Type: {entity_type})\nSummary: {self.summary}"
 
 
 @dataclass
@@ -113,14 +114,14 @@ class EdgeInfo:
         """转换为文本格式"""
         source = self.source_node_name or self.source_node_uuid[:8]
         target = self.target_node_name or self.target_node_uuid[:8]
-        base_text = f"关系: {source} --[{self.name}]--> {target}\n事实: {self.fact}"
-        
+        base_text = f"Relation: {source} --[{self.name}]--> {target}\nFact: {self.fact}"
+
         if include_temporal:
-            valid_at = self.valid_at or "未知"
-            invalid_at = self.invalid_at or "至今"
-            base_text += f"\n时效: {valid_at} - {invalid_at}"
+            valid_at = self.valid_at or "Unknown"
+            invalid_at = self.invalid_at or "Present"
+            base_text += f"\nValidity: {valid_at} - {invalid_at}"
             if self.expired_at:
-                base_text += f" (已过期: {self.expired_at})"
+                base_text += f" (Expired: {self.expired_at})"
         
         return base_text
     
@@ -171,40 +172,40 @@ class InsightForgeResult:
     def to_text(self) -> str:
         """转换为详细的文本格式，供LLM理解"""
         text_parts = [
-            f"## 未来预测深度分析",
-            f"分析问题: {self.query}",
-            f"预测场景: {self.simulation_requirement}",
-            f"\n### 预测数据统计",
-            f"- 相关预测事实: {self.total_facts}条",
-            f"- 涉及实体: {self.total_entities}个",
-            f"- 关系链: {self.total_relationships}条"
+            f"## In-Depth Prediction Analysis",
+            f"Analysis question: {self.query}",
+            f"Prediction scenario: {self.simulation_requirement}",
+            f"\n### Prediction Data Statistics",
+            f"- Related prediction facts: {self.total_facts}",
+            f"- Entities involved: {self.total_entities}",
+            f"- Relationship chains: {self.total_relationships}"
         ]
-        
+
         # 子问题
         if self.sub_queries:
-            text_parts.append(f"\n### 分析的子问题")
+            text_parts.append(f"\n### Analyzed Sub-questions")
             for i, sq in enumerate(self.sub_queries, 1):
                 text_parts.append(f"{i}. {sq}")
-        
+
         # 语义搜索结果
         if self.semantic_facts:
-            text_parts.append(f"\n### 【关键事实】(请在报告中引用这些原文)")
+            text_parts.append(f"\n### [Key Facts] (Please cite these original texts in the report)")
             for i, fact in enumerate(self.semantic_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
-        
+
         # 实体洞察
         if self.entity_insights:
-            text_parts.append(f"\n### 【核心实体】")
+            text_parts.append(f"\n### [Core Entities]")
             for entity in self.entity_insights:
-                text_parts.append(f"- **{entity.get('name', '未知')}** ({entity.get('type', '实体')})")
+                text_parts.append(f"- **{entity.get('name', 'Unknown')}** ({entity.get('type', 'Entity')})")
                 if entity.get('summary'):
-                    text_parts.append(f"  摘要: \"{entity.get('summary')}\"")
+                    text_parts.append(f"  Summary: \"{entity.get('summary')}\"")
                 if entity.get('related_facts'):
-                    text_parts.append(f"  相关事实: {len(entity.get('related_facts', []))}条")
-        
+                    text_parts.append(f"  Related facts: {len(entity.get('related_facts', []))}")
+
         # 关系链
         if self.relationship_chains:
-            text_parts.append(f"\n### 【关系链】")
+            text_parts.append(f"\n### [Relationship Chains]")
             for chain in self.relationship_chains:
                 text_parts.append(f"- {chain}")
         
@@ -250,32 +251,32 @@ class PanoramaResult:
     def to_text(self) -> str:
         """转换为文本格式（完整版本，不截断）"""
         text_parts = [
-            f"## 广度搜索结果（未来全景视图）",
-            f"查询: {self.query}",
-            f"\n### 统计信息",
-            f"- 总节点数: {self.total_nodes}",
-            f"- 总边数: {self.total_edges}",
-            f"- 当前有效事实: {self.active_count}条",
-            f"- 历史/过期事实: {self.historical_count}条"
+            f"## Panorama Search Results (Full Future View)",
+            f"Query: {self.query}",
+            f"\n### Statistics",
+            f"- Total nodes: {self.total_nodes}",
+            f"- Total edges: {self.total_edges}",
+            f"- Currently active facts: {self.active_count}",
+            f"- Historical/expired facts: {self.historical_count}"
         ]
-        
+
         # 当前有效的事实（完整输出，不截断）
         if self.active_facts:
-            text_parts.append(f"\n### 【当前有效事实】(模拟结果原文)")
+            text_parts.append(f"\n### [Currently Active Facts] (Simulation results)")
             for i, fact in enumerate(self.active_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
-        
+
         # 历史/过期事实（完整输出，不截断）
         if self.historical_facts:
-            text_parts.append(f"\n### 【历史/过期事实】(演变过程记录)")
+            text_parts.append(f"\n### [Historical/Expired Facts] (Evolution record)")
             for i, fact in enumerate(self.historical_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
-        
+
         # 关键实体（完整输出，不截断）
         if self.all_nodes:
-            text_parts.append(f"\n### 【涉及实体】")
+            text_parts.append(f"\n### [Entities Involved]")
             for node in self.all_nodes:
-                entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "实体")
+                entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "Entity")
                 text_parts.append(f"- **{node.name}** ({entity_type})")
         
         return "\n".join(text_parts)
@@ -304,11 +305,11 @@ class AgentInterview:
     def to_text(self) -> str:
         text = f"**{self.agent_name}** ({self.agent_role})\n"
         # 显示完整的agent_bio，不截断
-        text += f"_简介: {self.agent_bio}_\n\n"
+        text += f"_Bio: {self.agent_bio}_\n\n"
         text += f"**Q:** {self.question}\n\n"
         text += f"**A:** {self.response}\n"
         if self.key_quotes:
-            text += "\n**关键引言:**\n"
+            text += "\n**Key quotes:**\n"
             for quote in self.key_quotes:
                 # 清理各种引号
                 clean_quote = quote.replace('\u201c', '').replace('\u201d', '').replace('"', '')
@@ -375,25 +376,25 @@ class InterviewResult:
     def to_text(self) -> str:
         """转换为详细的文本格式，供LLM理解和报告引用"""
         text_parts = [
-            "## 深度采访报告",
-            f"**采访主题:** {self.interview_topic}",
-            f"**采访人数:** {self.interviewed_count} / {self.total_agents} 位模拟Agent",
-            "\n### 采访对象选择理由",
-            self.selection_reasoning or "（自动选择）",
+            "## In-Depth Interview Report",
+            f"**Interview topic:** {self.interview_topic}",
+            f"**Interviewees:** {self.interviewed_count} / {self.total_agents} simulated Agents",
+            "\n### Interviewee Selection Rationale",
+            self.selection_reasoning or "(Auto-selected)",
             "\n---",
-            "\n### 采访实录",
+            "\n### Interview Transcript",
         ]
 
         if self.interviews:
             for i, interview in enumerate(self.interviews, 1):
-                text_parts.append(f"\n#### 采访 #{i}: {interview.agent_name}")
+                text_parts.append(f"\n#### Interview #{i}: {interview.agent_name}")
                 text_parts.append(interview.to_text())
                 text_parts.append("\n---")
         else:
-            text_parts.append("（无采访记录）\n\n---")
+            text_parts.append("(No interview records)\n\n---")
 
-        text_parts.append("\n### 采访摘要与核心观点")
-        text_parts.append(self.summary or "（无摘要）")
+        text_parts.append("\n### Interview Summary and Key Points")
+        text_parts.append(self.summary or "(No summary)")
 
         return "\n".join(text_parts)
 
@@ -418,16 +419,16 @@ class ZepToolsService:
     - get_entity_summary - 获取实体的关系摘要
     """
     
-    # 重试配置
-    MAX_RETRIES = 3
-    RETRY_DELAY = 2.0
-    
     def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
             raise ValueError("ZEP_API_KEY 未配置")
         
         self.client = Zep(api_key=self.api_key)
+        self.max_retries = max(1, Config.ZEP_MAX_RETRIES)
+        self.retry_delay = max(0.1, Config.ZEP_RETRY_DELAY_SECONDS)
+        self.search_query_max_chars = max(50, Config.ZEP_SEARCH_QUERY_MAX_CHARS)
+        self.query_rewrite_target_chars = max(50, min(Config.ZEP_QUERY_REWRITE_TARGET_CHARS, self.search_query_max_chars))
         # LLM客户端用于InsightForge生成子问题
         self._llm_client = llm_client
         logger.info(t("console.zepToolsInitialized"))
@@ -439,25 +440,305 @@ class ZepToolsService:
             self._llm_client = LLMClient()
         return self._llm_client
     
-    def _call_with_retry(self, func, operation_name: str, max_retries: int = None):
-        """带重试机制的API调用"""
-        max_retries = max_retries or self.MAX_RETRIES
+    @staticmethod
+    def _normalize_query_preview(query: str, limit: int = 160) -> str:
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        return normalized[:limit]
+
+    def _build_empty_search_result(self, query: str) -> SearchResult:
+        return SearchResult(
+            facts=[],
+            edges=[],
+            nodes=[],
+            query=query,
+            total_count=0,
+        )
+
+    def _extract_error_metadata(self, exc: Exception) -> Dict[str, Any]:
+        status_code = getattr(exc, "status_code", None)
+        headers = getattr(exc, "headers", None)
+        body = getattr(exc, "body", None)
+
+        if not isinstance(headers, dict):
+            headers = {}
+        if body is None:
+            body = ""
+
+        text = str(exc)
+        if status_code is None:
+            status_match = re.search(r"status_code:\s*(\d+)", text)
+            if status_match:
+                status_code = int(status_match.group(1))
+        if not headers:
+            headers_match = re.search(r"headers:\s*(\{.*?\}),\s*status_code:", text, re.DOTALL)
+            if headers_match:
+                try:
+                    parsed_headers = json.loads(headers_match.group(1).replace("'", '"'))
+                    if isinstance(parsed_headers, dict):
+                        headers = parsed_headers
+                except Exception:
+                    headers = {}
+        if not body:
+            body_match = re.search(r"body:\s*(.+)$", text, re.DOTALL)
+            if body_match:
+                body = body_match.group(1).strip()
+
+        normalized_headers = {str(k).lower(): str(v) for k, v in headers.items()}
+        message_text = f"{text} {body}".lower()
+        body_text = str(body).lower()
+        explicit_rate_limit_text = any(
+            token in body_text
+            for token in (
+                "rate limit exceeded",
+                "too many requests",
+                "request limit exceeded",
+            )
+        )
+
+        retry_after_seconds = None
+        retry_after = normalized_headers.get("retry-after")
+        if retry_after:
+            try:
+                retry_after_seconds = max(0.0, float(retry_after))
+            except ValueError:
+                retry_after_seconds = None
+
+        if status_code == 400 and ("400 characters" in message_text or "query cannot be longer" in message_text):
+            category = "query_too_long"
+            retryable = False
+        elif status_code == 429 or (status_code is None and explicit_rate_limit_text):
+            category = "rate_limit"
+            retryable = True
+        elif status_code == 404:
+            category = "not_found"
+            retryable = False
+        elif status_code is not None and 400 <= status_code < 500:
+            category = "client_error"
+            retryable = False
+        elif status_code is not None and status_code >= 500:
+            category = "server_error"
+            retryable = True
+        elif isinstance(exc, (ConnectionError, TimeoutError, OSError)):
+            category = "network_error"
+            retryable = True
+        else:
+            category = "unknown_error"
+            retryable = False
+
+        return {
+            "status_code": status_code,
+            "headers": normalized_headers,
+            "body": str(body),
+            "category": category,
+            "retryable": retryable,
+            "retry_after_seconds": retry_after_seconds,
+            "message": text,
+        }
+
+    def _log_zep_failure(
+        self,
+        *,
+        operation_name: str,
+        attempt: int,
+        max_retries: int,
+        metadata: Dict[str, Any],
+        query: str = "",
+        effective_query: str = "",
+        query_source: str = "",
+        next_delay: Optional[float] = None,
+        final: bool = False,
+    ) -> None:
+        headers = metadata.get("headers", {})
+        logger_fn = logger.error if final else logger.warning
+        logger_fn(
+            (
+                "Zep failure operation=%s attempt=%s/%s query_source=%s raw_query_length=%s "
+                "effective_query_length=%s status_code=%s category=%s retryable=%s "
+                "retry_after=%s ratelimit_remaining=%s ratelimit_reset=%s raw_query=%r effective_query=%r error=%s%s"
+            ),
+            operation_name,
+            attempt,
+            max_retries,
+            query_source or "unknown",
+            len(query or ""),
+            len(effective_query or ""),
+            metadata.get("status_code"),
+            metadata.get("category"),
+            metadata.get("retryable"),
+            metadata.get("retry_after_seconds"),
+            headers.get("x-ratelimit-remaining"),
+            headers.get("x-ratelimit-reset"),
+            self._normalize_query_preview(query),
+            self._normalize_query_preview(effective_query),
+            metadata.get("message", "")[:240],
+            f" next_delay={next_delay:.1f}s" if next_delay is not None else "",
+        )
+
+    def _compress_query_deterministically(self, query: str, max_chars: Optional[int] = None) -> str:
+        max_chars = max_chars or self.search_query_max_chars
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        if len(normalized) <= max_chars:
+            return normalized
+
+        segments = [
+            segment.strip()
+            for segment in re.split(r"[\n\r\t]|[。！？!?;；]+", normalized)
+            if segment.strip()
+        ]
+        prioritized = sorted(
+            segments,
+            key=lambda segment: (
+                not bool(re.search(r"\d", segment)),
+                not any(token in segment.lower() for token in ("target", "men", "private", "brand", "202", "trend", "pricing", "risk", "outlook")),
+                len(segment),
+            ),
+        )
+
+        selected: List[str] = []
+        current_length = 0
+        for segment in prioritized:
+            projected = current_length + len(segment) + (3 if selected else 0)
+            if projected > max_chars:
+                continue
+            selected.append(segment)
+            current_length = projected
+            if current_length >= max_chars * 0.95:
+                break
+
+        compressed = " | ".join(selected).strip()
+        if compressed:
+            return compressed[:max_chars]
+        return normalized[:max_chars]
+
+    def _rewrite_query_for_search(self, query: str, query_source: str, operation_name: str) -> str:
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        if not normalized or len(normalized) <= self.search_query_max_chars:
+            return normalized
+
+        logger.info(
+            "Zep query rewrite requested operation=%s query_source=%s raw_query_length=%s provider=%s openrouter_pool_size=%s retry_attempts=%s",
+            operation_name,
+            query_source,
+            len(normalized),
+            "openrouter" if "openrouter.ai" in str(getattr(self.llm, "base_url", "")).lower() else "generic",
+            len(Config.OPENROUTER_API_KEYS),
+            Config.ZEP_QUERY_REWRITE_RETRY_ATTEMPTS,
+        )
+
+        system_prompt = (
+            "Rewrite long analytics questions into a single Zep graph search query.\n"
+            "Preserve the main company/brand, audience/category, time range, comparison axes, and major risks/opportunities.\n"
+            "Remove instructions and boilerplate.\n"
+            "Return JSON: {\"search_query\": \"...\"}.\n"
+            f"The search_query must be <= {self.search_query_max_chars} characters."
+        )
+        user_prompt = (
+            f"Original query source: {query_source}\n"
+            f"Max characters: {self.search_query_max_chars}\n"
+            f"Target length: about {self.query_rewrite_target_chars} characters\n"
+            "Rewrite this query for Zep graph search while preserving the core meaning:\n"
+            f"{normalized}"
+        )
+
+        try:
+            response = self.llm.chat_json(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+                max_tokens=256,
+                request_label="zep_query_rewrite",
+                retry_attempts=Config.ZEP_QUERY_REWRITE_RETRY_ATTEMPTS,
+            )
+            rewritten = re.sub(r"\s+", " ", str(response.get("search_query", ""))).strip()
+            if rewritten:
+                preferred_query = rewritten
+                if len(rewritten) < self.query_rewrite_target_chars:
+                    deterministic_fallback = self._compress_query_deterministically(
+                        normalized,
+                        self.query_rewrite_target_chars,
+                    )
+                    if len(deterministic_fallback) > len(rewritten):
+                        logger.info(
+                            "Zep query rewrite too short, preferring deterministic fallback operation=%s query_source=%s rewritten_length=%s fallback_length=%s",
+                            operation_name,
+                            query_source,
+                            len(rewritten),
+                            len(deterministic_fallback),
+                        )
+                        preferred_query = deterministic_fallback
+                logger.info(
+                    "Zep query rewrite success operation=%s query_source=%s raw_query_length=%s effective_query_length=%s raw_query=%r effective_query=%r",
+                    operation_name,
+                    query_source,
+                    len(normalized),
+                    len(preferred_query),
+                    self._normalize_query_preview(normalized),
+                    self._normalize_query_preview(preferred_query),
+                )
+                if len(preferred_query) <= self.search_query_max_chars:
+                    return preferred_query
+        except Exception as exc:
+            logger.warning(
+                "Zep query rewrite failed operation=%s query_source=%s raw_query_length=%s error=%s",
+                operation_name,
+                query_source,
+                len(normalized),
+                str(exc)[:240],
+            )
+
+        fallback = self._compress_query_deterministically(normalized, self.search_query_max_chars)
+        logger.warning(
+            "Zep query rewrite fallback operation=%s query_source=%s raw_query_length=%s effective_query_length=%s effective_query=%r",
+            operation_name,
+            query_source,
+            len(normalized),
+            len(fallback),
+            self._normalize_query_preview(fallback),
+        )
+        return fallback
+
+    def _call_with_retry(
+        self,
+        func,
+        operation_name: str,
+        max_retries: int = None,
+        *,
+        query: str = "",
+        effective_query: str = "",
+        query_source: str = "",
+    ):
+        """带重试机制的API调用，仅对瞬态错误重试。"""
+        max_retries = max_retries or self.max_retries
         last_exception = None
-        delay = self.RETRY_DELAY
+        delay = self.retry_delay
         
-        for attempt in range(max_retries):
+        for attempt in range(1, max_retries + 1):
             try:
                 return func()
             except Exception as e:
                 last_exception = e
-                if attempt < max_retries - 1:
-                    logger.warning(
-                        t("console.zepRetryAttempt", operation=operation_name, attempt=attempt + 1, error=str(e)[:100], delay=f"{delay:.1f}")
-                    )
-                    time.sleep(delay)
-                    delay *= 2
-                else:
-                    logger.error(t("console.zepAllRetriesFailed", operation=operation_name, retries=max_retries, error=str(e)))
+                metadata = self._extract_error_metadata(e)
+                should_retry = metadata["retryable"] and attempt < max_retries
+                next_delay = None
+                if should_retry:
+                    next_delay = metadata["retry_after_seconds"] or delay
+                self._log_zep_failure(
+                    operation_name=operation_name,
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    metadata=metadata,
+                    query=query,
+                    effective_query=effective_query,
+                    query_source=query_source,
+                    next_delay=next_delay,
+                    final=not should_retry,
+                )
+                if not should_retry:
+                    break
+                time.sleep(next_delay)
+                delay = max(delay * 2, self.retry_delay)
         
         raise last_exception
     
@@ -466,7 +747,8 @@ class ZepToolsService:
         graph_id: str, 
         query: str, 
         limit: int = 10,
-        scope: str = "edges"
+        scope: str = "edges",
+        query_source: str = "user_query",
     ) -> SearchResult:
         """
         图谱语义搜索
@@ -484,18 +766,22 @@ class ZepToolsService:
             SearchResult: 搜索结果
         """
         logger.info(t("console.graphSearch", graphId=graph_id, query=query[:50]))
+        effective_query = self._rewrite_query_for_search(query, query_source, f"graph_search:{graph_id}")
         
         # 尝试使用Zep Cloud Search API
         try:
             search_results = self._call_with_retry(
                 func=lambda: self.client.graph.search(
                     graph_id=graph_id,
-                    query=query,
+                    query=effective_query,
                     limit=limit,
                     scope=scope,
                     reranker="cross_encoder"
                 ),
-                operation_name=t("console.graphSearchOp", graphId=graph_id)
+                operation_name=t("console.graphSearchOp", graphId=graph_id),
+                query=query,
+                effective_query=effective_query,
+                query_source=query_source,
             )
             
             facts = []
@@ -534,14 +820,26 @@ class ZepToolsService:
                 facts=facts,
                 edges=edges,
                 nodes=nodes,
-                query=query,
+                query=effective_query,
                 total_count=len(facts)
             )
             
         except Exception as e:
-            logger.warning(t("console.zepSearchApiFallback", error=str(e)))
+            metadata = self._extract_error_metadata(e)
+            logger.warning(
+                "%s category=%s query_source=%s raw_query_length=%s effective_query_length=%s",
+                t("console.zepSearchApiFallback", error=str(e)),
+                metadata["category"],
+                query_source,
+                len(query or ""),
+                len(effective_query or ""),
+            )
+            if metadata["category"] in {"rate_limit", "query_too_long"}:
+                raise
+            if metadata["category"] == "not_found":
+                raise Exception(f"Graph data not found (404) for graph ID {graph_id}. Please rebuild the graph from Step 1.")
             # 降级：使用本地关键词匹配搜索
-            return self._local_search(graph_id, query, limit, scope)
+            return self._local_search(graph_id, effective_query, limit, scope)
     
     def _local_search(
         self, 
@@ -659,7 +957,12 @@ class ZepToolsService:
         """
         logger.info(t("console.fetchingAllNodes", graphId=graph_id))
 
-        nodes = fetch_all_nodes(self.client, graph_id)
+        nodes = fetch_all_nodes(
+            self.client,
+            graph_id,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay,
+        )
 
         result = []
         for node in nodes:
@@ -688,7 +991,12 @@ class ZepToolsService:
         """
         logger.info(t("console.fetchingAllEdges", graphId=graph_id))
 
-        edges = fetch_all_edges(self.client, graph_id)
+        edges = fetch_all_edges(
+            self.client,
+            graph_id,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay,
+        )
 
         result = []
         for edge in edges:
@@ -907,19 +1215,67 @@ class ZepToolsService:
             模拟上下文信息
         """
         logger.info(t("console.fetchingSimContext", requirement=simulation_requirement[:50]))
+        search_result = self._build_empty_search_result(simulation_requirement)
+        stats = {
+            "graph_id": graph_id,
+            "total_nodes": 0,
+            "total_edges": 0,
+            "entity_types": {},
+            "relation_types": {},
+        }
+        all_nodes: List[NodeInfo] = []
+
+        try:
+            # 搜索与模拟需求相关的信息
+            search_result = self.search_graph(
+                graph_id=graph_id,
+                query=simulation_requirement,
+                limit=limit,
+                query_source="simulation_requirement",
+            )
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep simulation context search degraded graph_id=%s category=%s retryable=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["retryable"],
+                metadata["status_code"],
+            )
+            if metadata["category"] == "not_found":
+                raise
+            if metadata["category"] == "rate_limit":
+                return {
+                    "simulation_requirement": simulation_requirement,
+                    "related_facts": [],
+                    "graph_statistics": stats,
+                    "entities": [],
+                    "total_entities": 0,
+                }
+
+        try:
+            # 获取图谱统计
+            stats = self.get_graph_statistics(graph_id)
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep graph statistics unavailable graph_id=%s category=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["status_code"],
+            )
         
-        # 搜索与模拟需求相关的信息
-        search_result = self.search_graph(
-            graph_id=graph_id,
-            query=simulation_requirement,
-            limit=limit
-        )
-        
-        # 获取图谱统计
-        stats = self.get_graph_statistics(graph_id)
-        
-        # 获取所有实体节点
-        all_nodes = self.get_all_nodes(graph_id)
+        try:
+            # 获取所有实体节点
+            all_nodes = self.get_all_nodes(graph_id)
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep entity listing unavailable graph_id=%s category=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["status_code"],
+            )
         
         # 筛选有实际类型的实体（非纯Entity节点）
         entities = []
@@ -998,7 +1354,8 @@ class ZepToolsService:
                 graph_id=graph_id,
                 query=sub_query,
                 limit=15,
-                scope="edges"
+                scope="edges",
+                query_source="insight_forge_sub_query",
             )
             
             for fact in search_result.facts:
@@ -1013,7 +1370,8 @@ class ZepToolsService:
             graph_id=graph_id,
             query=query,
             limit=20,
-            scope="edges"
+            scope="edges",
+            query_source="insight_forge_main_query",
         )
         for fact in main_search.facts:
             if fact not in seen_facts:
@@ -1046,7 +1404,7 @@ class ZepToolsService:
                 node = self.get_node_detail(uuid)
                 if node:
                     node_map[uuid] = node
-                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "实体")
+                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "Entity")
                     
                     # 获取该实体相关的所有事实（不截断）
                     related_facts = [
@@ -1101,23 +1459,23 @@ class ZepToolsService:
         
         将复杂问题分解为多个可以独立检索的子问题
         """
-        system_prompt = """你是一个专业的问题分析专家。你的任务是将一个复杂问题分解为多个可以在模拟世界中独立观察的子问题。
+        system_prompt = """You are a professional question analysis expert. Your task is to break down a complex question into multiple sub-questions that can be independently observed in a simulation world.
 
-要求：
-1. 每个子问题应该足够具体，可以在模拟世界中找到相关的Agent行为或事件
-2. 子问题应该覆盖原问题的不同维度（如：谁、什么、为什么、怎么样、何时、何地）
-3. 子问题应该与模拟场景相关
-4. 返回JSON格式：{"sub_queries": ["子问题1", "子问题2", ...]}"""
+Requirements:
+1. Each sub-question should be specific enough to find relevant Agent behaviors or events in the simulation world
+2. Sub-questions should cover different dimensions of the original question (e.g.: who, what, why, how, when, where)
+3. Sub-questions should be relevant to the simulation scenario
+4. Return JSON format: {"sub_queries": ["sub-question1", "sub-question2", ...]}"""
 
-        user_prompt = f"""模拟需求背景：
+        user_prompt = f"""Simulation requirement background:
 {simulation_requirement}
 
-{f"报告上下文：{report_context[:500]}" if report_context else ""}
+{f"Report context: {report_context[:500]}" if report_context else ""}
 
-请将以下问题分解为{max_queries}个子问题：
+Please break down the following question into {max_queries} sub-questions:
 {query}
 
-返回JSON格式的子问题列表。"""
+Return a JSON-formatted list of sub-questions."""
 
         try:
             response = self.llm.chat_json(
@@ -1125,7 +1483,9 @@ class ZepToolsService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.3
+                temperature=0.3,
+                request_label="zep_generate_sub_queries",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
             sub_queries = response.get("sub_queries", [])
@@ -1137,9 +1497,9 @@ class ZepToolsService:
             # 降级：返回基于原问题的变体
             return [
                 query,
-                f"{query} 的主要参与者",
-                f"{query} 的原因和影响",
-                f"{query} 的发展过程"
+                f"Key participants in {query}",
+                f"Causes and impacts of {query}",
+                f"Development process of {query}"
             ][:max_queries]
     
     def panorama_search(
@@ -1200,8 +1560,8 @@ class ZepToolsService:
             
             if is_historical:
                 # 历史/过期事实，添加时间标记
-                valid_at = edge.valid_at or "未知"
-                invalid_at = edge.invalid_at or edge.expired_at or "未知"
+                valid_at = edge.valid_at or "Unknown"
+                invalid_at = edge.invalid_at or edge.expired_at or "Unknown"
                 fact_with_time = f"[{valid_at} - {invalid_at}] {edge.fact}"
                 historical_facts.append(fact_with_time)
             else:
@@ -1263,7 +1623,8 @@ class ZepToolsService:
             graph_id=graph_id,
             query=query,
             limit=limit,
-            scope="edges"
+            scope="edges",
+            query_source="quick_search",
         )
         
         logger.info(t("console.quickSearchComplete", count=result.total_count))
@@ -1350,15 +1711,15 @@ class ZepToolsService:
         
         # 添加优化前缀，约束Agent回复格式
         INTERVIEW_PROMPT_PREFIX = (
-            "你正在接受一次采访。请结合你的人设、所有的过往记忆与行动，"
-            "以纯文本方式直接回答以下问题。\n"
-            "回复要求：\n"
-            "1. 直接用自然语言回答，不要调用任何工具\n"
-            "2. 不要返回JSON格式或工具调用格式\n"
-            "3. 不要使用Markdown标题（如#、##、###）\n"
-            "4. 按问题编号逐一回答，每个回答以「问题X：」开头（X为问题编号）\n"
-            "5. 每个问题的回答之间用空行分隔\n"
-            "6. 回答要有实质内容，每个问题至少回答2-3句话\n\n"
+            "You are being interviewed. Please draw on your persona, all past memories and actions, "
+            "and answer the following questions in plain text.\n"
+            "Response requirements:\n"
+            "1. Answer directly in natural language; do not invoke any tools\n"
+            "2. Do not return JSON format or tool-call format\n"
+            "3. Do not use Markdown headings (e.g., #, ##, ###)\n"
+            "4. Answer each question in order, starting each answer with 'Question X:' (where X is the question number)\n"
+            "5. Separate each answer with a blank line\n"
+            "6. Provide substantive answers — at least 2-3 sentences per question\n\n"
         )
         optimized_prompt = f"{INTERVIEW_PROMPT_PREFIX}{combined_prompt}"
         
@@ -1380,7 +1741,7 @@ class ZepToolsService:
                 simulation_id=simulation_id,
                 interviews=interviews_request,
                 platform=None,  # 不指定platform，双平台采访
-                timeout=180.0   # 双平台需要更长超时
+                timeout=Config.OASIS_BATCH_INTERVIEW_TIMEOUT_SECONDS,
             )
             
             logger.info(t("console.interviewApiReturned", count=api_result.get('interviews_count', 0), success=api_result.get('success')))
@@ -1389,7 +1750,7 @@ class ZepToolsService:
             if not api_result.get("success", False):
                 error_msg = api_result.get("error", "未知错误")
                 logger.warning(t("console.interviewApiReturnedFailure", error=error_msg))
-                result.summary = f"采访API调用失败：{error_msg}。请检查OASIS模拟环境状态。"
+                result.summary = f"Interview API call failed: {error_msg}. Please check the OASIS simulation environment status."
                 return result
             
             # Step 5: 解析API返回结果，构建AgentInterview对象
@@ -1400,7 +1761,7 @@ class ZepToolsService:
             for i, agent_idx in enumerate(selected_indices):
                 agent = selected_agents[i]
                 agent_name = agent.get("realname", agent.get("username", f"Agent_{agent_idx}"))
-                agent_role = agent.get("profession", "未知")
+                agent_role = agent.get("profession", "Unknown")
                 agent_bio = agent.get("bio", "")
                 
                 # 获取该Agent在两个平台的采访结果
@@ -1415,9 +1776,9 @@ class ZepToolsService:
                 reddit_response = self._clean_tool_call_response(reddit_response)
 
                 # 始终输出双平台标记
-                twitter_text = twitter_response if twitter_response else "（该平台未获得回复）"
-                reddit_text = reddit_response if reddit_response else "（该平台未获得回复）"
-                response_text = f"【Twitter平台回答】\n{twitter_text}\n\n【Reddit平台回答】\n{reddit_text}"
+                twitter_text = twitter_response if twitter_response else "(No response received from this platform)"
+                reddit_text = reddit_response if reddit_response else "(No response received from this platform)"
+                response_text = f"[Twitter Response]\n{twitter_text}\n\n[Reddit Response]\n{reddit_text}"
 
                 # 提取关键引言（从两个平台的回答中）
                 import re
@@ -1462,13 +1823,13 @@ class ZepToolsService:
         except ValueError as e:
             # 模拟环境未运行
             logger.warning(t("console.interviewApiCallFailed", error=e))
-            result.summary = f"采访失败：{str(e)}。模拟环境可能已关闭，请确保OASIS环境正在运行。"
+            result.summary = t("console.interviewFailedEnvClosed", error=str(e))
             return result
         except Exception as e:
             logger.error(t("console.interviewApiCallException", error=e))
             import traceback
             logger.error(traceback.format_exc())
-            result.summary = f"采访过程发生错误：{str(e)}"
+            result.summary = t("console.interviewProcessError", error=str(e))
             return result
         
         # Step 6: 生成采访摘要
@@ -1539,7 +1900,7 @@ class ZepToolsService:
                             "username": row.get("username", ""),
                             "bio": row.get("description", ""),
                             "persona": row.get("user_char", ""),
-                            "profession": "未知"
+                            "profession": "Unknown"
                         })
                 logger.info(t("console.loadedTwitterProfiles", count=len(profiles)))
                 return profiles
@@ -1571,36 +1932,36 @@ class ZepToolsService:
             summary = {
                 "index": i,
                 "name": profile.get("realname", profile.get("username", f"Agent_{i}")),
-                "profession": profile.get("profession", "未知"),
+                "profession": profile.get("profession", "Unknown"),
                 "bio": profile.get("bio", "")[:200],
                 "interested_topics": profile.get("interested_topics", [])
             }
             agent_summaries.append(summary)
         
-        system_prompt = """你是一个专业的采访策划专家。你的任务是根据采访需求，从模拟Agent列表中选择最适合采访的对象。
+        system_prompt = """You are a professional interview planning expert. Your task is to select the most suitable interview candidates from the list of simulated Agents based on the interview requirements.
 
-选择标准：
-1. Agent的身份/职业与采访主题相关
-2. Agent可能持有独特或有价值的观点
-3. 选择多样化的视角（如：支持方、反对方、中立方、专业人士等）
-4. 优先选择与事件直接相关的角色
+Selection criteria:
+1. The Agent's identity/profession should be relevant to the interview topic
+2. The Agent may hold unique or valuable perspectives
+3. Select diverse viewpoints (e.g., supporters, opponents, neutrals, professionals, etc.)
+4. Prioritize roles directly related to the event
 
-返回JSON格式：
+Return JSON format:
 {
-    "selected_indices": [选中Agent的索引列表],
-    "reasoning": "选择理由说明"
+    "selected_indices": [list of selected Agent indices],
+    "reasoning": "explanation of selection rationale"
 }"""
 
-        user_prompt = f"""采访需求：
+        user_prompt = f"""Interview requirement:
 {interview_requirement}
 
-模拟背景：
-{simulation_requirement if simulation_requirement else "未提供"}
+Simulation background:
+{simulation_requirement if simulation_requirement else "Not provided"}
 
-可选择的Agent列表（共{len(agent_summaries)}个）：
+Available Agent list ({len(agent_summaries)} total):
 {json.dumps(agent_summaries, ensure_ascii=False, indent=2)}
 
-请选择最多{max_agents}个最适合采访的Agent，并说明选择理由。"""
+Please select up to {max_agents} most suitable Agents to interview, and explain your selection rationale."""
 
         try:
             response = self.llm.chat_json(
@@ -1608,11 +1969,13 @@ class ZepToolsService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.3
+                temperature=0.3,
+                request_label="zep_select_interview_agents",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
             selected_indices = response.get("selected_indices", [])[:max_agents]
-            reasoning = response.get("reasoning", "基于相关性自动选择")
+            reasoning = response.get("reasoning", "Auto-selected based on relevance")
             
             # 获取选中的Agent完整信息
             selected_agents = []
@@ -1629,7 +1992,7 @@ class ZepToolsService:
             # 降级：选择前N个
             selected = profiles[:max_agents]
             indices = list(range(min(max_agents, len(profiles))))
-            return selected, indices, "使用默认选择策略"
+            return selected, indices, "Using default selection strategy"
     
     def _generate_interview_questions(
         self,
@@ -1639,27 +2002,27 @@ class ZepToolsService:
     ) -> List[str]:
         """使用LLM生成采访问题"""
         
-        agent_roles = [a.get("profession", "未知") for a in selected_agents]
-        
-        system_prompt = """你是一个专业的记者/采访者。根据采访需求，生成3-5个深度采访问题。
+        agent_roles = [a.get("profession", "Unknown") for a in selected_agents]
 
-问题要求：
-1. 开放性问题，鼓励详细回答
-2. 针对不同角色可能有不同答案
-3. 涵盖事实、观点、感受等多个维度
-4. 语言自然，像真实采访一样
-5. 每个问题控制在50字以内，简洁明了
-6. 直接提问，不要包含背景说明或前缀
+        system_prompt = """You are a professional journalist/interviewer. Based on the interview requirements, generate 3-5 in-depth interview questions.
 
-返回JSON格式：{"questions": ["问题1", "问题2", ...]}"""
+Question requirements:
+1. Open-ended questions that encourage detailed responses
+2. Questions that may yield different answers from different roles
+3. Cover multiple dimensions: facts, opinions, feelings, etc.
+4. Natural language, as in a real interview
+5. Keep each question under 50 words — concise and clear
+6. Ask directly; do not include background explanations or prefixes
 
-        user_prompt = f"""采访需求：{interview_requirement}
+Return JSON format: {"questions": ["question1", "question2", ...]}"""
 
-模拟背景：{simulation_requirement if simulation_requirement else "未提供"}
+        user_prompt = f"""Interview requirement: {interview_requirement}
 
-采访对象角色：{', '.join(agent_roles)}
+Simulation background: {simulation_requirement if simulation_requirement else "Not provided"}
 
-请生成3-5个采访问题。"""
+Interviewee roles: {', '.join(agent_roles)}
+
+Please generate 3-5 interview questions."""
 
         try:
             response = self.llm.chat_json(
@@ -1667,17 +2030,19 @@ class ZepToolsService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.5
+                temperature=0.5,
+                request_label="zep_generate_interview_questions",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
-            return response.get("questions", [f"关于{interview_requirement}，您有什么看法？"])
+            return response.get("questions", [f"What are your thoughts on {interview_requirement}?"])
             
         except Exception as e:
             logger.warning(t("console.generateInterviewQuestionsFailed", error=e))
             return [
-                f"关于{interview_requirement}，您的观点是什么？",
-                "这件事对您或您所代表的群体有什么影响？",
-                "您认为应该如何解决或改进这个问题？"
+                f"What is your opinion on {interview_requirement}?",
+                "How does this issue affect you or the group you represent?",
+                "How do you think this issue should be resolved or improved?"
             ]
     
     def _generate_interview_summary(
@@ -1688,36 +2053,36 @@ class ZepToolsService:
         """生成采访摘要"""
         
         if not interviews:
-            return "未完成任何采访"
+            return "No interviews were completed"
         
         # 收集所有采访内容
         interview_texts = []
         for interview in interviews:
-            interview_texts.append(f"【{interview.agent_name}（{interview.agent_role}）】\n{interview.response[:500]}")
+            interview_texts.append(f"[{interview.agent_name} ({interview.agent_role})]\n{interview.response[:500]}")
         
         quote_instruction = "引用受访者原话时使用中文引号「」" if get_locale() == 'zh' else 'Use quotation marks "" when quoting interviewees'
-        system_prompt = f"""你是一个专业的新闻编辑。请根据多位受访者的回答，生成一份采访摘要。
+        system_prompt = f"""You are a professional news editor. Based on the responses from multiple interviewees, generate an interview summary.
 
-摘要要求：
-1. 提炼各方主要观点
-2. 指出观点的共识和分歧
-3. 突出有价值的引言
-4. 客观中立，不偏袒任何一方
-5. 控制在1000字内
+Summary requirements:
+1. Extract the main viewpoints from each party
+2. Identify consensus and disagreements among viewpoints
+3. Highlight valuable quotes
+4. Remain objective and neutral, without favoring any side
+5. Keep within 1000 words
 
-格式约束（必须遵守）：
-- 使用纯文本段落，用空行分隔不同部分
-- 不要使用Markdown标题（如#、##、###）
-- 不要使用分割线（如---、***）
+Format constraints (must follow):
+- Use plain text paragraphs, separated by blank lines
+- Do not use Markdown headings (e.g., #, ##, ###)
+- Do not use horizontal rules (e.g., ---, ***)
 - {quote_instruction}
-- 可以使用**加粗**标记关键词，但不要使用其他Markdown语法"""
+- You may use **bold** to highlight key terms, but do not use other Markdown syntax"""
 
-        user_prompt = f"""采访主题：{interview_requirement}
+        user_prompt = f"""Interview topic: {interview_requirement}
 
-采访内容：
+Interview content:
 {"".join(interview_texts)}
 
-请生成采访摘要。"""
+Please generate an interview summary."""
 
         try:
             summary = self.llm.chat(
@@ -1726,11 +2091,11 @@ class ZepToolsService:
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=800
+                max_tokens=Config.ZEP_INTERVIEW_SUMMARY_MAX_TOKENS
             )
             return summary
             
         except Exception as e:
             logger.warning(t("console.generateInterviewSummaryFailed", error=e))
             # 降级：简单拼接
-            return f"共采访了{len(interviews)}位受访者，包括：" + "、".join([i.agent_name for i in interviews])
+            return f"A total of {len(interviews)} interviewees were interviewed, including: " + ", ".join([i.agent_name for i in interviews])

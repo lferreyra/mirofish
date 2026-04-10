@@ -1,7 +1,12 @@
 services:
   mirofish:
-    image: ghcr.io/666ghj/mirofish:latest
-    # 加速镜像（如拉取缓慢可替换上方地址）
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mirofish-local:latest
+    # 如需改回官方预构建镜像，可注释掉上面的 build/image，并启用下面一行
+    # image: ghcr.io/666ghj/mirofish:latest
+    # 加速镜像（如拉取缓慢可替换官方镜像）
     # image: ghcr.nju.edu.cn/666ghj/mirofish:latest
     container_name: mirofish
     env_file:

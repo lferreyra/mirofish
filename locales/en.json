@@ -26,8 +26,8 @@
     "files": "files"
   },
   "meta": {
-    "title": "MiroFish - Predict Everything",
-    "description": "MiroFish - Social Media Opinion Simulation System"
+    "title": "Shinsung AI - Predict Everything",
+    "description": "Shinsung AI - Social Media Opinion Simulation System"
   },
   "nav": {
     "visitGithub": "Visit our Github page"
@@ -38,7 +38,7 @@
     "heroTitle1": "Upload Reports,",
     "heroTitle2": "Predict the Future",
     "heroDesc": "From a single document, {brand} extracts reality seeds to auto-generate a parallel world with up to {agentScale}. Inject variables from a god's-eye view to find the {optimalSolution} in complex group dynamics.",
-    "heroDescBrand": "MiroFish",
+    "heroDescBrand": "Shinsung AI",
     "heroDescAgentScale": "million-scale Agents",
     "heroDescOptimalSolution": "\"local optimum\"",
     "slogan": "Let Agents rehearse the future, let decisions prevail",
@@ -67,7 +67,7 @@
     "inputParams": "Input Parameters",
     "simulationPrompt": ">_ 02 / Simulation Prompt",
     "promptPlaceholder": "// Describe your simulation or prediction requirement in natural language",
-    "engineBadge": "Engine: MiroFish-V1.0",
+    "engineBadge": "Engine: Shinsung AI-V1.0",
     "startEngine": "Start Engine",
     "initializing": "Initializing..."
   },
@@ -145,7 +145,7 @@
     "setupComplete": "Setup Complete",
     "setupCompleteDesc": "Simulation environment is ready. You can now start the simulation.",
     "roundsConfig": "Simulation Rounds Configuration",
-    "roundsConfigDesc": "MiroFish auto-plans to simulate {hours} real-world hours, each round representing {minutesPerRound} minutes of elapsed time",
+    "roundsConfigDesc": "Shinsung AI auto-plans to simulate {hours} real-world hours, each round representing {minutesPerRound} minutes of elapsed time",
     "customToggle": "Custom",
     "roundsUnit": "rounds",
     "estimatedDuration": "For 100 Agents: est. ~{minutes} minutes",
@@ -257,7 +257,7 @@
     "selectChatTarget": "Select chat target",
     "sendSurvey": "Send survey to the world",
     "reportAgentChat": "Report Agent - Chat",
-    "reportAgentDesc": "A conversational version of the report generation agent with access to 4 professional tools and MiroFish's complete memory",
+    "reportAgentDesc": "A conversational version of the report generation agent with access to 4 professional tools and Shinsung AI's complete memory",
     "toolInsightForge": "InsightForge Deep Attribution",
     "toolInsightForgeDesc": "Aligns real-world seed data with simulation state, combining Global/Local Memory for cross-temporal deep attribution analysis",
     "toolPanoramaSearch": "PanoramaSearch Full Tracking",
@@ -388,6 +388,8 @@
     "envRunning": "Environment is running and ready for Interview commands",
     "envNotRunningShort": "Environment not running or closed",
     "requireGraphIdAndQuery": "Please provide graph_id and query",
+    "reportIdSimMismatch": "report_id does not match simulation_id",
+    "onlyFailedCanResume": "Only reports with 'failed' status can be resumed",
     "initReportAgent": "Initializing Report Agent..."
   },
   "progress": {
@@ -601,6 +603,13 @@
     "reportGenFailed": "Report generation failed: {error}",
     "agentChat": "Report Agent chat: {message}...",
     "fetchReportFailed": "Failed to fetch report content: {error}",
+    "defaultOutlineTitle": "Simulation Prediction Report",
+    "defaultOutlineSummary": "Key trends, behavior shifts, and risks derived from the simulation results.",
+    "defaultSectionTitle1": "Core Findings",
+    "defaultSectionTitle2": "Behavior Shifts and Channel Migration",
+    "defaultSectionTitle3": "Competitive Landscape and Market Impact",
+    "defaultSectionTitle4": "Risks and Opportunities",
+    "defaultSectionTitle5": "What to Watch Next",
     "outlineSaved": "Outline saved: {reportId}",
     "sectionFileSaved": "Section saved: {reportId}/{fileSuffix}",
     "fullReportAssembled": "Full report assembled: {reportId}",
@@ -653,6 +662,8 @@
     "interviewApiReturnedFailure": "Interview API returned failure: {error}",
     "interviewApiCallFailed": "Interview API call failed (env not running?): {error}",
     "interviewApiCallException": "Interview API call exception: {error}",
+    "interviewFailedEnvClosed": "Interview failed: {error}. The simulation environment may be closed. Please ensure the OASIS environment is running.",
+    "interviewProcessError": "Interview process error: {error}",
     "interviewAgentsComplete": "InterviewAgents complete: interviewed {count} agents (dual platform)",
     "loadedRedditProfiles": "Loaded {count} profiles from reddit_profiles.json",
     "readRedditProfilesFailed": "Failed to read reddit_profiles.json: {error}",

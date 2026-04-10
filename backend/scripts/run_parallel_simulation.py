@@ -102,6 +102,13 @@ else:
         load_dotenv(_backend_env)
         print(f"已加载环境配置: {_backend_env}")
 
+from app.utils.openrouter_runtime import (
+    configure_openrouter_runtime,
+    get_effective_llm_api_key,
+)
+
+configure_openrouter_runtime()
+
 
 class MaxTokensWarningFilter(logging.Filter):
     """过滤掉 camel-ai 关于 max_tokens 的警告（我们故意不设置 max_tokens，让模型自行决定）"""
@@ -999,18 +1006,25 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
     boost_api_key = os.environ.get("LLM_BOOST_API_KEY", "")
     boost_base_url = os.environ.get("LLM_BOOST_BASE_URL", "")
     boost_model = os.environ.get("LLM_BOOST_MODEL_NAME", "")
-    has_boost_config = bool(boost_api_key)
+    has_boost_config = bool(boost_api_key or boost_base_url or boost_model)
     
     # 根据参数和配置情况选择使用哪个 LLM
     if use_boost and has_boost_config:
         # 使用加速配置
-        llm_api_key = boost_api_key
-        llm_base_url = boost_base_url
+        llm_base_url = boost_base_url or os.environ.get("LLM_BASE_URL", "")
+        llm_api_key = get_effective_llm_api_key(
+            explicit_api_key=boost_api_key,
+            base_url=llm_base_url,
+            reverse_openrouter_pool=True,
+        ) or ""
         llm_model = boost_model or os.environ.get("LLM_MODEL_NAME", "")
         config_label = "[加速LLM]"
     else:
         # 使用通用配置
-        llm_api_key = os.environ.get("LLM_API_KEY", "")
+        llm_api_key = get_effective_llm_api_key(
+            explicit_api_key=os.environ.get("LLM_API_KEY", ""),
+            base_url=os.environ.get("LLM_BASE_URL", ""),
+        ) or ""
         llm_base_url = os.environ.get("LLM_BASE_URL", "")
         llm_model = os.environ.get("LLM_MODEL_NAME", "")
         config_label = "[通用LLM]"
@@ -1024,7 +1038,7 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
         os.environ["OPENAI_API_KEY"] = llm_api_key
     
     if not os.environ.get("OPENAI_API_KEY"):
-        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY")
+        raise ValueError("缺少 API Key 配置，请在项目根目录 .env 文件中设置 LLM_API_KEY 或 OPENROUTER_API_KEY1..N")
     
     if llm_base_url:
         os.environ["OPENAI_API_BASE_URL"] = llm_base_url

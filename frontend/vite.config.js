@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
+    open: process.env.VITE_OPEN_BROWSER === 'true',
     proxy: {
       '/api': {
         target: 'http://localhost:5001',
