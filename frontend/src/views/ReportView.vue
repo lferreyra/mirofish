@@ -862,6 +862,7 @@ function abrirChat() {
           <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/agentes`)" class="tb-btn" v-if="report?.simulation_id">🧠 Agentes</AugurButton>
           <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/posts`)" class="tb-btn" v-if="report?.simulation_id">📝 Posts</AugurButton>
           <AugurButton variant="ghost" @click="router.push(`/simulacao/${report?.simulation_id}/influentes`)" class="tb-btn" v-if="report?.simulation_id">👑 Influentes</AugurButton>
+          <AugurButton variant="ghost" @click="compartilhar()" class="tb-btn" :disabled="shareLoading">🔗 {{ shareLoading ? 'Gerando...' : 'Compartilhar' }}</AugurButton>
           <AugurButton variant="primary" @click="exportarPDF()" class="tb-btn">📄 Exportar PDF</AugurButton>
         </div>
       </header>
