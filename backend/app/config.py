@@ -69,6 +69,13 @@ class Config:
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
+    ZEP_MAX_RETRIES = int(os.environ.get('ZEP_MAX_RETRIES', '3'))
+    ZEP_RETRY_DELAY_SECONDS = float(os.environ.get('ZEP_RETRY_DELAY_SECONDS', '2.0'))
+    ZEP_SEARCH_QUERY_MAX_CHARS = int(os.environ.get('ZEP_SEARCH_QUERY_MAX_CHARS', '400'))
+    ZEP_QUERY_REWRITE_TARGET_CHARS = int(os.environ.get('ZEP_QUERY_REWRITE_TARGET_CHARS', '340'))
+    ZEP_QUERY_REWRITE_RETRY_ATTEMPTS = int(
+        os.environ.get('ZEP_QUERY_REWRITE_RETRY_ATTEMPTS', str(LLM_JSON_RETRY_ATTEMPTS))
+    )
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
@@ -82,6 +89,9 @@ class Config:
     # OASIS模拟配置
     OASIS_DEFAULT_MAX_ROUNDS = int(os.environ.get('OASIS_DEFAULT_MAX_ROUNDS', '10'))
     OASIS_SIMULATION_DATA_DIR = os.path.join(os.path.dirname(__file__), '../uploads/simulations')
+    OASIS_BATCH_INTERVIEW_TIMEOUT_SECONDS = float(
+        os.environ.get('OASIS_BATCH_INTERVIEW_TIMEOUT_SECONDS', '300')
+    )
     
     # OASIS平台可用动作配置
     OASIS_TWITTER_ACTIONS = [

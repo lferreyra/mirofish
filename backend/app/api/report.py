@@ -62,6 +62,7 @@ def generate_report():
         force_regenerate = data.get('force_regenerate', False)
         requested_report_id = data.get('report_id')
         resume_failed = data.get('resume_failed', False)
+        restart_from_scratch = data.get('restart_from_scratch', False)
         
         # 获取模拟信息
         manager = SimulationManager()
@@ -144,6 +145,24 @@ def generate_report():
             # 提前生成 report_id，以便立即返回给前端
             import uuid
             report_id = f"report_{uuid.uuid4().hex[:12]}"
+
+        if restart_from_scratch:
+            if not requested_report_id:
+                return jsonify({
+                    "success": False,
+                    "error": "restart_from_scratch requires an existing report_id"
+                }), 400
+            if resume_failed:
+                return jsonify({
+                    "success": False,
+                    "error": "restart_from_scratch cannot be combined with resume_failed"
+                }), 400
+            if not force_regenerate:
+                return jsonify({
+                    "success": False,
+                    "error": "restart_from_scratch requires force_regenerate=true"
+                }), 400
+            ReportManager.reset_report_run(report_id)
         
         # 创建异步任务
         task_manager = TaskManager()
@@ -152,7 +171,8 @@ def generate_report():
             metadata={
                 "simulation_id": simulation_id,
                 "graph_id": graph_id,
-                "report_id": report_id
+                "report_id": report_id,
+                "restart_from_scratch": restart_from_scratch,
             }
         )
         

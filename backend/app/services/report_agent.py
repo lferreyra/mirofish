@@ -33,6 +33,39 @@ from .zep_tools import (
 logger = get_logger('mirofish.report_agent')
 
 
+@dataclass
+class ToolExecutionResult:
+    """结构化工具执行结果，供章节生成质量校验使用。"""
+
+    tool_name: str
+    ok: bool
+    content: str
+    payload_count: int = 0
+    error: Optional[str] = None
+    status_code: Optional[int] = None
+    retryable: bool = False
+
+    def to_observation_text(self) -> str:
+        if self.ok:
+            return self.content
+        error_bits = [f"Tool execution failed: {self.error or 'Unknown error'}"]
+        if self.status_code is not None:
+            error_bits.append(f"status_code={self.status_code}")
+        if self.retryable:
+            error_bits.append("retryable=true")
+        return " | ".join(error_bits)
+
+
+@dataclass
+class SectionGenerationResult:
+    """章节生成结果与质量元数据。"""
+
+    content: str
+    tool_calls_count: int
+    successful_tool_calls: int
+    failed_tool_calls: int
+
+
 class ReportLogger:
     """
     Report Agent 详细日志记录器
@@ -192,7 +225,13 @@ class ReportLogger:
         section_index: int,
         tool_name: str,
         result: str,
-        iteration: int
+        iteration: int,
+        *,
+        ok: bool = True,
+        payload_count: int = 0,
+        error: Optional[str] = None,
+        status_code: Optional[int] = None,
+        retryable: Optional[bool] = None,
     ):
         """记录工具调用结果（完整内容，不截断）"""
         self.log(
@@ -205,6 +244,11 @@ class ReportLogger:
                 "tool_name": tool_name,
                 "result": result,  # 完整结果，不截断
                 "result_length": len(result),
+                "ok": ok,
+                "payload_count": payload_count,
+                "error": error,
+                "status_code": status_code,
+                "retryable": retryable,
                 "message": t("report.toolResult", toolName=tool_name)
             }
         )
@@ -894,6 +938,19 @@ class ReportAgent:
     
     # 对话中的最大工具调用次数
     MAX_TOOL_CALLS_PER_CHAT = 2
+
+    FAILURE_CONTENT_PATTERNS = (
+        "i'm unable to complete this section",
+        "i am unable to complete this section",
+        "cannot complete this section",
+        "tool execution failed",
+        "all retrieval tools",
+        "simulation environment or data sources are currently unavailable",
+        "recommend trying again later",
+        "without access to the simulated world data",
+        "404 error",
+        "404 errors",
+    )
     
     def __init__(
         self, 
@@ -929,6 +986,63 @@ class ReportAgent:
         self.console_logger: Optional[ReportConsoleLogger] = None
         
         logger.info(t("report.agentInitDone", graphId=graph_id, simulationId=simulation_id))
+
+    @staticmethod
+    def _estimate_tool_payload_count(result: Any) -> int:
+        if isinstance(result, SearchResult):
+            return int(result.total_count)
+        if isinstance(result, InsightForgeResult):
+            return int(result.total_facts + result.total_entities + result.total_relationships)
+        if isinstance(result, PanoramaResult):
+            return int(result.active_count + result.historical_count)
+        if isinstance(result, InterviewResult):
+            return int(result.interviewed_count)
+        if isinstance(result, list):
+            return len(result)
+        if isinstance(result, dict):
+            if "total_nodes" in result or "total_edges" in result:
+                return int(result.get("total_nodes", 0) + result.get("total_edges", 0))
+            return len(result)
+        if result is None:
+            return 0
+        return 1
+
+    def _extract_tool_error_metadata(self, exc: Exception) -> Dict[str, Any]:
+        extractor = getattr(self.zep_tools, "_extract_error_metadata", None)
+        if callable(extractor):
+            try:
+                return extractor(exc)
+            except Exception:
+                pass
+        return {
+            "status_code": getattr(exc, "status_code", None),
+            "retryable": False,
+            "category": type(exc).__name__,
+            "message": str(exc),
+        }
+
+    def _looks_like_failure_content(self, content: str) -> bool:
+        normalized = re.sub(r"\s+", " ", str(content or "")).strip().lower()
+        if not normalized:
+            return True
+        return any(pattern in normalized for pattern in self.FAILURE_CONTENT_PATTERNS)
+
+    def _validate_section_content(
+        self,
+        content: str,
+        *,
+        section_title: str,
+        successful_tool_calls: int,
+        failed_tool_calls: int,
+    ) -> Optional[str]:
+        if successful_tool_calls < 1:
+            return (
+                f"Section '{section_title}' has no successful retrieval results "
+                f"(failed_tool_calls={failed_tool_calls})."
+            )
+        if self._looks_like_failure_content(content):
+            return f"Section '{section_title}' final content is a failure/apology message instead of analysis."
+        return None
 
     def _get_default_outline_title(self) -> str:
         return t("report.defaultOutlineTitle")
@@ -1075,7 +1189,7 @@ class ReportAgent:
             }
         }
     
-    def _execute_tool(self, tool_name: str, parameters: Dict[str, Any], report_context: str = "") -> str:
+    def _execute_tool(self, tool_name: str, parameters: Dict[str, Any], report_context: str = "") -> ToolExecutionResult:
         """
         执行工具调用
         
@@ -1099,7 +1213,14 @@ class ReportAgent:
                     simulation_requirement=self.simulation_requirement,
                     report_context=ctx
                 )
-                return result.to_text()
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=result.to_text(),
+                    payload_count=payload_count,
+                    error="No relevant insight data found." if payload_count == 0 else None,
+                )
             
             elif tool_name == "panorama_search":
                 # 广度搜索 - 获取全貌
@@ -1112,7 +1233,14 @@ class ReportAgent:
                     query=query,
                     include_expired=include_expired
                 )
-                return result.to_text()
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=result.to_text(),
+                    payload_count=payload_count,
+                    error="No panorama search data found." if payload_count == 0 else None,
+                )
             
             elif tool_name == "quick_search":
                 # 简单搜索 - 快速检索
@@ -1125,7 +1253,14 @@ class ReportAgent:
                     query=query,
                     limit=limit
                 )
-                return result.to_text()
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=result.to_text(),
+                    payload_count=payload_count,
+                    error="Quick search returned no related items." if payload_count == 0 else None,
+                )
             
             elif tool_name == "interview_agents":
                 # 深度采访 - 调用真实的OASIS采访API获取模拟Agent的回答（双平台）
@@ -1140,7 +1275,14 @@ class ReportAgent:
                     simulation_requirement=self.simulation_requirement,
                     max_agents=max_agents
                 )
-                return result.to_text()
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=result.to_text(),
+                    payload_count=payload_count,
+                    error="Interview tool returned no interview records." if payload_count == 0 else None,
+                )
             
             # ========== 向后兼容的旧工具（内部重定向到新工具） ==========
             
@@ -1151,7 +1293,14 @@ class ReportAgent:
             
             elif tool_name == "get_graph_statistics":
                 result = self.zep_tools.get_graph_statistics(self.graph_id)
-                return json.dumps(result, ensure_ascii=False, indent=2)
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=json.dumps(result, ensure_ascii=False, indent=2),
+                    payload_count=payload_count,
+                    error="Graph statistics were empty." if payload_count == 0 else None,
+                )
             
             elif tool_name == "get_entity_summary":
                 entity_name = parameters.get("entity_name", "")
@@ -1159,7 +1308,14 @@ class ReportAgent:
                     graph_id=self.graph_id,
                     entity_name=entity_name
                 )
-                return json.dumps(result, ensure_ascii=False, indent=2)
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=json.dumps(result, ensure_ascii=False, indent=2),
+                    payload_count=payload_count,
+                    error="Entity summary was empty." if payload_count == 0 else None,
+                )
             
             elif tool_name == "get_simulation_context":
                 # 重定向到 insight_forge，因为它更强大
@@ -1174,17 +1330,39 @@ class ReportAgent:
                     entity_type=entity_type
                 )
                 result = [n.to_dict() for n in nodes]
-                return json.dumps(result, ensure_ascii=False, indent=2)
+                payload_count = self._estimate_tool_payload_count(result)
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=payload_count > 0,
+                    content=json.dumps(result, ensure_ascii=False, indent=2),
+                    payload_count=payload_count,
+                    error="No entities found for the requested type." if payload_count == 0 else None,
+                )
             
             else:
-                return (
-                    f"Unknown tool: {tool_name}. Please use one of: "
-                    "insight_forge, panorama_search, quick_search, interview_agents."
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    ok=False,
+                    payload_count=0,
+                    error=(
+                        f"Unknown tool: {tool_name}. Please use one of: "
+                        "insight_forge, panorama_search, quick_search, interview_agents."
+                    ),
+                    content="",
                 )
                 
         except Exception as e:
             logger.error(t("report.toolExecFailed", toolName=tool_name, error=str(e)))
-            return f"Tool execution failed: {str(e)}"
+            metadata = self._extract_tool_error_metadata(e)
+            return ToolExecutionResult(
+                tool_name=tool_name,
+                ok=False,
+                content="",
+                payload_count=0,
+                error=str(e),
+                status_code=metadata.get("status_code"),
+                retryable=bool(metadata.get("retryable")),
+            )
     
     # 合法的工具名称集合，用于裸 JSON 兜底解析时校验
     VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
@@ -1323,7 +1501,7 @@ class ReportAgent:
             
         except Exception as e:
             logger.error(t("report.outlinePlanFailed", error=str(e)))
-            return self._build_default_outline()
+            raise e
     
     def _generate_section_react(
         self, 
@@ -1332,7 +1510,7 @@ class ReportAgent:
         previous_sections: List[str],
         progress_callback: Optional[Callable] = None,
         section_index: int = 0
-    ) -> str:
+    ) -> SectionGenerationResult:
         """
         使用ReACT模式生成单个章节内容
         
@@ -1393,6 +1571,8 @@ class ReportAgent:
         
         # ReACT循环
         tool_calls_count = 0
+        successful_tool_calls = 0
+        failed_tool_calls = 0
         max_iterations = 5  # 最大迭代轮数
         min_tool_calls = 3  # 最少工具调用次数
         conflict_retries = 0  # 工具调用与Final Answer同时出现的连续冲突次数
@@ -1526,7 +1706,29 @@ class ReportAgent:
                         content=final_answer,
                         tool_calls_count=tool_calls_count
                     )
-                return final_answer
+                validation_error = self._validate_section_content(
+                    final_answer,
+                    section_title=section.title,
+                    successful_tool_calls=successful_tool_calls,
+                    failed_tool_calls=failed_tool_calls,
+                )
+                if validation_error:
+                    logger.error(validation_error)
+                    messages.append({"role": "assistant", "content": response})
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            f"[Quality Gate Failed] {validation_error} "
+                            "Do not output an apology or failure message. Retrieve actual simulation data, then answer again."
+                        ),
+                    })
+                    continue
+                return SectionGenerationResult(
+                    content=final_answer,
+                    tool_calls_count=tool_calls_count,
+                    successful_tool_calls=successful_tool_calls,
+                    failed_tool_calls=failed_tool_calls,
+                )
 
             # ── 情况2：LLM 尝试调用工具 ──
             if has_tool_calls:
@@ -1573,11 +1775,20 @@ class ReportAgent:
                         section_title=section.title,
                         section_index=section_index,
                         tool_name=call["name"],
-                        result=result,
-                        iteration=iteration + 1
+                        result=result.to_observation_text(),
+                        iteration=iteration + 1,
+                        ok=result.ok,
+                        payload_count=result.payload_count,
+                        error=result.error,
+                        status_code=result.status_code,
+                        retryable=result.retryable,
                     )
 
                 tool_calls_count += 1
+                if result.ok:
+                    successful_tool_calls += 1
+                else:
+                    failed_tool_calls += 1
                 used_tools.add(call['name'])
 
                 # 构建未使用工具提示
@@ -1591,7 +1802,7 @@ class ReportAgent:
                     "role": "user",
                     "content": REACT_OBSERVATION_TEMPLATE.format(
                         tool_name=call["name"],
-                        result=result,
+                        result=result.to_observation_text(),
                         tool_calls_count=tool_calls_count,
                         max_tool_calls=self.MAX_TOOL_CALLS_PER_SECTION,
                         used_tools_str=", ".join(used_tools),
@@ -1633,7 +1844,28 @@ class ReportAgent:
                     content=final_answer,
                     tool_calls_count=tool_calls_count
                 )
-            return final_answer
+            validation_error = self._validate_section_content(
+                final_answer,
+                section_title=section.title,
+                successful_tool_calls=successful_tool_calls,
+                failed_tool_calls=failed_tool_calls,
+            )
+            if validation_error:
+                logger.error(validation_error)
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        f"[Quality Gate Failed] {validation_error} "
+                        "Do not return failure/apology text as the report body."
+                    ),
+                })
+                continue
+            return SectionGenerationResult(
+                content=final_answer,
+                tool_calls_count=tool_calls_count,
+                successful_tool_calls=successful_tool_calls,
+                failed_tool_calls=failed_tool_calls,
+            )
         
         # 达到最大迭代次数，强制生成内容
         logger.warning(t("report.sectionMaxIter", title=section.title))
@@ -1655,6 +1887,15 @@ class ReportAgent:
             final_answer = response.split("Final Answer:")[-1].strip()
         else:
             final_answer = response
+
+        validation_error = self._validate_section_content(
+            final_answer,
+            section_title=section.title,
+            successful_tool_calls=successful_tool_calls,
+            failed_tool_calls=failed_tool_calls,
+        )
+        if validation_error:
+            raise RuntimeError(validation_error)
         
         # 记录章节内容生成完成日志
         if self.report_logger:
@@ -1665,7 +1906,12 @@ class ReportAgent:
                 tool_calls_count=tool_calls_count
             )
         
-        return final_answer
+        return SectionGenerationResult(
+            content=final_answer,
+            tool_calls_count=tool_calls_count,
+            successful_tool_calls=successful_tool_calls,
+            failed_tool_calls=failed_tool_calls,
+        )
     
     def generate_report(
         self, 
@@ -1842,7 +2088,7 @@ class ReportAgent:
                     )
                 
                 # 生成主章节内容
-                section_content = self._generate_section_react(
+                section_result = self._generate_section_react(
                     section=section,
                     outline=outline,
                     previous_sections=generated_sections,
@@ -1855,15 +2101,15 @@ class ReportAgent:
                     section_index=section_num
                 )
                 
-                section.content = section_content
-                generated_sections.append(f"## {section.title}\n\n{section_content}")
+                section.content = section_result.content
+                generated_sections.append(f"## {section.title}\n\n{section_result.content}")
 
                 # 保存章节
                 ReportManager.save_section(report_id, section_num, section)
                 completed_section_titles.append(section.title)
 
                 # 记录章节完成日志
-                full_section_content = f"## {section.title}\n\n{section_content}"
+                full_section_content = f"## {section.title}\n\n{section_result.content}"
 
                 if self.report_logger:
                     self.report_logger.log_section_full_complete(
@@ -2746,3 +2992,10 @@ class ReportManager:
             deleted = True
         
         return deleted
+
+    @classmethod
+    def reset_report_run(cls, report_id: str) -> None:
+        """清空同一 report_id 的所有产物，供“从头重新开始”使用。"""
+        cls.delete_report(report_id)
+        cls._ensure_report_folder(report_id)
+        logger.info("Report run reset: report_id=%s", report_id)

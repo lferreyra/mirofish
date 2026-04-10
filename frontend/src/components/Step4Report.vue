@@ -127,21 +127,40 @@
             </div>
           </div>
 
-          <!-- Next Step Button - 在完成后显示 -->
-          <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
-            <span>Enter Deep Interaction</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
+          <div v-if="isComplete" class="workflow-action-row">
+            <button class="next-step-btn" @click="goToInteraction">
+              <span>Enter Deep Interaction</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+            <button
+              v-if="isStageRestartAvailable"
+              class="stage-restart-btn"
+              :disabled="isRestarting"
+              @click="handleRestartFromScratch"
+            >
+              {{ restartButtonText }}
+            </button>
+          </div>
 
           <div v-if="showRetryBanner" class="report-error-banner">
             <strong>Report generation failed.</strong>
             <span>{{ retryBannerMessage }}</span>
-            <button class="retry-btn" :disabled="isRetrying || retryPending" @click="handleRetry">
-              {{ retryButtonText }}
-            </button>
+            <div class="report-error-actions">
+              <button class="retry-btn" :disabled="isRetrying || retryPending || isRestarting" @click="handleRetry">
+                {{ retryButtonText }}
+              </button>
+              <button
+                v-if="isStageRestartAvailable"
+                class="stage-restart-btn"
+                :disabled="isRestarting || isRetrying || retryPending"
+                @click="handleRestartFromScratch"
+              >
+                {{ restartButtonText }}
+              </button>
+            </div>
           </div>
 
           <div class="workflow-divider"></div>
@@ -412,6 +431,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAgentLog, getConsoleLog, generateReport } from '../api/report'
+import { useStageRestart } from '../composables/useStageRestart'
 
 const router = useRouter()
 
@@ -451,8 +471,56 @@ const rightPanel = ref(null)
 const logContent = ref(null)
 const showRawResult = reactive({})
 
-const showRetryBanner = computed(() => Boolean(generationError.value) || isRetrying.value || retryPending.value)
+const resetReportState = () => {
+  agentLogs.value = []
+  consoleLogs.value = []
+  agentLogLine.value = 0
+  consoleLogLine.value = 0
+  reportOutline.value = null
+  currentSectionIndex.value = null
+  generatedSections.value = {}
+  expandedContent.value = new Set()
+  expandedLogs.value = new Set()
+  collapsedSections.value = new Set()
+  isComplete.value = false
+  generationError.value = ''
+  isRetrying.value = false
+  retryPending.value = false
+  startTime.value = null
+  Object.keys(showRawResult).forEach(key => {
+    delete showRawResult[key]
+  })
+}
+
+const {
+  isRestarting,
+  restartError,
+  restartStage,
+  clearRestartError
+} = useStageRestart({
+  addLog: (msg) => emit('add-log', msg),
+  startMessage: `Restarting report stage from scratch: ${props.reportId || 'unknown-report'}`,
+  resetState: () => {
+    stopPolling()
+    resetReportState()
+  },
+  runRestart: () => generateReport({
+    simulation_id: props.simulationId,
+    report_id: props.reportId,
+    force_regenerate: true,
+    restart_from_scratch: true
+  }),
+  onStarted: () => {
+    generationError.value = ''
+    emit('update-status', 'processing')
+    emit('add-log', `✓ Report stage restarted from scratch: ${props.reportId}`)
+    startPolling()
+  }
+})
+
+const showRetryBanner = computed(() => Boolean(restartError.value) || Boolean(generationError.value) || isRetrying.value || retryPending.value)
 const retryBannerMessage = computed(() => {
+  if (restartError.value) return restartError.value
   if (generationError.value) return generationError.value
   if (retryPending.value) return 'Retry request accepted. Waiting for report generation to resume...'
   if (isRetrying.value) return 'Submitting retry request...'
@@ -463,6 +531,11 @@ const retryButtonText = computed(() => {
   if (retryPending.value) return 'Waiting for retry...'
   return 'Retry from failed point'
 })
+const restartButtonText = computed(() => {
+  if (isRestarting.value) return 'Restarting stage...'
+  return 'Restart this stage from scratch'
+})
+const isStageRestartAvailable = computed(() => Boolean(props.reportId && props.simulationId && (isComplete.value || generationError.value)))
 
 // Toggle functions
 const toggleRawResult = (timestamp, event) => {
@@ -1868,8 +1941,9 @@ const addLog = (msg) => {
 }
 
 const handleRetry = async () => {
-  if (!props.simulationId || !props.reportId || isRetrying.value || retryPending.value) return
+  if (!props.simulationId || !props.reportId || isRetrying.value || retryPending.value || isRestarting.value) return
 
+  clearRestartError()
   isRetrying.value = true
   try {
     addLog(`Retrying failed report from checkpoint: ${props.reportId}`)
@@ -1895,6 +1969,18 @@ const handleRetry = async () => {
     emit('update-status', 'error')
   } finally {
     isRetrying.value = false
+  }
+}
+
+const handleRestartFromScratch = async () => {
+  if (!props.simulationId || !props.reportId || isRestarting.value || isRetrying.value || retryPending.value) return
+
+  try {
+    clearRestartError()
+    await restartStage()
+  } catch (err) {
+    generationError.value = err.message || restartError.value || 'Stage restart failed'
+    emit('update-status', 'error')
   }
 }
 
@@ -2273,21 +2359,8 @@ onUnmounted(() => {
 
 watch(() => props.reportId, (newId) => {
   if (newId) {
-    agentLogs.value = []
-    consoleLogs.value = []
-    agentLogLine.value = 0
-    consoleLogLine.value = 0
-    reportOutline.value = null
-    currentSectionIndex.value = null
-    generatedSections.value = {}
-    expandedContent.value = new Set()
-    expandedLogs.value = new Set()
-    collapsedSections.value = new Set()
-    isComplete.value = false
-    generationError.value = ''
-    isRetrying.value = false
-    retryPending.value = false
-    startTime.value = null
+    resetReportState()
+    clearRestartError()
     
     startPolling()
   }
@@ -3544,6 +3617,13 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
 }
 
+.report-error-actions,
+.workflow-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .retry-btn {
   margin-top: 6px;
   align-self: flex-start;
@@ -3566,13 +3646,34 @@ watch(() => props.reportId, (newId) => {
   cursor: not-allowed;
 }
 
+.stage-restart-btn {
+  margin-top: 6px;
+  align-self: flex-start;
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stage-restart-btn:hover:not(:disabled) {
+  background: #F9FAFB;
+}
+
+.stage-restart-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .next-step-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: calc(100% - 40px);
-  margin: 4px 20px 0 20px;
+  flex: 1 1 280px;
   padding: 14px 20px;
   font-size: 14px;
   font-weight: 600;
@@ -3594,6 +3695,10 @@ watch(() => props.reportId, (newId) => {
 
 .next-step-btn:hover svg {
   transform: translateX(4px);
+}
+
+.workflow-action-row {
+  margin: 4px 20px 0 20px;
 }
 
 /* Workflow Empty */

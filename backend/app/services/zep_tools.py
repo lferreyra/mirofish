@@ -10,6 +10,7 @@ Zep检索工具服务
 
 import time
 import json
+import re
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
@@ -418,16 +419,16 @@ class ZepToolsService:
     - get_entity_summary - 获取实体的关系摘要
     """
     
-    # 重试配置
-    MAX_RETRIES = 3
-    RETRY_DELAY = 2.0
-    
     def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
             raise ValueError("ZEP_API_KEY 未配置")
         
         self.client = Zep(api_key=self.api_key)
+        self.max_retries = max(1, Config.ZEP_MAX_RETRIES)
+        self.retry_delay = max(0.1, Config.ZEP_RETRY_DELAY_SECONDS)
+        self.search_query_max_chars = max(50, Config.ZEP_SEARCH_QUERY_MAX_CHARS)
+        self.query_rewrite_target_chars = max(50, min(Config.ZEP_QUERY_REWRITE_TARGET_CHARS, self.search_query_max_chars))
         # LLM客户端用于InsightForge生成子问题
         self._llm_client = llm_client
         logger.info(t("console.zepToolsInitialized"))
@@ -439,25 +440,305 @@ class ZepToolsService:
             self._llm_client = LLMClient()
         return self._llm_client
     
-    def _call_with_retry(self, func, operation_name: str, max_retries: int = None):
-        """带重试机制的API调用"""
-        max_retries = max_retries or self.MAX_RETRIES
+    @staticmethod
+    def _normalize_query_preview(query: str, limit: int = 160) -> str:
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        return normalized[:limit]
+
+    def _build_empty_search_result(self, query: str) -> SearchResult:
+        return SearchResult(
+            facts=[],
+            edges=[],
+            nodes=[],
+            query=query,
+            total_count=0,
+        )
+
+    def _extract_error_metadata(self, exc: Exception) -> Dict[str, Any]:
+        status_code = getattr(exc, "status_code", None)
+        headers = getattr(exc, "headers", None)
+        body = getattr(exc, "body", None)
+
+        if not isinstance(headers, dict):
+            headers = {}
+        if body is None:
+            body = ""
+
+        text = str(exc)
+        if status_code is None:
+            status_match = re.search(r"status_code:\s*(\d+)", text)
+            if status_match:
+                status_code = int(status_match.group(1))
+        if not headers:
+            headers_match = re.search(r"headers:\s*(\{.*?\}),\s*status_code:", text, re.DOTALL)
+            if headers_match:
+                try:
+                    parsed_headers = json.loads(headers_match.group(1).replace("'", '"'))
+                    if isinstance(parsed_headers, dict):
+                        headers = parsed_headers
+                except Exception:
+                    headers = {}
+        if not body:
+            body_match = re.search(r"body:\s*(.+)$", text, re.DOTALL)
+            if body_match:
+                body = body_match.group(1).strip()
+
+        normalized_headers = {str(k).lower(): str(v) for k, v in headers.items()}
+        message_text = f"{text} {body}".lower()
+        body_text = str(body).lower()
+        explicit_rate_limit_text = any(
+            token in body_text
+            for token in (
+                "rate limit exceeded",
+                "too many requests",
+                "request limit exceeded",
+            )
+        )
+
+        retry_after_seconds = None
+        retry_after = normalized_headers.get("retry-after")
+        if retry_after:
+            try:
+                retry_after_seconds = max(0.0, float(retry_after))
+            except ValueError:
+                retry_after_seconds = None
+
+        if status_code == 400 and ("400 characters" in message_text or "query cannot be longer" in message_text):
+            category = "query_too_long"
+            retryable = False
+        elif status_code == 429 or (status_code is None and explicit_rate_limit_text):
+            category = "rate_limit"
+            retryable = True
+        elif status_code == 404:
+            category = "not_found"
+            retryable = False
+        elif status_code is not None and 400 <= status_code < 500:
+            category = "client_error"
+            retryable = False
+        elif status_code is not None and status_code >= 500:
+            category = "server_error"
+            retryable = True
+        elif isinstance(exc, (ConnectionError, TimeoutError, OSError)):
+            category = "network_error"
+            retryable = True
+        else:
+            category = "unknown_error"
+            retryable = False
+
+        return {
+            "status_code": status_code,
+            "headers": normalized_headers,
+            "body": str(body),
+            "category": category,
+            "retryable": retryable,
+            "retry_after_seconds": retry_after_seconds,
+            "message": text,
+        }
+
+    def _log_zep_failure(
+        self,
+        *,
+        operation_name: str,
+        attempt: int,
+        max_retries: int,
+        metadata: Dict[str, Any],
+        query: str = "",
+        effective_query: str = "",
+        query_source: str = "",
+        next_delay: Optional[float] = None,
+        final: bool = False,
+    ) -> None:
+        headers = metadata.get("headers", {})
+        logger_fn = logger.error if final else logger.warning
+        logger_fn(
+            (
+                "Zep failure operation=%s attempt=%s/%s query_source=%s raw_query_length=%s "
+                "effective_query_length=%s status_code=%s category=%s retryable=%s "
+                "retry_after=%s ratelimit_remaining=%s ratelimit_reset=%s raw_query=%r effective_query=%r error=%s%s"
+            ),
+            operation_name,
+            attempt,
+            max_retries,
+            query_source or "unknown",
+            len(query or ""),
+            len(effective_query or ""),
+            metadata.get("status_code"),
+            metadata.get("category"),
+            metadata.get("retryable"),
+            metadata.get("retry_after_seconds"),
+            headers.get("x-ratelimit-remaining"),
+            headers.get("x-ratelimit-reset"),
+            self._normalize_query_preview(query),
+            self._normalize_query_preview(effective_query),
+            metadata.get("message", "")[:240],
+            f" next_delay={next_delay:.1f}s" if next_delay is not None else "",
+        )
+
+    def _compress_query_deterministically(self, query: str, max_chars: Optional[int] = None) -> str:
+        max_chars = max_chars or self.search_query_max_chars
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        if len(normalized) <= max_chars:
+            return normalized
+
+        segments = [
+            segment.strip()
+            for segment in re.split(r"[\n\r\t]|[。！？!?;；]+", normalized)
+            if segment.strip()
+        ]
+        prioritized = sorted(
+            segments,
+            key=lambda segment: (
+                not bool(re.search(r"\d", segment)),
+                not any(token in segment.lower() for token in ("target", "men", "private", "brand", "202", "trend", "pricing", "risk", "outlook")),
+                len(segment),
+            ),
+        )
+
+        selected: List[str] = []
+        current_length = 0
+        for segment in prioritized:
+            projected = current_length + len(segment) + (3 if selected else 0)
+            if projected > max_chars:
+                continue
+            selected.append(segment)
+            current_length = projected
+            if current_length >= max_chars * 0.95:
+                break
+
+        compressed = " | ".join(selected).strip()
+        if compressed:
+            return compressed[:max_chars]
+        return normalized[:max_chars]
+
+    def _rewrite_query_for_search(self, query: str, query_source: str, operation_name: str) -> str:
+        normalized = re.sub(r"\s+", " ", str(query or "")).strip()
+        if not normalized or len(normalized) <= self.search_query_max_chars:
+            return normalized
+
+        logger.info(
+            "Zep query rewrite requested operation=%s query_source=%s raw_query_length=%s provider=%s openrouter_pool_size=%s retry_attempts=%s",
+            operation_name,
+            query_source,
+            len(normalized),
+            "openrouter" if "openrouter.ai" in str(getattr(self.llm, "base_url", "")).lower() else "generic",
+            len(Config.OPENROUTER_API_KEYS),
+            Config.ZEP_QUERY_REWRITE_RETRY_ATTEMPTS,
+        )
+
+        system_prompt = (
+            "Rewrite long analytics questions into a single Zep graph search query.\n"
+            "Preserve the main company/brand, audience/category, time range, comparison axes, and major risks/opportunities.\n"
+            "Remove instructions and boilerplate.\n"
+            "Return JSON: {\"search_query\": \"...\"}.\n"
+            f"The search_query must be <= {self.search_query_max_chars} characters."
+        )
+        user_prompt = (
+            f"Original query source: {query_source}\n"
+            f"Max characters: {self.search_query_max_chars}\n"
+            f"Target length: about {self.query_rewrite_target_chars} characters\n"
+            "Rewrite this query for Zep graph search while preserving the core meaning:\n"
+            f"{normalized}"
+        )
+
+        try:
+            response = self.llm.chat_json(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+                max_tokens=256,
+                request_label="zep_query_rewrite",
+                retry_attempts=Config.ZEP_QUERY_REWRITE_RETRY_ATTEMPTS,
+            )
+            rewritten = re.sub(r"\s+", " ", str(response.get("search_query", ""))).strip()
+            if rewritten:
+                preferred_query = rewritten
+                if len(rewritten) < self.query_rewrite_target_chars:
+                    deterministic_fallback = self._compress_query_deterministically(
+                        normalized,
+                        self.query_rewrite_target_chars,
+                    )
+                    if len(deterministic_fallback) > len(rewritten):
+                        logger.info(
+                            "Zep query rewrite too short, preferring deterministic fallback operation=%s query_source=%s rewritten_length=%s fallback_length=%s",
+                            operation_name,
+                            query_source,
+                            len(rewritten),
+                            len(deterministic_fallback),
+                        )
+                        preferred_query = deterministic_fallback
+                logger.info(
+                    "Zep query rewrite success operation=%s query_source=%s raw_query_length=%s effective_query_length=%s raw_query=%r effective_query=%r",
+                    operation_name,
+                    query_source,
+                    len(normalized),
+                    len(preferred_query),
+                    self._normalize_query_preview(normalized),
+                    self._normalize_query_preview(preferred_query),
+                )
+                if len(preferred_query) <= self.search_query_max_chars:
+                    return preferred_query
+        except Exception as exc:
+            logger.warning(
+                "Zep query rewrite failed operation=%s query_source=%s raw_query_length=%s error=%s",
+                operation_name,
+                query_source,
+                len(normalized),
+                str(exc)[:240],
+            )
+
+        fallback = self._compress_query_deterministically(normalized, self.search_query_max_chars)
+        logger.warning(
+            "Zep query rewrite fallback operation=%s query_source=%s raw_query_length=%s effective_query_length=%s effective_query=%r",
+            operation_name,
+            query_source,
+            len(normalized),
+            len(fallback),
+            self._normalize_query_preview(fallback),
+        )
+        return fallback
+
+    def _call_with_retry(
+        self,
+        func,
+        operation_name: str,
+        max_retries: int = None,
+        *,
+        query: str = "",
+        effective_query: str = "",
+        query_source: str = "",
+    ):
+        """带重试机制的API调用，仅对瞬态错误重试。"""
+        max_retries = max_retries or self.max_retries
         last_exception = None
-        delay = self.RETRY_DELAY
+        delay = self.retry_delay
         
-        for attempt in range(max_retries):
+        for attempt in range(1, max_retries + 1):
             try:
                 return func()
             except Exception as e:
                 last_exception = e
-                if attempt < max_retries - 1:
-                    logger.warning(
-                        t("console.zepRetryAttempt", operation=operation_name, attempt=attempt + 1, error=str(e)[:100], delay=f"{delay:.1f}")
-                    )
-                    time.sleep(delay)
-                    delay *= 2
-                else:
-                    logger.error(t("console.zepAllRetriesFailed", operation=operation_name, retries=max_retries, error=str(e)))
+                metadata = self._extract_error_metadata(e)
+                should_retry = metadata["retryable"] and attempt < max_retries
+                next_delay = None
+                if should_retry:
+                    next_delay = metadata["retry_after_seconds"] or delay
+                self._log_zep_failure(
+                    operation_name=operation_name,
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    metadata=metadata,
+                    query=query,
+                    effective_query=effective_query,
+                    query_source=query_source,
+                    next_delay=next_delay,
+                    final=not should_retry,
+                )
+                if not should_retry:
+                    break
+                time.sleep(next_delay)
+                delay = max(delay * 2, self.retry_delay)
         
         raise last_exception
     
@@ -466,7 +747,8 @@ class ZepToolsService:
         graph_id: str, 
         query: str, 
         limit: int = 10,
-        scope: str = "edges"
+        scope: str = "edges",
+        query_source: str = "user_query",
     ) -> SearchResult:
         """
         图谱语义搜索
@@ -484,18 +766,22 @@ class ZepToolsService:
             SearchResult: 搜索结果
         """
         logger.info(t("console.graphSearch", graphId=graph_id, query=query[:50]))
+        effective_query = self._rewrite_query_for_search(query, query_source, f"graph_search:{graph_id}")
         
         # 尝试使用Zep Cloud Search API
         try:
             search_results = self._call_with_retry(
                 func=lambda: self.client.graph.search(
                     graph_id=graph_id,
-                    query=query,
+                    query=effective_query,
                     limit=limit,
                     scope=scope,
                     reranker="cross_encoder"
                 ),
-                operation_name=t("console.graphSearchOp", graphId=graph_id)
+                operation_name=t("console.graphSearchOp", graphId=graph_id),
+                query=query,
+                effective_query=effective_query,
+                query_source=query_source,
             )
             
             facts = []
@@ -534,14 +820,26 @@ class ZepToolsService:
                 facts=facts,
                 edges=edges,
                 nodes=nodes,
-                query=query,
+                query=effective_query,
                 total_count=len(facts)
             )
             
         except Exception as e:
-            logger.warning(t("console.zepSearchApiFallback", error=str(e)))
+            metadata = self._extract_error_metadata(e)
+            logger.warning(
+                "%s category=%s query_source=%s raw_query_length=%s effective_query_length=%s",
+                t("console.zepSearchApiFallback", error=str(e)),
+                metadata["category"],
+                query_source,
+                len(query or ""),
+                len(effective_query or ""),
+            )
+            if metadata["category"] in {"rate_limit", "query_too_long"}:
+                raise
+            if metadata["category"] == "not_found":
+                raise Exception(f"Graph data not found (404) for graph ID {graph_id}. Please rebuild the graph from Step 1.")
             # 降级：使用本地关键词匹配搜索
-            return self._local_search(graph_id, query, limit, scope)
+            return self._local_search(graph_id, effective_query, limit, scope)
     
     def _local_search(
         self, 
@@ -659,7 +957,12 @@ class ZepToolsService:
         """
         logger.info(t("console.fetchingAllNodes", graphId=graph_id))
 
-        nodes = fetch_all_nodes(self.client, graph_id)
+        nodes = fetch_all_nodes(
+            self.client,
+            graph_id,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay,
+        )
 
         result = []
         for node in nodes:
@@ -688,7 +991,12 @@ class ZepToolsService:
         """
         logger.info(t("console.fetchingAllEdges", graphId=graph_id))
 
-        edges = fetch_all_edges(self.client, graph_id)
+        edges = fetch_all_edges(
+            self.client,
+            graph_id,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay,
+        )
 
         result = []
         for edge in edges:
@@ -907,19 +1215,67 @@ class ZepToolsService:
             模拟上下文信息
         """
         logger.info(t("console.fetchingSimContext", requirement=simulation_requirement[:50]))
+        search_result = self._build_empty_search_result(simulation_requirement)
+        stats = {
+            "graph_id": graph_id,
+            "total_nodes": 0,
+            "total_edges": 0,
+            "entity_types": {},
+            "relation_types": {},
+        }
+        all_nodes: List[NodeInfo] = []
+
+        try:
+            # 搜索与模拟需求相关的信息
+            search_result = self.search_graph(
+                graph_id=graph_id,
+                query=simulation_requirement,
+                limit=limit,
+                query_source="simulation_requirement",
+            )
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep simulation context search degraded graph_id=%s category=%s retryable=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["retryable"],
+                metadata["status_code"],
+            )
+            if metadata["category"] == "not_found":
+                raise
+            if metadata["category"] == "rate_limit":
+                return {
+                    "simulation_requirement": simulation_requirement,
+                    "related_facts": [],
+                    "graph_statistics": stats,
+                    "entities": [],
+                    "total_entities": 0,
+                }
+
+        try:
+            # 获取图谱统计
+            stats = self.get_graph_statistics(graph_id)
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep graph statistics unavailable graph_id=%s category=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["status_code"],
+            )
         
-        # 搜索与模拟需求相关的信息
-        search_result = self.search_graph(
-            graph_id=graph_id,
-            query=simulation_requirement,
-            limit=limit
-        )
-        
-        # 获取图谱统计
-        stats = self.get_graph_statistics(graph_id)
-        
-        # 获取所有实体节点
-        all_nodes = self.get_all_nodes(graph_id)
+        try:
+            # 获取所有实体节点
+            all_nodes = self.get_all_nodes(graph_id)
+        except Exception as exc:
+            metadata = self._extract_error_metadata(exc)
+            logger.warning(
+                "Zep entity listing unavailable graph_id=%s category=%s status_code=%s",
+                graph_id,
+                metadata["category"],
+                metadata["status_code"],
+            )
         
         # 筛选有实际类型的实体（非纯Entity节点）
         entities = []
@@ -998,7 +1354,8 @@ class ZepToolsService:
                 graph_id=graph_id,
                 query=sub_query,
                 limit=15,
-                scope="edges"
+                scope="edges",
+                query_source="insight_forge_sub_query",
             )
             
             for fact in search_result.facts:
@@ -1013,7 +1370,8 @@ class ZepToolsService:
             graph_id=graph_id,
             query=query,
             limit=20,
-            scope="edges"
+            scope="edges",
+            query_source="insight_forge_main_query",
         )
         for fact in main_search.facts:
             if fact not in seen_facts:
@@ -1125,7 +1483,9 @@ Return a JSON-formatted list of sub-questions."""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.3
+                temperature=0.3,
+                request_label="zep_generate_sub_queries",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
             sub_queries = response.get("sub_queries", [])
@@ -1263,7 +1623,8 @@ Return a JSON-formatted list of sub-questions."""
             graph_id=graph_id,
             query=query,
             limit=limit,
-            scope="edges"
+            scope="edges",
+            query_source="quick_search",
         )
         
         logger.info(t("console.quickSearchComplete", count=result.total_count))
@@ -1380,7 +1741,7 @@ Return a JSON-formatted list of sub-questions."""
                 simulation_id=simulation_id,
                 interviews=interviews_request,
                 platform=None,  # 不指定platform，双平台采访
-                timeout=180.0   # 双平台需要更长超时
+                timeout=Config.OASIS_BATCH_INTERVIEW_TIMEOUT_SECONDS,
             )
             
             logger.info(t("console.interviewApiReturned", count=api_result.get('interviews_count', 0), success=api_result.get('success')))
@@ -1608,7 +1969,9 @@ Please select up to {max_agents} most suitable Agents to interview, and explain 
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.3
+                temperature=0.3,
+                request_label="zep_select_interview_agents",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
             selected_indices = response.get("selected_indices", [])[:max_agents]
@@ -1667,7 +2030,9 @@ Please generate 3-5 interview questions."""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.5
+                temperature=0.5,
+                request_label="zep_generate_interview_questions",
+                retry_attempts=Config.REPORT_AGENT_LLM_RETRY_ATTEMPTS,
             )
             
             return response.get("questions", [f"What are your thoughts on {interview_requirement}?"])

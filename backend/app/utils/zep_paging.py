@@ -6,6 +6,8 @@ Zep 的 node/edge 列表接口使用 UUID cursor 分页，
 
 from __future__ import annotations
 
+import json
+import re
 import time
 from collections.abc import Callable
 from typing import Any
@@ -23,6 +25,83 @@ _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_RETRY_DELAY = 2.0  # seconds, doubles each retry
 
 
+def _extract_error_metadata(exc: Exception) -> dict[str, Any]:
+    status_code = getattr(exc, "status_code", None)
+    headers = getattr(exc, "headers", None)
+    body = getattr(exc, "body", None)
+
+    if not isinstance(headers, dict):
+        headers = {}
+    if body is None:
+        body = ""
+
+    text = str(exc)
+    if status_code is None:
+        match = re.search(r"status_code:\s*(\d+)", text)
+        if match:
+            status_code = int(match.group(1))
+    if not headers:
+        headers_match = re.search(r"headers:\s*(\{.*?\}),\s*status_code:", text, re.DOTALL)
+        if headers_match:
+            try:
+                parsed = json.loads(headers_match.group(1).replace("'", '"'))
+                if isinstance(parsed, dict):
+                    headers = parsed
+            except Exception:
+                headers = {}
+    if not body:
+        body_match = re.search(r"body:\s*(.+)$", text, re.DOTALL)
+        if body_match:
+            body = body_match.group(1).strip()
+
+    normalized_headers = {str(k).lower(): str(v) for k, v in headers.items()}
+    message_text = f"{text} {body}".lower()
+    body_text = str(body).lower()
+    explicit_rate_limit_text = any(
+        token in body_text
+        for token in (
+            "rate limit exceeded",
+            "too many requests",
+            "request limit exceeded",
+        )
+    )
+    retry_after = normalized_headers.get("retry-after")
+    retry_after_seconds = None
+    if retry_after:
+        try:
+            retry_after_seconds = max(0.0, float(retry_after))
+        except ValueError:
+            retry_after_seconds = None
+
+    if status_code == 429 or (status_code is None and explicit_rate_limit_text):
+        category = "rate_limit"
+        retryable = True
+    elif status_code == 404:
+        category = "not_found"
+        retryable = False
+    elif status_code is not None and 400 <= status_code < 500:
+        category = "client_error"
+        retryable = False
+    elif status_code is not None and status_code >= 500:
+        category = "server_error"
+        retryable = True
+    elif isinstance(exc, (ConnectionError, TimeoutError, OSError, InternalServerError)):
+        category = "network_error"
+        retryable = True
+    else:
+        category = "non_retryable"
+        retryable = False
+
+    return {
+        "status_code": status_code,
+        "headers": normalized_headers,
+        "category": category,
+        "retryable": retryable,
+        "retry_after_seconds": retry_after_seconds,
+        "message": text,
+    }
+
+
 def _fetch_page_with_retry(
     api_call: Callable[..., list[Any]],
     *args: Any,
@@ -38,19 +117,38 @@ def _fetch_page_with_retry(
     last_exception: Exception | None = None
     delay = retry_delay
 
-    for attempt in range(max_retries):
+    for attempt in range(1, max_retries + 1):
         try:
             return api_call(*args, **kwargs)
-        except (ConnectionError, TimeoutError, OSError, InternalServerError) as e:
+        except Exception as e:
             last_exception = e
-            if attempt < max_retries - 1:
+            metadata = _extract_error_metadata(e)
+            if metadata["retryable"] and attempt < max_retries:
+                next_delay = metadata["retry_after_seconds"] or delay
                 logger.warning(
-                    f"Zep {page_description} attempt {attempt + 1} failed: {str(e)[:100]}, retrying in {delay:.1f}s..."
+                    "Zep %s attempt %s/%s failed category=%s status_code=%s retrying in %.1fs error=%s",
+                    page_description,
+                    attempt,
+                    max_retries,
+                    metadata["category"],
+                    metadata["status_code"],
+                    next_delay,
+                    str(e)[:100],
                 )
-                time.sleep(delay)
-                delay *= 2
-            else:
-                logger.error(f"Zep {page_description} failed after {max_retries} attempts: {str(e)}")
+                time.sleep(next_delay)
+                delay = max(delay * 2, _DEFAULT_RETRY_DELAY)
+                continue
+
+            logger.error(
+                "Zep %s failed after %s/%s attempts category=%s status_code=%s error=%s",
+                page_description,
+                attempt,
+                max_retries,
+                metadata["category"],
+                metadata["status_code"],
+                str(e),
+            )
+            break
 
     assert last_exception is not None
     raise last_exception
