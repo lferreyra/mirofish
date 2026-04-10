@@ -113,7 +113,7 @@ onMounted(async () => {
     simulationId.value = raw?.simulation_id || ''
 
     if (!simulationId.value) {
-      erro.value = 'Relatório não possui simulação associada.'
+      erro.value = 'Simulacao nao encontrada. O relatorio pode ainda estar sendo gerado. Tente novamente em alguns minutos.'
       return
     }
 
@@ -351,7 +351,7 @@ function mdSimple(text) {
     <div v-else-if="erro" class="state-box state-err">
       <div style="font-size:42px">⚠️</div>
       <div>{{ erro }}</div>
-      <AugurButton variant="ghost" @click="router.back()">← Voltar</AugurButton>
+      <AugurButton variant="ghost" @click="router.push(`/relatorio/${route.params.reportId}`)">← Voltar ao Relatório</AugurButton>
     </div>
 
     <!-- Main layout -->
