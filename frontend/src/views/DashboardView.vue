@@ -149,31 +149,36 @@ function navSim(s) {
 
     <div v-else>
 
+      <!-- ══════════ WELCOME ══════════ -->
+      <div class="welcome-bar">
+        <div class="wb-left">
+          <h2 class="wb-greeting">{{ greeting }}, Carlos</h2>
+          <p class="wb-sub">{{ totalSims }} simulacoes realizadas · {{ totalRelatorios }} relatorios gerados</p>
+        </div>
+        <button class="wb-cta" @click="router.push('/projeto/novo')">+ Nova Analise</button>
+      </div>
+
       <!-- ══════════ MÉTRICAS PRINCIPAIS ══════════ -->
       <div class="metrics-row">
-        <div class="metric-card mc-accent">
-          <div class="mc-icon">📂</div>
-          <div class="mc-body"><div class="mc-val">{{ totalProjetos }}</div><div class="mc-label">Projetos</div></div>
+        <div class="metric-card mc-1">
+          <div class="mc-val-big">{{ totalProjetos }}</div>
+          <div class="mc-label">Projetos</div>
+          <div class="mc-bar"><div class="mc-fill" style="width:100%;background:var(--accent)"></div></div>
         </div>
-        <div class="metric-card">
-          <div class="mc-icon">🧪</div>
-          <div class="mc-body"><div class="mc-val">{{ totalSims }}</div><div class="mc-label">Simulações</div></div>
+        <div class="metric-card mc-2">
+          <div class="mc-val-big">{{ totalAgentes }}</div>
+          <div class="mc-label">Agentes</div>
+          <div class="mc-bar"><div class="mc-fill" style="width:75%;background:var(--accent2)"></div></div>
         </div>
-        <div class="metric-card">
-          <div class="mc-icon">🧠</div>
-          <div class="mc-body"><div class="mc-val">{{ totalAgentes }}</div><div class="mc-label">Agentes criados</div></div>
+        <div class="metric-card mc-3">
+          <div class="mc-val-big">{{ totalRelatorios }}</div>
+          <div class="mc-label">Relatorios</div>
+          <div class="mc-bar"><div class="mc-fill" style="width:60%;background:#f5a623"></div></div>
         </div>
-        <div class="metric-card">
-          <div class="mc-icon">📊</div>
-          <div class="mc-body"><div class="mc-val">{{ totalRelatorios }}</div><div class="mc-label">Relatórios</div></div>
-        </div>
-        <div class="metric-card">
-          <div class="mc-icon">🔄</div>
-          <div class="mc-body"><div class="mc-val">{{ totalRodadas }}</div><div class="mc-label">Rodadas simuladas</div></div>
-        </div>
-        <div class="metric-card" :class="{'mc-green': taxaSucesso >= 80}">
-          <div class="mc-icon">✅</div>
-          <div class="mc-body"><div class="mc-val">{{ taxaSucesso }}%</div><div class="mc-label">Taxa de sucesso</div></div>
+        <div class="metric-card mc-4">
+          <div class="mc-val-big">{{ taxaSucesso }}%</div>
+          <div class="mc-label">Sucesso</div>
+          <div class="mc-bar"><div class="mc-fill" :style="{width: taxaSucesso+'%', background: taxaSucesso >= 80 ? 'var(--accent)' : '#ff5a5a'}"></div></div>
         </div>
       </div>
 
@@ -266,15 +271,25 @@ function navSim(s) {
 </template>
 
 <style scoped>
+/* Welcome */
+.welcome-bar { display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:20px 24px;background:linear-gradient(135deg,rgba(0,229,195,0.06),rgba(124,111,247,0.06));border:1px solid rgba(0,229,195,0.12);border-radius:16px; }
+.wb-greeting { font-size:20px;font-weight:700;color:var(--text-primary);margin:0; }
+.wb-sub { font-size:12px;color:var(--text-muted);margin-top:4px; }
+.wb-cta { background:var(--accent);color:#09090f;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s; }
+.wb-cta:hover { transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,229,195,0.3); }
+
 /* Metricas */
-.metrics-row { display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px; }
-.metric-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color .15s; }
-.metric-card:hover { border-color:var(--border-md); }
-.mc-accent { border-color:rgba(0,229,195,0.3); }
-.mc-green .mc-val { color:var(--accent) !important; }
-.mc-icon { font-size:20px; }
-.mc-val { font-size:22px;font-weight:800;color:var(--text-primary);font-family:monospace;line-height:1; }
-.mc-label { font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px; }
+.metrics-row { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px; }
+.metric-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;transition:all .2s;position:relative;overflow:hidden; }
+.metric-card:hover { border-color:var(--border-md);transform:translateY(-2px); }
+.mc-val-big { font-size:32px;font-weight:800;color:var(--text-primary);font-family:'JetBrains Mono',monospace;line-height:1; }
+.mc-label { font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:6px;font-weight:600; }
+.mc-bar { height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:12px;overflow:hidden; }
+.mc-fill { height:100%;border-radius:2px;transition:width 1s ease; }
+.mc-1 { border-left:3px solid var(--accent); }
+.mc-2 { border-left:3px solid var(--accent2); }
+.mc-3 { border-left:3px solid #f5a623; }
+.mc-4 { border-left:3px solid var(--accent); }
 
 /* Botoes */
 .btn-nova { background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer; }
@@ -307,8 +322,8 @@ function navSim(s) {
 
 /* Projetos grid */
 .projetos-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:10px; }
-.projeto-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:6px; }
-.projeto-card:hover { border-color:var(--border-md);transform:translateY(-1px); }
+.projeto-card { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:8px;position:relative; }
+.projeto-card:hover { border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.12); }
 .card-top { display:flex;align-items:center;justify-content:space-between; }
 .card-data { font-size:11px;color:var(--text-muted); }
 .card-nome { font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.4; }
@@ -323,8 +338,8 @@ function navSim(s) {
 
 /* Atividade */
 .activity-list { display:flex;flex-direction:column;gap:4px; }
-.activity-item { display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s; }
-.activity-item:hover { border-color:var(--accent2);background:var(--bg-raised); }
+.activity-item { display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;border-left:3px solid var(--accent); }
+.activity-item:hover { border-color:var(--accent);background:var(--bg-raised);transform:translateX(4px); }
 .act-icon { font-size:16px;flex-shrink:0; }
 .act-body { flex:1;min-width:0; }
 .act-title { font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
@@ -333,11 +348,11 @@ function navSim(s) {
 .act-empty { text-align:center;padding:24px;color:var(--text-muted);font-size:13px; }
 
 /* Quick stats */
-.quick-stats { background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:8px; }
+.quick-stats { background:linear-gradient(135deg,rgba(124,111,247,0.04),rgba(0,229,195,0.04));border:1px solid rgba(124,111,247,0.12);border-radius:14px;padding:20px;margin-top:12px; }
 .qs-title { font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px; }
 .qs-items { display:grid;grid-template-columns:repeat(3,1fr);gap:12px; }
 .qs-item { text-align:center; }
-.qs-val { font-size:24px;font-weight:800;font-family:monospace;display:block; }
+.qs-val { font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;display:block; }
 .qs-label { font-size:10px;color:var(--text-muted);margin-top:2px; }
 
 /* Badges */
@@ -349,7 +364,7 @@ function navSim(s) {
 .b-draft { background:rgba(107,107,128,0.12);color:var(--text-muted); }
 
 @media (max-width:1080px) {
-  .metrics-row { grid-template-columns:repeat(3,1fr); }
+  .metrics-row { grid-template-columns:repeat(2,1fr); }
   .main-grid { grid-template-columns:1fr; }
   .projetos-grid { grid-template-columns:repeat(2,1fr); }
 }
