@@ -569,7 +569,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
         <!-- Chart -->
         <div class="chart-box">
           <div v-if="!evoChart" class="chart-ph">
-            <div class="mspin"></div><span>Aguardando dados das primeiras rodadas...</span>
+            <template v-if="!concluida"><div class="mspin"></div><span>Aguardando dados das primeiras rodadas...</span></template><span v-else style="color:var(--text-secondary,#8888aa)">Dados nao disponiveis para esta simulacao.</span>
           </div>
           <svg v-else :viewBox="`0 0 ${CW} ${CH}`" class="chart-svg" preserveAspectRatio="xMidYMid meet">
             <g v-for="l in evoChart.yLines" :key="l.v">
@@ -623,7 +623,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
 
         <div class="feed-sep"></div>
         <div class="st">FEED DE EVENTOS</div>
-        <div v-if="!eventsFeed.length" class="feed-ph"><div class="mspin"></div><span>Aguardando rodadas...</span></div>
+        <div v-if="!eventsFeed.length" class="feed-ph"><template v-if="!concluida"><div class="mspin"></div><span>Aguardando rodadas...</span></template><span v-else style="color:var(--text-secondary,#8888aa)">Sem eventos registrados.</span></div>
         <div class="feed-list" v-else>
           <div v-for="(ev,i) in eventsFeed" :key="i" class="fi">
             <span class="fi-r">R{{ ev.round }}</span>
