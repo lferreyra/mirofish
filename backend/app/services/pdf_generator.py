@@ -209,7 +209,23 @@ class PDFGenerator:
     def _c(t):
         t = re.sub(r'^#{1,6}\s+','',t or '',flags=re.MULTILINE)
         t = re.sub(r'\[([^\]]+)\]\([^)]+\)',r'\1',t)
-        return t.replace("---","").replace("___","").strip()
+        t = t.replace("---","").replace("___","").strip()
+        # Sanitizar Unicode para Latin-1 (Helvetica)
+        t = t.replace('—', '-').replace('–', '-').replace('‒', '-')
+        t = t.replace('‘', "'").replace('’', "'")
+        t = t.replace('“', '"').replace('”', '"')
+        t = t.replace('…', '...').replace('•', '*')
+        t = t.replace('·', '*').replace('‣', '>')
+        t = t.replace('→', '->').replace('←', '<-')
+        t = t.replace('✓', 'v').replace('✔', 'v')
+        t = t.replace('✕', 'x').replace('✖', 'x')
+        t = t.replace(' ', ' ').replace('​', '').replace('﻿', '')
+        # Fallback: replace any remaining non-latin1 chars
+        try:
+            t.encode('latin-1')
+        except UnicodeEncodeError:
+            t = t.encode('latin-1', errors='replace').decode('latin-1')
+        return t
     @staticmethod
     def _date(d):
         if not d: return ""
