@@ -174,6 +174,25 @@ const networkSvg = computed(() => {
 </template>
 
 <style scoped>
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 .state-box { display:flex;flex-direction:column;align-items:center;gap:14px;padding:60px;text-align:center;color:var(--text-muted); }
 .state-err { color:var(--danger); }
 .spin { width:24px;height:24px;border:3px solid var(--border-md);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite; }
@@ -181,11 +200,11 @@ const networkSvg = computed(() => {
 
 .subtitle { font-size:12px;color:var(--text-muted);margin-bottom:16px; }
 .layout { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
-.bloco { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px; }
+.bloco { background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);padding:22px 24px; }
 .bloco-label { font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:16px; }
 
 .ranking-list { display:flex;flex-direction:column;gap:4px; }
-.rank-row { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;transition:background .15s; }
+.rank-row { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;transition:background .15s; }
 .rank-row:hover { background:var(--bg-raised); }
 .rank-top { background:rgba(124,111,247,0.04); }
 .rank-pos { width:28px;text-align:center;flex-shrink:0; }
