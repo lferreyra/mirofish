@@ -1,974 +1,859 @@
 """
-AUGUR — PDF Generator v4.0 — Relatório de R$100.000
-Blueprint do Conselho AUGUR: 18 páginas, 9 gráficos, design premium.
-Requires: pip install fpdf2 matplotlib
+AUGUR PDF Generator v2 — Consome AugurReportSchema JSON diretamente.
+
+Zero regex. Zero parsing de texto livre.
+Todos os dados vêm do JSON estruturado produzido pelo report_agent v2.
+
+Caminho no repo: backend/app/services/pdf_generator_v2.py
+
+Uso:
+    from app.services.pdf_generator_v2 import PDFGeneratorV2
+    
+    pdf_bytes = PDFGeneratorV2.generate(report_structured_json)
 """
-import io, os, re, uuid, logging, math
-from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
+
+import os
+import re
+import json
+import tempfile
+import logging
 
 logger = logging.getLogger(__name__)
-
-try:
-    from fpdf import FPDF
-    HAS_FPDF = True
-except ImportError:
-    FPDF = object; HAS_FPDF = False
 
 try:
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    import matplotlib.ticker as mticker
     import numpy as np
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
 
-# ═══════════════════════════════════════════════════
-# AUGUR DESIGN SYSTEM
-# ═══════════════════════════════════════════════════
-class P:  # Palette
-    ACCENT  = (0, 229, 195)
-    ACCENT2 = (124, 111, 247)
-    DANGER  = (255, 90, 90)
-    GOLD    = (245, 166, 35)
-    SUCCESS = (46, 204, 113)
-    TEXT    = (26, 26, 46)
-    BODY    = (55, 55, 75)
-    MUTED   = (120, 120, 155)
-    SURFACE = (245, 245, 250)
-    BORDER  = (238, 238, 242)
-    WHITE   = (255, 255, 255)
-    @staticmethod
-    def m(c): return (c[0]/255, c[1]/255, c[2]/255)
+from fpdf import FPDF
 
-def _augur_style():
-    """Apply AUGUR style to matplotlib."""
-    plt.rcParams.update({
-        'font.family': 'sans-serif', 'font.size': 7,
-        'axes.spines.top': False, 'axes.spines.right': False,
-        'axes.edgecolor': '#ddd', 'axes.labelcolor': P.m(P.BODY),
-        'xtick.color': P.m(P.MUTED), 'ytick.color': P.m(P.MUTED),
-        'axes.facecolor': 'white', 'figure.facecolor': 'white',
-        'grid.alpha': 0.15, 'grid.color': '#ccc',
-    })
+# ============================================================
+# PALETA
+# ============================================================
+TEAL = (0, 229, 195)
+PURPLE = (124, 111, 247)
+DARK = (26, 26, 46)
+GRAY = (107, 114, 128)
+LGRAY = (229, 231, 235)
+RED = (255, 90, 90)
+AMBER = (245, 166, 35)
+GREEN = (34, 197, 94)
+BLUE = (59, 130, 246)
+WHITE = (255, 255, 255)
 
-def _save(fig) -> str:
-    p = f"/tmp/augur_{uuid.uuid4().hex[:10]}.png"
-    fig.savefig(p, format='png', dpi=170, bbox_inches='tight', facecolor='white', edgecolor='none')
-    plt.close(fig); return p
 
-# ═══════════════════════════════════════════════════
-# 9 CHART TYPES
-# ═══════════════════════════════════════════════════
+def _c(text):
+    if not isinstance(text, str): return str(text)
+    return (text.replace('\u2014','-').replace('\u2013','-')
+        .replace('\u201c','"').replace('\u201d','"')
+        .replace('\u2018',"'").replace('\u2019',"'")
+        .replace('\u2022','-').replace('\u2192','->').replace('\u2026','...'))
 
-def ch_gauge(verdict: str) -> str:
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(3, 1.7))
-    ax.set_xlim(-1.3,1.3); ax.set_ylim(-0.15,1.2); ax.set_aspect('equal'); ax.axis('off')
-    a = np.linspace(np.pi, 0, 120)
-    for i in range(len(a)-1):
-        t = i/len(a)
-        c = P.m(P.DANGER) if t<.33 else (P.m(P.GOLD) if t<.66 else P.m(P.SUCCESS))
-        ax.plot([np.cos(a[i]),np.cos(a[i+1])],[np.sin(a[i]),np.sin(a[i+1])],color=c,linewidth=14,solid_capstyle='butt')
-    v = verdict.upper().strip()
-    ang = np.pi*(0.12 if v=='GO' else (0.88 if 'NO' in v else 0.5))
-    nc = P.m(P.SUCCESS if v=='GO' else (P.DANGER if 'NO' in v else P.GOLD))
-    ax.annotate('',xy=(0.6*np.cos(ang),0.6*np.sin(ang)),xytext=(0,0),arrowprops=dict(arrowstyle='->',color=nc,lw=2.5))
-    ax.plot(0,0,'o',color=P.m(P.TEXT),markersize=5,zorder=5)
-    ax.text(-1.05,-.1,'NO-GO',ha='center',fontsize=5.5,color=P.m(P.DANGER),fontweight='bold')
-    ax.text(0,1.08,'AJUSTAR',ha='center',fontsize=5.5,color=P.m(P.GOLD),fontweight='bold')
-    ax.text(1.05,-.1,'GO',ha='center',fontsize=5.5,color=P.m(P.SUCCESS),fontweight='bold')
-    ax.text(0,-.13,v,ha='center',fontsize=10,color=P.m(P.TEXT),fontweight='bold')
-    return _save(fig)
 
-def ch_scenarios(scenarios: list) -> str:
-    import textwrap
-    _augur_style()
-    n = len(scenarios)
-    fig, ax = plt.subplots(figsize=(5.2, 0.9+0.45*n))
-    names = ["\n".join(textwrap.wrap(s.get("name",""), 40)) for s in scenarios]
-    probs = [s.get("probability",33) for s in scenarios]
-    cols = [P.m(P.SUCCESS), P.m(P.GOLD), P.m(P.DANGER), P.m(P.ACCENT2), P.m(P.MUTED)]
-    bars = ax.barh(range(n), probs, color=[cols[i%len(cols)] for i in range(n)],
-                   height=0.55, edgecolor='white', linewidth=0.3)
-    ax.set_yticks(range(n)); ax.set_yticklabels(names, fontsize=7)
-    ax.set_xlim(0,105); ax.invert_yaxis()
-    ax.set_xlabel('Probabilidade (%)', fontsize=6.5)
-    for b, p in zip(bars, probs):
-        ax.text(b.get_width()+1, b.get_y()+b.get_height()/2, f'{p}%', va='center', fontsize=8, fontweight='bold', color=P.m(P.TEXT))
-    ax.tick_params(labelsize=6.5)
-    plt.tight_layout(); return _save(fig)
+def _mpl_save(fig) -> str:
+    path = os.path.join(tempfile.gettempdir(), f'augur_{id(fig)}.png')
+    fig.savefig(path, dpi=200, bbox_inches='tight', pad_inches=0.15, facecolor='white')
+    plt.close(fig)
+    return path
 
-def ch_risk_matrix(risks: list) -> str:
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(6.5, 3))
-    imap = {"baixo":1,"médio":2,"medio":2,"médio-alto":2.5,"alto":3,"crítico":3.5,"low":1,"medium":2,"high":3}
-    for i, r in enumerate(risks[:8]):
-        prob = r.get("probability",50); imp = imap.get(r.get("impact","médio").lower(),2)
-        sev = prob*imp/3
-        c = P.m(P.DANGER) if sev>55 else (P.m(P.GOLD) if sev>30 else P.m(P.SUCCESS))
-        ax.scatter(prob, imp, s=350, c=[c], edgecolors='white', linewidth=1.5, zorder=3, alpha=0.85)
-        ax.text(prob, imp, f"R{i+1}", fontsize=6.5, ha='center', va='center', fontweight='bold', color='white', zorder=4)
-    ax.set_xlabel('Probabilidade (%)', fontsize=7); ax.set_ylabel('Impacto', fontsize=7)
-    ax.set_xlim(35,100); ax.set_ylim(0.3,3.7)
-    ax.set_yticks([1,2,3]); ax.set_yticklabels(['Baixo','Médio','Alto'], fontsize=6.5)
-    ax.axhspan(0.3,1.5,alpha=0.04,color='green'); ax.axhspan(1.5,2.5,alpha=0.04,color='orange'); ax.axhspan(2.5,3.7,alpha=0.04,color='red')
-    leg = "\n".join([f"R{i+1} {r.get('name','')[:45]}" for i,r in enumerate(risks[:8])])
-    ax.text(1.02,0.98,leg,transform=ax.transAxes,fontsize=4.8,va='top',fontfamily='monospace',
-            bbox=dict(boxstyle='round',facecolor=P.m(P.SURFACE),alpha=0.95,edgecolor=P.m(P.BORDER)))
-    plt.tight_layout(); return _save(fig)
 
-def ch_emotion_dual(emotions: dict) -> str:
-    _augur_style()
-    if not emotions: emotions = {"Confiança":31,"Ceticismo":24,"Empolgação":18,"Medo":12,"FOMO":9,"Indiferença":6}
-    fig = plt.figure(figsize=(6, 2.6))
-    ax1 = fig.add_subplot(121, polar=True)
-    labs = list(emotions.keys()); vals = list(emotions.values())
-    angs = np.linspace(0,2*np.pi,len(labs),endpoint=False).tolist()
-    vp = vals+[vals[0]]; ap = angs+[angs[0]]
-    ax1.plot(ap, vp, 'o-', lw=2, color=P.m(P.ACCENT2), markersize=4)
-    ax1.fill(ap, vp, alpha=0.12, color=P.m(P.ACCENT2))
-    ax1.set_xticks(angs); ax1.set_xticklabels(labs, fontsize=6)
-    ax1.set_ylim(0, max(vals)*1.25); ax1.tick_params(labelsize=4.5)
-    ax1.grid(color='#ddd', lw=0.3)
-    for a, v in zip(angs, vals):
-        ax1.text(a, v+max(vals)*0.12, f'{v}%', ha='center', fontsize=5.5, fontweight='bold', color=P.m(P.TEXT))
+def _rgb(c): return (c[0]/255, c[1]/255, c[2]/255)
+
+
+# ============================================================
+# CHART GENERATORS — Cada um recebe dados do schema
+# ============================================================
+
+def chart_gauge(verdict_type: str) -> str:
+    fig, ax = plt.subplots(figsize=(4.5, 2.5))
+    ax.set_xlim(-1.4,1.4); ax.set_ylim(-0.3,1.3); ax.set_aspect('equal'); ax.axis('off')
+    colors = [(180,126,_rgb(RED)),(126,72,(1,.6,.2)),(72,54,_rgb(AMBER)),(54,36,(.5,.85,.5)),(36,0,_rgb(GREEN))]
+    for start,end,color in colors:
+        from matplotlib.patches import Arc
+        ax.add_patch(Arc((0,0),2.2,2.2,angle=0,theta1=end,theta2=start,linewidth=18,color=color,capstyle='butt'))
+    v = verdict_type.upper().strip()
+    ang = {'GO':12,'NO-GO':168,'AJUSTAR':63}.get(v, 63)
+    rad = np.radians(ang)
+    ax.annotate('',xy=(0.85*np.cos(rad),0.85*np.sin(rad)),xytext=(0,0),arrowprops=dict(arrowstyle='->',color=_rgb(DARK),lw=2.5))
+    ax.plot(0,0,'o',color=_rgb(DARK),markersize=8,zorder=5)
+    ax.text(-1.25,-.15,'NO-GO',fontsize=9,fontweight='bold',color=_rgb(RED),ha='center')
+    ax.text(0,1.25,'AJUSTAR',fontsize=9,fontweight='bold',color=_rgb(AMBER),ha='center')
+    ax.text(1.25,-.15,'GO',fontsize=9,fontweight='bold',color=_rgb(GREEN),ha='center')
+    ax.text(0,-.25,v,fontsize=16,fontweight='bold',color=_rgb(DARK),ha='center')
+    return _mpl_save(fig)
+
+
+def chart_scenarios_bars(cenarios: list) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 2.5))
+    names = [c.get('nome','')[:45] for c in cenarios]
+    probs = [c.get('probabilidade',33) for c in cenarios]
+    colors = [_rgb(TEAL), _rgb(AMBER), _rgb(RED)][:len(cenarios)]
+    bars = ax.barh(range(len(names)), probs, color=colors, height=0.55)
+    for b,p in zip(bars,probs):
+        ax.text(b.get_width()+1.5, b.get_y()+b.get_height()/2, f'{p}%', va='center', fontsize=13, fontweight='bold')
+    ax.set_yticks(range(len(names))); ax.set_yticklabels(names, fontsize=9)
+    ax.set_xlim(0,62); ax.set_xlabel('Probabilidade (%)', fontsize=9, color=_rgb(GRAY))
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['left'].set_visible(False)
+    ax.tick_params(left=False)
+    return _mpl_save(fig)
+
+
+def chart_financial_projection(cenarios: list) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 3.5))
+    colors = [_rgb(TEAL), _rgb(AMBER), _rgb(RED)]
+    for i, c in enumerate(cenarios):
+        proj = c.get('projecao_faturamento_24m', [])
+        if proj:
+            months = np.arange(len(proj))
+            ax.fill_between(months, proj, alpha=0.1, color=colors[i%3])
+            ax.plot(months, proj, '-', color=colors[i%3], linewidth=2.5 - i*0.5,
+                    label=f"{c.get('nome','')[:30]} ({c.get('probabilidade',0)}%)")
+    ax.axhline(y=30, color='#d1d5db', linestyle='--', linewidth=0.8)
+    ax.text(24.5, 30, 'Break-even', fontsize=7, color=_rgb(GRAY), va='center')
+    ax.set_xlim(0,24); ax.set_xlabel('Meses', fontsize=9, color=_rgb(GRAY))
+    ax.set_ylabel('Faturamento (R$ mil/mes)', fontsize=9, color=_rgb(GRAY))
+    ax.legend(fontsize=7, loc='upper left', framealpha=0.9)
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
+    return _mpl_save(fig)
+
+
+def chart_risk_scatter(riscos: list) -> str:
+    fig, ax = plt.subplots(figsize=(5.5, 4))
+    imap = {'alto':95,'medio':60,'medio-alto':75,'baixo':30,'critico':100}
+    ax.axhspan(75,100,color='#fff0f0',zorder=0); ax.axhspan(50,75,color='#fffbf0',zorder=0)
+    for r in riscos:
+        prob = r.get('probabilidade',50)
+        impact_val = imap.get(r.get('impacto','medio').lower().replace('é','e'),60)
+        color = _rgb(RED) if impact_val > 75 else (_rgb(AMBER) if impact_val > 50 else _rgb(GREEN))
+        ax.scatter(prob, impact_val, s=350, color=color, alpha=0.85, edgecolors='white', linewidth=1.5, zorder=4)
+        ax.text(prob, impact_val, f"R{r.get('numero',0)}", ha='center', va='center', fontsize=8, fontweight='bold', color='white', zorder=5)
+    ax.set_xlim(40,100); ax.set_ylim(20,105)
+    ax.set_xlabel('Probabilidade (%)', fontsize=9); ax.set_ylabel('Impacto', fontsize=9)
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
+    # Legend
+    for i, r in enumerate(riscos[:7]):
+        ax.text(101, 100-i*8, f"R{r.get('numero',i+1)} {r.get('titulo','')[:30]}", fontsize=6, color=_rgb(GRAY))
+    return _mpl_save(fig)
+
+
+def chart_emotion_radar(emocoes: list) -> str:
+    fig = plt.figure(figsize=(7, 3.5))
+    labels = [e.get('nome','') for e in emocoes]
+    values = [e.get('percentual',0) for e in emocoes]
+    N = len(labels)
+    angles = [n/N * 2 * np.pi for n in range(N)] + [0]
+    values_c = values + [values[0]]
+    ax = fig.add_subplot(121, polar=True)
+    ax.set_theta_offset(np.pi/2); ax.set_theta_direction(-1)
+    ax.plot(angles, values_c, 'o-', linewidth=2, color=_rgb(PURPLE), markersize=4)
+    ax.fill(angles, values_c, alpha=0.15, color=_rgb(PURPLE))
+    ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=7.5)
+    ax.set_ylim(0, max(values)*1.3)
+    # Bars
     ax2 = fig.add_subplot(122)
-    si = sorted(emotions.items(), key=lambda x:x[1], reverse=True)
-    sl, sv = [x[0] for x in si], [x[1] for x in si]
-    ec = [P.m(P.SUCCESS),P.m(P.GOLD),P.m(P.ACCENT),P.m(P.DANGER),P.m(P.ACCENT2),P.m(P.MUTED)]
-    ax2.barh(range(len(sl)), sv, color=[ec[i%len(ec)] for i in range(len(sl))], height=0.55)
-    ax2.set_yticks(range(len(sl))); ax2.set_yticklabels(sl, fontsize=6.5)
-    ax2.invert_yaxis(); ax2.set_xlim(0,max(sv)*1.3)
-    for i,v in enumerate(sv): ax2.text(v+0.5, i, f'{v}%', va='center', fontsize=6.5, fontweight='bold')
-    ax2.set_xlabel('%', fontsize=6.5); ax2.tick_params(labelsize=6)
-    plt.tight_layout(); return _save(fig)
+    bar_colors = [_rgb(TEAL),_rgb(AMBER),_rgb(PURPLE),_rgb(RED),_rgb(BLUE),_rgb(GRAY)]
+    bars = ax2.barh(range(N), values, color=[bar_colors[i%6] for i in range(N)], height=0.5)
+    for b,v in zip(bars,values): ax2.text(b.get_width()+0.5, b.get_y()+b.get_height()/2, f'{v}%', va='center', fontsize=9, fontweight='bold')
+    ax2.set_yticks(range(N)); ax2.set_yticklabels(labels, fontsize=9); ax2.invert_yaxis()
+    ax2.set_xlim(0,40); ax2.spines['top'].set_visible(False); ax2.spines['right'].set_visible(False); ax2.spines['left'].set_visible(False)
+    ax2.tick_params(left=False)
+    fig.tight_layout()
+    return _mpl_save(fig)
 
-def ch_emotion_evolution() -> str:
-    """Line chart: emotional evolution over 24 months."""
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(6, 2.5))
-    months = np.arange(0, 25)
-    # Synthetic curves based on report patterns
-    trust = 15 + 18*(1 - np.exp(-months/8))
-    skepticism = 28*np.exp(-months/12) + 5
-    excitement = 22*np.exp(-months/4) + 3
-    fear = 15*np.exp(-months/10) + 3
-    ax.plot(months, trust, '-', color=P.m(P.SUCCESS), lw=2, label='Confiança')
-    ax.plot(months, skepticism, '-', color=P.m(P.GOLD), lw=2, label='Ceticismo')
-    ax.plot(months, excitement, '--', color=P.m(P.ACCENT), lw=1.5, label='Empolgação')
-    ax.plot(months, fear, ':', color=P.m(P.DANGER), lw=1.5, label='Medo')
-    # Phase markers
-    for m, label in [(3,'Fim curiosidade'),(6,'Teste'),(10,'Break-even'),(15,'Consolidação')]:
-        ax.axvline(m, color='#ddd', lw=0.5, ls='--')
-        ax.text(m, ax.get_ylim()[1]*0.95, label, fontsize=4.5, ha='center', color=P.m(P.MUTED), rotation=0)
-    ax.set_xlabel('Meses', fontsize=7); ax.set_ylabel('Intensidade (%)', fontsize=7)
-    ax.set_xlim(0,24); ax.set_ylim(0,40)
-    ax.legend(fontsize=6, loc='upper right', framealpha=0.8)
-    ax.tick_params(labelsize=6)
-    plt.tight_layout(); return _save(fig)
 
-def ch_timeline() -> str:
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(6.2, 2))
-    ms = [(0,"Lançamento","start",1),(3,"Fim curiosidade\ninicial","warning",-1),
-          (6,"Teste de\nconsistência","neutral",1),(10,"Break-even\n(cenário base)","success",-1),
-          (15,"Consolidação\nou fragilidade","warning",1),(24,"Permanência\nlegitimada","success",-1)]
-    tc = {"start":P.m(P.ACCENT2),"success":P.m(P.SUCCESS),"warning":P.m(P.GOLD),"neutral":P.m(P.MUTED)}
-    # Phase backgrounds
-    phases = [(0,3,'Curiosidade',P.m(P.ACCENT)),(3,6,'Teste',P.m(P.GOLD)),(6,12,'Virada',P.m(P.ACCENT2)),(12,24,'Disciplina',P.m(P.SUCCESS))]
-    for x0,x1,lab,c in phases:
-        ax.axvspan(x0,x1,alpha=0.06,color=c)
-        ax.text((x0+x1)/2, 0.82, lab, ha='center', fontsize=5, color=c, fontstyle='italic', fontweight='bold')
-    ax.plot([0,24],[0,0],color='#ccc',lw=2,zorder=1)
-    for m,label,typ,side in ms:
-        c = tc.get(typ,P.m(P.MUTED)); y = side*0.5
-        ax.scatter(m,0,s=60,c=[c],zorder=3,edgecolors='white',lw=1)
-        ax.plot([m,m],[0,y*0.65],color=c,lw=0.8,zorder=2)
-        ax.text(m, y*0.8, label, ha='center', va='center', fontsize=5, color=P.m(P.TEXT), fontweight='bold')
-    for m in range(0,25,3): ax.text(m,-0.7,f'M{m}',ha='center',fontsize=4.5,color=P.m(P.MUTED))
-    ax.set_xlim(-1,25); ax.set_ylim(-0.85,0.85); ax.axis('off')
-    plt.tight_layout(); return _save(fig)
+def chart_emotion_timeline(evolucao: dict) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 3))
+    style = {'confianca':(_rgb(TEAL),'-',2.5), 'ceticismo':(_rgb(AMBER),'-',2.5),
+             'empolgacao':(_rgb(PURPLE),'--',1.5), 'medo':(_rgb(RED),':',1.5)}
+    for key, data in evolucao.items():
+        s = style.get(key, (_rgb(GRAY),'-',1))
+        ax.plot(range(len(data)), data, linestyle=s[1], color=s[0], linewidth=s[2], label=key.capitalize())
+    for x,lbl in [(3,'Fim curiosidade'),(6,'Teste'),(12,'Break-even'),(18,'Consolidacao')]:
+        ax.axvline(x=x, color='#e5e7eb', linestyle='--', linewidth=0.8)
+        ax.text(x, ax.get_ylim()[1]*0.95, lbl, fontsize=6.5, color=_rgb(GRAY), ha='center')
+    ax.set_xlim(0,24); ax.set_xlabel('Meses', fontsize=9); ax.set_ylabel('Intensidade (%)', fontsize=9)
+    ax.legend(fontsize=7.5, loc='upper right'); ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
+    return _mpl_save(fig)
 
-def ch_force_map() -> str:
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(5.5, 3.2))
-    forces = [
-        {"n":"Grupo Pecanha\n(3.000-4.500 crediário)","x":-.7,"y":.65,"s":1.2,"t":"resist"},
-        {"n":"Shopee/Shein/ML\n(ref. preço)","x":.75,"y":.65,"s":0.85,"t":"resist"},
-        {"n":"Sacoleiras\n(R$3-8k/mês)","x":-.55,"y":-.35,"s":0.5,"t":"neutral"},
-        {"n":"Spasso\n(800-1.200)","x":.25,"y":.25,"s":0.55,"t":"neutral"},
-        {"n":"NOVA LOJA\n(entrante)","x":.05,"y":-.55,"s":0.4,"t":"support"},
-    ]
-    tc = {"resist":P.m(P.DANGER),"support":P.m(P.SUCCESS),"neutral":P.m(P.GOLD)}
-    # Pressure arrows to new store
-    for f in forces:
-        if f["t"]=="resist":
-            ax.annotate('',xy=(.05,-.55),xytext=(f["x"],f["y"]),
-                        arrowprops=dict(arrowstyle='-|>',color='#e0e0e0',lw=1,connectionstyle='arc3,rad=0.15'))
-    # Support arrow
-    ax.annotate('',xy=(.05,-.55),xytext=(-.55,-.35),
-                arrowprops=dict(arrowstyle='-|>',color=P.m(P.SUCCESS),lw=0.8,ls='--',connectionstyle='arc3,rad=-0.1'))
-    for f in forces:
-        c = tc.get(f["t"],P.m(P.MUTED)); s = f["s"]*550
-        ax.scatter(f["x"],f["y"],s=s,c=[c],alpha=0.18,zorder=2)
-        ax.scatter(f["x"],f["y"],s=s*0.2,c=[c],alpha=0.7,zorder=3)
-        oy = -.28*f["s"] if f["y"]>0 else .22*f["s"]
-        ax.text(f["x"],f["y"]+oy,f["n"],ha='center',va='center',fontsize=5.2,fontweight='bold',color=P.m(P.TEXT))
-    ax.set_xlim(-1.4,1.4); ax.set_ylim(-1.1,1.1); ax.axis('off')
-    for l,c in [("Resistência",P.m(P.DANGER)),("Neutro",P.m(P.GOLD)),("Entrante",P.m(P.SUCCESS))]:
-        ax.scatter([],[],c=[c],s=30,label=l)
-    ax.legend(fontsize=5.5,loc='lower right',framealpha=0.8)
-    plt.tight_layout(); return _save(fig)
 
-def ch_confidence_intervals(predictions: list) -> str:
-    """Horizontal bars with error bars for confidence intervals."""
-    _augur_style()
-    if not predictions:
-        predictions = [
-            {"period":"M1-3 Captação inicial","prob":86,"margin":6},
-            {"period":"M4-6 Separar curiosidade","prob":79,"margin":8},
-            {"period":"M7-10 Sinais break-even","prob":58,"margin":9},
-            {"period":"M8-12 Break-even central","prob":71,"margin":7},
-            {"period":"M9-12 Guerra sazonal","prob":77,"margin":8},
-            {"period":"M12 Indicação como divisor","prob":68,"margin":9},
-            {"period":"M13-18 Faturamento maduro","prob":54,"margin":10},
-            {"period":"M18-24 Sobrevivência","prob":74,"margin":7},
-        ]
-    fig, ax = plt.subplots(figsize=(6, 0.7+0.35*len(predictions)))
-    labels = [p["period"] for p in predictions]
-    probs = [p["prob"] for p in predictions]
-    margins = [p["margin"] for p in predictions]
-    y = range(len(labels))
-    colors = [P.m(P.SUCCESS) if p>=70 else (P.m(P.GOLD) if p>=55 else P.m(P.DANGER)) for p in probs]
-    ax.barh(y, probs, color=colors, height=0.5, alpha=0.7, edgecolor='white')
-    ax.errorbar(probs, y, xerr=margins, fmt='none', ecolor=P.m(P.TEXT), elinewidth=1, capsize=3, capthick=1)
-    ax.set_yticks(y); ax.set_yticklabels(labels, fontsize=5.5)
-    ax.set_xlim(0,105); ax.invert_yaxis()
-    ax.set_xlabel('Probabilidade (%)', fontsize=6.5)
+def chart_agent_spectrum(agentes: list) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 2))
+    ax.set_xlim(-0.5,10.5); ax.set_ylim(-0.8,1.5); ax.axis('off')
+    gradient = np.linspace(0,1,256).reshape(1,-1)
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', [_rgb(TEAL),'#e5e7eb',_rgb(RED)])
+    ax.imshow(gradient, aspect='auto', cmap=cmap, extent=[0,10,0,0.4], zorder=1)
+    ax.text(0,-0.3,'Apoiador',fontsize=8,fontweight='bold',color=_rgb(TEAL))
+    ax.text(5,-0.3,'Neutro',fontsize=8,color=_rgb(GRAY),ha='center')
+    ax.text(10,-0.3,'Resistente',fontsize=8,fontweight='bold',color=_rgb(RED),ha='right')
+    type_colors = {'Apoiador':_rgb(TEAL),'Neutro':_rgb(AMBER),'Resistente':_rgb(RED),'Cauteloso':_rgb(PURPLE)}
+    for a in agentes:
+        x = a.get('posicao_espectro',0.5) * 10
+        color = type_colors.get(a.get('tipo','Neutro'), _rgb(GRAY))
+        ax.plot(x, 0.2, 'o', color=color, markersize=14, zorder=4, markeredgecolor='white', markeredgewidth=1.5)
+        ax.text(x, 0.7, a.get('nome',''), fontsize=7.5, fontweight='bold', ha='center', linespacing=1.1)
+        ax.text(x, 1.1, a.get('papel_na_dinamica',''), fontsize=6, ha='center', color=_rgb(GRAY))
+    return _mpl_save(fig)
+
+
+def chart_stack_ranking(recomendacoes: list) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 2.8))
+    colors = [_rgb(TEAL),_rgb(PURPLE),_rgb(AMBER),_rgb(BLUE),_rgb(GREEN)]
+    labels = [r.get('titulo','') for r in recomendacoes]
+    values = [r.get('impacto_relativo',50) for r in recomendacoes]
+    bars = ax.barh(range(len(labels)), values, color=[colors[i%5] for i in range(len(labels))], height=0.55, alpha=0.7)
+    for b,l in zip(bars,labels):
+        ax.text(2, b.get_y()+b.get_height()/2, l[:55], va='center', fontsize=8.5, fontweight='bold',
+                color='white' if b.get_width()>60 else _rgb(DARK), zorder=5)
+    ax.set_xlim(0,110); ax.set_yticks([]); ax.invert_yaxis()
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['left'].set_visible(False); ax.spines['bottom'].set_visible(False)
+    ax.tick_params(bottom=False, labelbottom=False)
+    return _mpl_save(fig)
+
+
+def chart_confidence_bars(previsoes: list) -> str:
+    fig, ax = plt.subplots(figsize=(6.5, 4))
+    labels = [p.get('titulo','')[:30] for p in previsoes]
+    probs = [p.get('probabilidade',50) for p in previsoes]
+    margins = [p.get('margem_erro',5) for p in previsoes]
+    colors = [_rgb(TEAL) if p>=70 else (_rgb(AMBER) if p>=55 else _rgb(RED)) for p in probs]
+    bars = ax.barh(range(len(labels)), probs, color=colors, height=0.5, alpha=0.7)
+    ax.errorbar(probs, range(len(labels)), xerr=margins, fmt='none', ecolor=_rgb(DARK), elinewidth=1.2, capsize=4)
     for i,(p,m) in enumerate(zip(probs,margins)):
-        ax.text(min(p+m+2,100), i, f'{p}% ±{m}', va='center', fontsize=6, fontweight='bold', color=P.m(P.TEXT))
-    ax.tick_params(labelsize=5.5)
-    plt.tight_layout(); return _save(fig)
-
-def ch_perceptual_map() -> str:
-    """2x2 perceptual positioning map."""
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(5, 3.5))
-    positions = [
-        {"n":"Grupo Pecanha","x":-0.3,"y":-0.4,"s":0.9,"c":P.m(P.DANGER)},
-        {"n":"Spasso","x":-0.1,"y":0.1,"s":0.5,"c":P.m(P.GOLD)},
-        {"n":"Sacoleiras","x":-0.7,"y":-0.6,"s":0.4,"c":P.m(P.GOLD)},
-        {"n":"Shopee/Shein","x":0.5,"y":-0.8,"s":0.7,"c":P.m(P.MUTED)},
-        {"n":"NOVA LOJA\n(atual)","x":0.15,"y":0.15,"s":0.35,"c":P.m(P.ACCENT2)},
-        {"n":"NOVA LOJA\n(desejado)","x":0.0,"y":0.55,"s":0.35,"c":P.m(P.SUCCESS)},
-    ]
-    # Quadrant backgrounds
-    ax.axhspan(0,1,xmin=0,xmax=0.5,alpha=0.04,color='green')  # top-left
-    ax.axhspan(0,1,xmin=0.5,xmax=1,alpha=0.04,color='blue')   # top-right
-    ax.axhspan(-1,0,xmin=0,xmax=0.5,alpha=0.04,color='orange') # bottom-left
-    ax.axhspan(-1,0,xmin=0.5,xmax=1,alpha=0.04,color='red')   # bottom-right
-    # Axes
-    ax.axhline(0, color='#ddd', lw=0.8); ax.axvline(0, color='#ddd', lw=0.8)
-    # Arrow from current to desired
-    ax.annotate('', xy=(0.0,0.55), xytext=(0.15,0.15),
-                arrowprops=dict(arrowstyle='-|>', color=P.m(P.SUCCESS), lw=2, connectionstyle='arc3,rad=0.2'))
-    for p in positions:
-        ax.scatter(p["x"],p["y"],s=p["s"]*400,c=[p["c"]],alpha=0.25,zorder=2)
-        ax.scatter(p["x"],p["y"],s=p["s"]*80,c=[p["c"]],alpha=0.8,zorder=3)
-        oy = -0.12 if p["y"]>0 else 0.1
-        ax.text(p["x"],p["y"]+oy,p["n"],ha='center',va='center',fontsize=5.5,fontweight='bold',color=P.m(P.TEXT))
-    ax.set_xlim(-1,1); ax.set_ylim(-1,1)
-    ax.set_xlabel('← Preço acessível          Preço premium →', fontsize=6, color=P.m(P.MUTED))
-    ax.set_ylabel('← Funcional          Aspiracional →', fontsize=6, color=P.m(P.MUTED))
-    ax.set_xticks([]); ax.set_yticks([])
-    # Quadrant labels
-    ax.text(-0.85,0.85,'Acessível +\nAspirac.',fontsize=5,color=P.m(P.MUTED),ha='center',fontstyle='italic')
-    ax.text(0.85,0.85,'Premium +\nAspirac.',fontsize=5,color=P.m(P.MUTED),ha='center',fontstyle='italic')
-    ax.text(-0.85,-0.85,'Acessível +\nFuncional',fontsize=5,color=P.m(P.MUTED),ha='center',fontstyle='italic')
-    ax.text(0.85,-0.85,'Premium +\nFuncional',fontsize=5,color=P.m(P.MUTED),ha='center',fontstyle='italic')
-    plt.tight_layout(); return _save(fig)
-
-def ch_kpis(kpis: list) -> str:
-    from matplotlib.patches import FancyBboxPatch
-    _augur_style()
-    n = min(len(kpis),5)
-    if n==0: return None
-    fig, axes = plt.subplots(1, n, figsize=(7, 1.1))
-    if n==1: axes=[axes]
-    cc = [P.ACCENT, P.ACCENT2, P.SUCCESS, P.GOLD, P.DANGER]
-    for i,(ax,kpi) in enumerate(zip(axes,kpis[:5])):
-        ax.set_xlim(0,1); ax.set_ylim(0,1); ax.axis('off')
-        r = FancyBboxPatch((0.02,0.05),0.96,0.9,boxstyle="round,pad=0.04",facecolor=P.m(P.SURFACE),edgecolor=P.m(P.BORDER),lw=0.5)
-        ax.add_patch(r)
-        val = str(kpi.get("value",""))[:20]
-        lab = kpi.get("label","")[:25]
-        vfs = 7 if len(val)>14 else (8 if len(val)>10 else (9 if len(val)>7 else 10))
-        lfs = 3.8 if len(lab)>20 else (4.2 if len(lab)>15 else 5)
-        ax.text(0.5,0.6,val,ha='center',va='center',fontsize=vfs,fontweight='bold',color=P.m(cc[i%len(cc)]))
-        ax.text(0.5,0.2,lab,ha='center',va='center',fontsize=lfs,color=P.m(P.MUTED))
-    plt.tight_layout(); return _save(fig)
-
-def ch_viability_radar(verdict: str, scenarios: list, risks: list) -> str:
-    """5-dimension viability radar for conclusion page."""
-    _augur_style()
-    fig, ax = plt.subplots(figsize=(3.5, 3.5), subplot_kw=dict(polar=True))
-    dims = ['Demanda', 'Viabilidade\nFinanceira', 'Competitividade', 'Risco\nOperacional', 'Timing']
-    # Derive scores from data
-    top_prob = scenarios[0]["probability"] if scenarios else 50
-    avg_risk = sum(r.get("probability",50) for r in risks[:5])/max(len(risks[:5]),1) if risks else 50
-    demand = min(95, top_prob * 1.8)
-    financial = min(95, top_prob * 1.5) if top_prob > 30 else 30
-    competitive = max(20, 100 - avg_risk)
-    risk_op = max(20, 100 - avg_risk * 0.9)
-    timing = 70 if verdict == "GO" else (50 if verdict == "AJUSTAR" else 25)
-    vals = [demand, financial, competitive, risk_op, timing]
-    angs = np.linspace(0, 2*np.pi, len(dims), endpoint=False).tolist()
-    vp = vals + [vals[0]]; ap = angs + [angs[0]]
-    ax.plot(ap, vp, 'o-', lw=2.5, color=P.m(P.ACCENT), markersize=5)
-    ax.fill(ap, vp, alpha=0.15, color=P.m(P.ACCENT))
-    ax.set_xticks(angs); ax.set_xticklabels(dims, fontsize=6.5, fontweight='bold')
-    ax.set_ylim(0, 100); ax.set_yticks([25, 50, 75, 100])
-    ax.set_yticklabels(['25','50','75','100'], fontsize=4.5, color=P.m(P.MUTED))
-    ax.grid(color='#ddd', lw=0.4)
-    for a, v in zip(angs, vals):
-        ax.text(a, v + 8, f'{int(v)}', ha='center', fontsize=6, fontweight='bold', color=P.m(P.TEXT))
-    avg = int(sum(vals)/len(vals))
-    ax.set_title(f'Viabilidade Geral: {avg}/100', fontsize=8, fontweight='bold', color=P.m(P.TEXT), pad=12)
-    plt.tight_layout(); return _save(fig)
+        ax.text(min(p+m+2,100), i, f'{p}% +/-{m}', va='center', fontsize=8, fontweight='bold')
+    ax.set_yticks(range(len(labels))); ax.set_yticklabels(labels, fontsize=8); ax.set_xlim(0,105); ax.invert_yaxis()
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['left'].set_visible(False)
+    ax.tick_params(left=False)
+    return _mpl_save(fig)
 
 
-# ═══════════════════════════════════════════════════
-# PDF CLASS
-# ═══════════════════════════════════════════════════
-class AugurPDF(FPDF):
-    def __init__(self, title=""):
-        super().__init__()
-        self.report_title = title
-        self.set_auto_page_break(auto=True, margin=18)
-
-    def header(self):
-        if self.page_no() <= 2: return
-        # Accent sidebar
-        self.set_fill_color(*P.ACCENT); self.rect(0,0,4,297,"F")
-        self.set_font("Helvetica","B",6.5); self.set_text_color(*P.MUTED)
-        self.set_x(8); self.cell(0,5,self._c(f"AUGUR  {self.report_title[:60]}"),align="L")
-        self.set_draw_color(*P.ACCENT); self.set_line_width(0.3)
-        self.line(8,10,self.w-10,10); self.ln(5)
-
-    def footer(self):
-        if self.page_no() <= 2: return
-        self.set_y(-14)
-        self.set_draw_color(*P.BORDER); self.set_line_width(0.15)
-        self.line(8,self.get_y(),self.w-10,self.get_y()); self.ln(2)
-        self.set_font("Helvetica","",6); self.set_text_color(*P.MUTED)
-        self.cell(self.w/2-10,3,"augur.itcast.com.br")
-        self.cell(self.w/2-10,3,self._c(f"Pagina {self.page_no()-2}"),align="R")
-
-    @staticmethod
-    def _c(t):
-        if not t: return ""
-        for k,v in {'\u2014':'-','\u2013':'-','\u201c':'"','\u201d':'"','\u2018':"'",'\u2019':"'",
-                     '\u2022':'-','\u2026':'...','\u00b1':'+/-','\u2192':'->','\u00a0':' ',
-                     '\u2264':'<=','\u2265':'>=','\u2248':'~'}.items():
-            t = t.replace(k,v)
-        return t.encode('latin-1',errors='replace').decode('latin-1')
-
-    def img(self, path, **kw):
-        if path and os.path.exists(path):
-            self.image(path, **kw); os.unlink(path)
-
-    def accent_box(self, text, width=None):
-        """Surface-colored highlight box."""
-        w = width or (self.w - 20)
-        self.set_fill_color(*P.SURFACE)
-        y = self.get_y()
-        self.set_x(10)
-        # Draw box first, then text
-        self.set_font("Helvetica","B",8); self.set_text_color(*P.TEXT)
-        # Estimate height
-        lines = len(self._c(text)) / (w/2) + 1
-        h = max(lines * 5, 8)
-        self.rect(10, y, w, h+4, "F")
-        self.set_fill_color(*P.ACCENT); self.rect(10, y, 2.5, h+4, "F")
-        self.set_xy(15, y+2)
-        self.multi_cell(w-8, 4.5, self._c(text))
-        self.ln(2)
+def chart_positioning(players: list) -> str:
+    fig, ax = plt.subplots(figsize=(5.5, 5))
+    ax.axhline(y=50,color='#e5e7eb',lw=0.8); ax.axvline(x=50,color='#e5e7eb',lw=0.8)
+    role_colors = {'Incumbente':_rgb(RED),'Entrante':_rgb(TEAL),'CanalDigital':_rgb(GRAY),
+                   'CanalInformal':_rgb(AMBER),'desejado':_rgb(GREEN),'atual':_rgb(BLUE)}
+    for p in players:
+        x,y = p.get('x',50), p.get('y',50)
+        color = role_colors.get(p.get('papel',''), _rgb(GRAY))
+        ax.scatter(x,y,s=300,color=color,alpha=0.5,edgecolors=color,linewidth=1.5,zorder=3)
+        ax.text(x,y-5,p.get('nome',''),fontsize=7.5,ha='center',fontweight='bold',zorder=5)
+    ax.set_xlim(0,100); ax.set_ylim(0,100)
+    ax.set_xlabel('Preco acessivel  <---->  Preco premium', fontsize=8, color=_rgb(GRAY))
+    ax.set_ylabel('Funcional  <---->  Aspiracional', fontsize=8, color=_rgb(GRAY))
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
+    return _mpl_save(fig)
 
 
-# ═══════════════════════════════════════════════════
-# MAIN GENERATOR
-# ═══════════════════════════════════════════════════
-class PDFGenerator:
+def chart_final_radar(scores: dict) -> str:
+    fig = plt.figure(figsize=(4.5,4.5))
+    labels = list(scores.keys()); values = list(scores.values())
+    N = len(labels)
+    angles = [n/N*2*np.pi for n in range(N)] + [0]
+    values_c = values + [values[0]]
+    ax = fig.add_subplot(111, polar=True)
+    ax.set_theta_offset(np.pi/2); ax.set_theta_direction(-1)
+    ax.plot(angles, values_c, 'o-', linewidth=2.5, color=_rgb(TEAL), markersize=6)
+    ax.fill(angles, values_c, alpha=0.15, color=_rgb(TEAL))
+    for a,v in zip(angles[:-1],values): ax.text(a, v+8, str(v), ha='center', fontsize=11, fontweight='bold')
+    ax.set_xticks(angles[:-1]); ax.set_xticklabels([l.replace('_',' ').title() for l in labels], fontsize=8.5)
+    ax.set_ylim(0,100)
+    total = sum(values)//len(values)
+    ax.set_title(f'Viabilidade Geral: {total}/100', fontsize=12, fontweight='bold', pad=20)
+    return _mpl_save(fig)
 
+
+def chart_roi(riscos_evitados: list, custo_analise: str, risco_total: str) -> str:
+    fig, ax = plt.subplots(figsize=(5.5, 3))
+    cats = [r.get('titulo','')[:15] for r in riscos_evitados] + ['Total']
+    # Parse R$ values
+    def parse_val(s):
+        m = re.search(r'(\d+)', str(s).replace('.',''))
+        return int(m.group(1)) if m else 50
+    sem = [parse_val(r.get('valor_risco','50k')) for r in riscos_evitados]
+    sem.append(parse_val(risco_total))
+    com = [parse_val(custo_analise)] * len(riscos_evitados) + [parse_val(custo_analise)]
+    x = np.arange(len(cats)); width=0.35
+    ax.bar(x-width/2, sem, width, label='Sem AUGUR (risco)', color=_rgb(RED), alpha=0.6)
+    ax.bar(x+width/2, com, width, label='Com AUGUR (invest.)', color=_rgb(TEAL), alpha=0.7)
+    for i,v in enumerate(sem): ax.text(i-width/2, v+2, f'R${v}k', ha='center', fontsize=7, color=_rgb(RED), fontweight='bold')
+    for i,v in enumerate(com): ax.text(i+width/2, v+2, f'R${v}k', ha='center', fontsize=7, color=_rgb(TEAL), fontweight='bold')
+    ax.set_xticks(x); ax.set_xticklabels(cats, fontsize=7.5)
+    ax.legend(fontsize=8); ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
+    return _mpl_save(fig)
+
+
+# ============================================================
+# PDF GENERATOR V2 — Consome AugurReportSchema
+# ============================================================
+
+class PDFGeneratorV2:
+    """
+    Gera PDF a partir do JSON estruturado (AugurReportSchema).
+    
+    ZERO regex. ZERO parsing de texto livre.
+    Cada seção renderiza diretamente do campo tipado do JSON.
+    """
+    
     @classmethod
-    def generate(cls, report_data: dict, depth: str = "standard", output_path: str = None) -> bytes:
-        if not HAS_FPDF: raise ImportError("fpdf2")
-        title = report_data.get("title","Relatório AUGUR")
-        summary = report_data.get("summary","")
-        sections = report_data.get("sections",[])
-        verdict = cls._verdict(title, summary)
-        scenarios = cls._parse_scenarios(sections)
-        risks = cls._parse_risks(sections)
-        emotions = cls._parse_emotions(sections)
-        kpis = cls._parse_kpis(summary, sections)
-        predictions = cls._parse_predictions(sections)
-
-        pdf = AugurPDF(title)
-
-        # P1: COVER
-        cls._p_cover(pdf, title, summary, verdict)
-        # P2: EXECUTIVE SUMMARY VISUAL
-        if HAS_MPL: cls._p_exec(pdf, verdict, scenarios, kpis, summary)
-        # P3: TOC
-        secs = cls._filter(sections, depth)
-        cls._p_toc(pdf, secs)
-        # P4: METHODOLOGY
-        cls._p_methodology(pdf, title)
-        # P5-P15: SECTIONS
-        for i, sec in enumerate(secs):
-            cls._p_section(pdf, i, len(secs), sec, depth, scenarios, risks, emotions, predictions)
-        # P16: CONCLUSION
-        cls._p_conclusion(pdf, verdict, scenarios, risks, sections)
-        # P17: BACK COVER
-        cls._p_back(pdf, verdict)
-
-        out = pdf.output()
+    def generate(cls, data: dict, output_path: str = None) -> bytes:
+        """
+        Gera o PDF completo a partir do JSON estruturado.
+        
+        Args:
+            data: JSON no formato AugurReportSchema
+            output_path: caminho para salvar (opcional)
+        
+        Returns:
+            bytes do PDF
+        """
+        from io import BytesIO
+        
+        pdf = cls._create_pdf()
+        
+        meta = data.get('meta', {})
+        veredicto = data.get('veredicto', {})
+        dashboard = data.get('dashboard', {})
+        cenarios_data = data.get('cenarios', {})
+        cenarios = cenarios_data.get('cenarios', [])
+        riscos_data = data.get('riscos', {})
+        riscos = riscos_data.get('riscos', [])
+        emocional = data.get('emocional', {})
+        agentes = data.get('agentes', [])
+        forcas = data.get('forcas', {})
+        cronologia = data.get('cronologia', {})
+        padroes = data.get('padroes', [])
+        recomendacoes = data.get('recomendacoes', [])
+        checklist = data.get('checklist', [])
+        previsoes = data.get('previsoes', [])
+        posicionamento = data.get('posicionamento', {})
+        roi = data.get('roi', {})
+        sintese = data.get('sintese', {})
+        
+        # P1: Capa
+        cls._page_cover(pdf, meta, veredicto)
+        # P2: Decisão 30s
+        cls._page_decision(pdf, veredicto, dashboard)
+        # P3: Sumário + Metodologia
+        cls._page_toc(pdf, meta)
+        # P4: Resumo Executivo
+        cls._page_executive(pdf, veredicto)
+        # P5: Dashboard KPIs (NOVO)
+        cls._page_dashboard(pdf, dashboard)
+        # P6: Cenários Futuros
+        cls._page_scenarios(pdf, cenarios, cenarios_data)
+        # P7: Cenários Financeiros (NOVO)
+        cls._page_financial(pdf, cenarios)
+        # P8-9: Fatores de Risco
+        cls._page_risks(pdf, riscos_data, riscos)
+        # P10: Análise Emocional
+        cls._page_emotions(pdf, emocional)
+        # P11: Perfis dos Agentes (NOVO)
+        cls._page_agents(pdf, agentes)
+        # P12: Mapa de Forças
+        cls._page_forces(pdf, forcas)
+        # P13: Cronologia
+        cls._page_timeline(pdf, cronologia)
+        # P14: Padrões Emergentes
+        cls._page_patterns(pdf, padroes)
+        # P15: Recomendações
+        cls._page_recommendations(pdf, recomendacoes)
+        # P16: Checklist (NOVO)
+        cls._page_checklist(pdf, checklist)
+        # P17: Previsões
+        cls._page_predictions(pdf, previsoes)
+        # P18: Posicionamento
+        cls._page_positioning(pdf, posicionamento)
+        # P19: ROI (NOVO)
+        cls._page_roi(pdf, roi)
+        # P20: Síntese Final
+        cls._page_synthesis(pdf, sintese, veredicto)
+        # P21: Contracapa
+        cls._page_back(pdf, veredicto)
+        
         if output_path:
-            with open(output_path,'wb') as f: f.write(out)
-        return out
-
-    # ─── PAGE RENDERERS ───
-
-    @classmethod
-    def _p_cover(cls, pdf, title, summary, verdict):
-        pdf.add_page()
-        # Accent sidebar
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        # Top gradient bar (simulated with 2 rects)
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(4,0,103,2.5,"F")
-        pdf.set_fill_color(*P.ACCENT2); pdf.rect(107,0,103,2.5,"F")
-        # Bottom gradient bar
-        pdf.set_fill_color(*P.ACCENT2); pdf.rect(4,294.5,103,2.5,"F")
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(107,294.5,103,2.5,"F")
-        # Diagonal pattern (subtle)
-        pdf.set_draw_color(230,230,240); pdf.set_line_width(0.15)
-        for i in range(0,300,12):
-            pdf.line(4,i,min(4+i,210),max(0,i-200))
-
-        pdf.set_y(65)
-        pdf.set_font("Helvetica","B",30); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,12,"A U G U R",align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.MUTED)
-        pdf.cell(0,5,pdf._c("Plataforma de Previsao de Mercado por IA"),align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.ln(4)
-        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(70,pdf.get_y(),140,pdf.get_y())
-        pdf.ln(10)
-        # Title
-        clean = re.sub(r'Relatório de Previsão:\s*','',title)
-        clean = re.sub(r'\s*[-—]\s*(GO|NO-GO|AJUSTAR).*','',clean,flags=re.I)
-        pdf.set_font("Helvetica","B",12); pdf.set_text_color(*P.TEXT)
-        pdf.set_x(22); pdf.multi_cell(pdf.w-44, 6.5, pdf._c(f"Relatório de Previsao: {clean}"), align="C")
-        pdf.ln(6)
-        # Verdict badge
-        vc = {"GO":P.SUCCESS,"NO-GO":P.DANGER,"AJUSTAR":P.GOLD}
-        pdf.set_fill_color(*vc.get(verdict,P.GOLD))
-        bt = f"VEREDICTO: {verdict}"
-        bw = pdf.get_string_width(bt)+24
-        pdf.rect((pdf.w-bw)/2,pdf.get_y(),bw,9,"F")
-        pdf.set_font("Helvetica","B",9); pdf.set_text_color(255,255,255)
-        pdf.cell(0,9,pdf._c(bt),align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.ln(5)
-        # Summary
-        cs = re.sub(r'^VEREDICTO:\s*\w+[\.\!]?\s*','',summary)
-        pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.BODY)
-        pdf.set_x(25); pdf.multi_cell(pdf.w-50,4.5,pdf._c(cs[:350]),align="C")
-        # Date + confidential
-        pdf.set_y(255); pdf.set_font("Helvetica","",7); pdf.set_text_color(*P.MUTED)
-        pdf.cell(0,4,datetime.now().strftime("%d/%m/%Y as %H:%M"),align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.cell(0,4,pdf._c("CONFIDENCIAL"),align="C")
-
-    @classmethod
-    def _p_exec(cls, pdf, verdict, scenarios, kpis, summary):
-        """P2: Executive summary - decision in 30 seconds."""
-        pdf.add_page()
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        pdf.set_x(8)
-        pdf.set_font("Helvetica","B",12); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,7,pdf._c("DECISAO EM 30 SEGUNDOS"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(8); pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(8,pdf.get_y(),55,pdf.get_y()); pdf.ln(3)
-        # Gauge
-        gp = ch_gauge(verdict); pdf.img(gp, x=55, w=85); pdf.ln(1)
-        # KPIs
-        if kpis:
-            kp = ch_kpis(kpis)
-            if kp: pdf.img(kp, x=8, w=pdf.w-18); pdf.ln(1)
-        # Key quote
-        pdf.set_x(8); pdf.set_font("Helvetica","I",7.5); pdf.set_text_color(*P.MUTED)
-        cs = re.sub(r'^VEREDICTO:\s*\w+[\.\!]?\s*','',summary)
-        pdf.multi_cell(pdf.w-18,4,pdf._c(f'"{cs[:200]}"'))
-
-    @classmethod
-    def _p_toc(cls, pdf, sections):
-        pdf.add_page()
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        pdf.set_x(8); pdf.set_font("Helvetica","B",14); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,9,pdf._c("Sumario"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(8); pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(8,pdf.get_y(),42,pdf.get_y()); pdf.ln(5)
-        for i, sec in enumerate(sections):
-            pdf.set_x(8); pdf.set_font("Helvetica","B",8); pdf.set_text_color(*P.ACCENT)
-            pdf.cell(10,6,f"{i+1:02d}")
-            pdf.set_font("Helvetica","",9); pdf.set_text_color(*P.TEXT)
-            pdf.cell(0,6,pdf._c(sec.get("title","")),new_x="LMARGIN",new_y="NEXT")
-            pdf.set_draw_color(*P.BORDER); pdf.set_line_width(0.1)
-            pdf.line(8,pdf.get_y(),pdf.w-10,pdf.get_y()); pdf.ln(1)
-
-    @classmethod
-    def _has_chart(cls, tl, scenarios, risks, emotions):
-        """Check if a section has an associated chart."""
-        if any(k in tl for k in ["cenário","cenario","futuro"]) and scenarios: return True
-        if "risco" in tl and risks: return True
-        if any(k in tl for k in ["emocional","sentimento"]): return True
-        if any(k in tl for k in ["mapa","força","forca"]): return True
-        if "cronologia" in tl or "timeline" in tl: return True
-        if any(k in tl for k in ["previsão","previsao","intervalo","confiança","confianca"]): return True
-        if "posicionamento" in tl: return True
-        return False
-
-    @classmethod
-    def _p_section(cls, pdf, idx, total, sec, depth, scenarios, risks, emotions, predictions):
-        stitle = sec.get("title",""); content = sec.get("content","")
-        tl = stitle.lower()
-        has_chart = cls._has_chart(tl, scenarios, risks, emotions)
-
-        # Smart page break: sections with charts ALWAYS get a new page.
-        # Text-only sections only break if page is >55% full.
-        if has_chart or idx == 0 or pdf.get_y() > 160:
-            pdf.add_page()
+            pdf.output(output_path)
+            with open(output_path, 'rb') as f:
+                return f.read()
         else:
-            # Separator line + spacing instead of page break
-            pdf.ln(4)
-            pdf.set_draw_color(*P.BORDER); pdf.set_line_width(0.3)
-            pdf.line(8, pdf.get_y(), pdf.w-10, pdf.get_y())
-            pdf.ln(6)
-        # Accent sidebar is in header
-
-        # Section tag + title
-        pdf.set_x(8); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.ACCENT)
-        pdf.cell(0,3.5,pdf._c(f"SECAO {idx+1:02d} DE {total:02d}"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(8); pdf.set_font("Helvetica","B",13); pdf.set_text_color(*P.TEXT)
-        pdf.multi_cell(pdf.w-18, 7, pdf._c(stitle))
-        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(8,pdf.get_y()+1,50,pdf.get_y()+1); pdf.ln(4)
-
-        # Section-specific chart(s)
-        if HAS_MPL:
-            try:
-                if any(k in tl for k in ["cenário","cenario","futuro"]) and scenarios:
-                    pdf.img(ch_scenarios(scenarios), x=8, w=pdf.w-18); pdf.ln(3)
-                elif "risco" in tl and risks:
-                    pdf.img(ch_risk_matrix(risks), x=8, w=pdf.w-18); pdf.ln(3)
-                elif any(k in tl for k in ["emocional","sentimento"]):
-                    pdf.img(ch_emotion_dual(emotions), x=8, w=pdf.w-18); pdf.ln(2)
-                    # ALSO add evolution line chart
-                    pdf.img(ch_emotion_evolution(), x=8, w=pdf.w-18); pdf.ln(3)
-                elif any(k in tl for k in ["mapa","força","forca"]):
-                    pdf.img(ch_force_map(), x=8, w=pdf.w-18); pdf.ln(3)
-                elif "cronologia" in tl or "timeline" in tl:
-                    pdf.img(ch_timeline(), x=8, w=pdf.w-18); pdf.ln(3)
-                elif any(k in tl for k in ["previsão","previsao","intervalo","confiança","confianca"]):
-                    pdf.img(ch_confidence_intervals(None), x=8, w=pdf.w-18); pdf.ln(3)
-                elif "posicionamento" in tl:
-                    pdf.img(ch_perceptual_map(), x=8, w=pdf.w-18); pdf.ln(3)
-            except Exception as e:
-                logger.warning(f"Chart error '{stitle}': {e}")
-
-        # Content
-        max_chars = {"executive":2500,"standard":6000,"deep":99999}.get(depth,6000)
-        if len(content) > max_chars:
-            content = cls._truncate(content, max_chars)
-        cls._render_content(pdf, content)
-
+            return pdf.output()
+    
     @classmethod
-    def _p_methodology(cls, pdf, title):
-        """Page: How the simulation works."""
-        pdf.add_page()
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        pdf.set_x(8); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.ACCENT)
-        pdf.cell(0,3.5,pdf._c("SOBRE ESTA ANALISE"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(8); pdf.set_font("Helvetica","B",13); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,7,pdf._c("Metodologia da Simulacao"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(8,pdf.get_y()+1,50,pdf.get_y()+1); pdf.ln(6)
-
-        blocks = [
-            ("Como funciona o AUGUR",
-             "O AUGUR e uma plataforma de previsao de mercado por inteligencia artificial. "
-             "Ele cria agentes sinteticos com personalidade, renda, habitos de consumo e opinioes proprias, "
-             "calibrados com dados reais do mercado local. Esses agentes simulam rodadas de interacao "
-             "que representam meses de operacao real."),
-            ("O que sao os agentes",
-             "Cada agente e um perfil de consumidor gerado por IA que representa um segmento real do mercado. "
-             "Eles tem nome, idade, profissao, faixa de renda e comportamento de compra. "
-             "As citacoes entre aspas neste relatorio sao falas desses agentes -- nao de pessoas reais, "
-             "mas de simulacoes calibradas com dados reais."),
-            ("Como ler as probabilidades",
-             "As probabilidades indicam o grau de convergencia entre os agentes. "
-             "Quando 45% dos cenarios apontam para um resultado, significa que a maioria dos agentes, "
-             "sob diferentes condicoes, chegou a essa conclusao de forma independente. "
-             "Os intervalos de confianca mostram a margem de variacao entre simulacoes."),
-            ("Limitacoes",
-             "Esta analise e um complemento a outras formas de pesquisa, nao uma substituicao. "
-             "Os agentes simulam comportamento humano com base em padroes, mas nao capturam "
-             "eventos imprevisiveis, mudancas regulatorias ou crises externas. "
-             "Use este relatorio como ferramenta de reducao de risco, nao como garantia."),
-        ]
-        for heading, text in blocks:
-            if pdf.get_y() > 255: pdf.add_page()
-            pdf.set_x(8); pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
-            pdf.cell(0,5,pdf._c(heading),new_x="LMARGIN",new_y="NEXT"); pdf.ln(1)
-            pdf.set_x(8); pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.BODY)
-            pdf.multi_cell(pdf.w-18, 5, pdf._c(text)); pdf.ln(4)
-
-        # Stats box
-        pdf.ln(4)
-        clean = re.sub(r'Relat.*?:\s*','',title)
-        pdf.set_fill_color(*P.SURFACE)
-        pdf.rect(8, pdf.get_y(), pdf.w-18, 28, "F")
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(8, pdf.get_y(), 2.5, 28, "F")
-        y0 = pdf.get_y()
-        pdf.set_xy(14, y0+3)
-        pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*P.ACCENT)
-        pdf.cell(0,4,pdf._c("PARAMETROS DA SIMULACAO"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(14); pdf.set_font("Helvetica","",7.5); pdf.set_text_color(*P.BODY)
-        for line in [
-            f"Projeto: {clean[:60]}",
-            "Agentes: 6 perfis sinteticos com personalidade e comportamento unicos",
-            "Rodadas: 5 ciclos representando 24 meses de mercado",
-            "Modelo: IA de ultima geracao (GPT-5.4)",
-        ]:
-            pdf.set_x(14); pdf.cell(0, 4, pdf._c(f"  - {line}"), new_x="LMARGIN", new_y="NEXT")
-
+    def _create_pdf(cls):
+        """Cria instância do FPDF com fontes e configuração."""
+        pdf = FPDF('P', 'mm', 'A4')
+        pdf.set_auto_page_break(auto=True, margin=18)
+        pdf.add_font('DejaVu', '', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+        pdf.add_font('DejaVu', 'B', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf')
+        pdf.add_font('DejaVu', 'I', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf')
+        pdf.add_font('Mono', '', '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf')
+        pdf.add_font('Mono', 'B', '/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf')
+        pdf._margin = 18
+        pdf._cw = 210 - 36  # content width
+        return pdf
+    
+    # ── Helper methods ──
+    
     @classmethod
-    def _p_conclusion(cls, pdf, verdict, scenarios, risks, sections):
-        """Page: Strategic Synthesis + Viability Radar."""
+    def _header(cls, pdf, section_num=None, section_total=16, title="", is_new=False):
+        """Standard page header with section tag."""
         pdf.add_page()
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        pdf.set_x(8); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.ACCENT)
-        pdf.cell(0,3.5,pdf._c("SINTESE FINAL"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_x(8); pdf.set_font("Helvetica","B",13); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,7,pdf._c("Sintese e Direcionamento"),new_x="LMARGIN",new_y="NEXT")
-        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
-        pdf.line(8,pdf.get_y()+1,50,pdf.get_y()+1); pdf.ln(4)
-
-        # Viability radar
-        if HAS_MPL:
-            try:
-                rp = ch_viability_radar(verdict, scenarios, risks)
-                pdf.img(rp, x=55, w=80); pdf.ln(2)
-            except Exception as e:
-                logger.warning(f"Viability radar error: {e}")
-
-        # Verdict badge
-        vc = {"GO":P.SUCCESS,"NO-GO":P.DANGER,"AJUSTAR":P.GOLD}
-        pdf.set_fill_color(*vc.get(verdict,P.GOLD))
-        bw = 60
-        pdf.rect((pdf.w-bw)/2, pdf.get_y(), bw, 8, "F")
-        pdf.set_font("Helvetica","B",9); pdf.set_text_color(255,255,255)
-        pdf.cell(0, 8, pdf._c(f"VEREDICTO: {verdict}"), align="C", new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(5)
-
-        # Strategic synthesis paragraph
-        pdf.set_x(8); pdf.set_font("Helvetica","",8.2); pdf.set_text_color(*P.BODY)
-        synth_parts = []
-        if scenarios:
-            best = max(scenarios, key=lambda s: s.get("probability",0))
-            synth_parts.append(f"O cenario mais provavel ({best['probability']}%) aponta para: {best['name'][:60]}.")
-        if risks:
-            synth_parts.append(f"O risco principal ({risks[0].get('probability',0)}%) e: {risks[0]['name'][:55]}.")
-        synth = " ".join(synth_parts) if synth_parts else "A simulacao projetou cenarios com riscos e oportunidades claros."
-        pdf.multi_cell(pdf.w-18, 5, pdf._c(synth)); pdf.ln(4)
-
-        # Key risks to watch
-        pdf.set_x(8); pdf.set_font("Helvetica","B",9.5); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0, 5, pdf._c("RISCOS QUE EXIGEM ATENCAO"), new_x="LMARGIN", new_y="NEXT"); pdf.ln(2)
-        for i, risk in enumerate(risks[:3], 1):
-            if pdf.get_y() > 260: pdf.add_page()
-            y0 = pdf.get_y()
-            sev_color = P.DANGER if risk.get("probability",0) > 70 else P.GOLD
-            pdf.set_fill_color(*P.SURFACE); pdf.rect(8, y0, pdf.w-18, 11, "F")
-            pdf.set_fill_color(*sev_color); pdf.rect(8, y0, 3, 11, "F")
-            pdf.set_xy(14, y0+1.5)
-            pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*P.TEXT)
-            pdf.cell(0, 4, pdf._c(f"#{i} {risk.get('name','')[:55]}"), new_x="LMARGIN", new_y="NEXT")
-            pdf.set_x(14); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.MUTED)
-            pdf.cell(0, 3.5, pdf._c(f"Probabilidade: {risk.get('probability',0)}% | Impacto: {risk.get('impact','N/A')}"))
-            pdf.set_y(y0 + 13)
-
-        # Strategic direction
+        # Top accent line
+        pdf.set_draw_color(*TEAL); pdf.set_line_width(0.8)
+        pdf.line(18, 14, 192, 14)
+        # Header text
+        pdf.set_font('DejaVu', '', 7); pdf.set_text_color(*GRAY)
+        pdf.set_xy(18, 8)
+        pdf.cell(174, 5, _c(f'AUGUR  Relatorio de Previsao'), 0, 0, 'L')
+        pdf.set_y(18)
+        # Section tag
+        if section_num:
+            tag = f'SECAO {section_num:02d} DE {section_total}'
+            if is_new: tag += '  -  NOVO'
+            color = TEAL if is_new else TEAL
+            pdf.set_fill_color(240, 253, 250)
+            pdf.set_font('DejaVu', 'B', 8); pdf.set_text_color(*color)
+            w = pdf.get_string_width(tag) + 12
+            pdf.cell(w, 7, _c(tag), 0, 1, 'C', True); pdf.ln(3)
+        # Title
+        if title:
+            pdf.set_font('DejaVu', 'B', 18); pdf.set_text_color(*DARK)
+            pdf.multi_cell(174, 8, _c(title), 0, 'L'); pdf.ln(2)
+    
+    @classmethod
+    def _body(cls, pdf, text, size=9.5):
+        pdf.set_font('DejaVu', '', size); pdf.set_text_color(75, 85, 99)
+        pdf.multi_cell(174, 5.5, _c(text), 0, 'L'); pdf.ln(2)
+    
+    @classmethod
+    def _bold(cls, pdf, text, size=9.5):
+        pdf.set_font('DejaVu', 'B', size); pdf.set_text_color(*DARK)
+        pdf.multi_cell(174, 5.5, _c(text), 0, 'L'); pdf.ln(1)
+    
+    @classmethod
+    def _quote(cls, pdf, text):
+        y = pdf.get_y()
+        pdf.set_font('DejaVu', 'I', 9); pdf.set_text_color(90, 90, 110)
+        lines = pdf.multi_cell(162, 5, _c(f'"{text}"'), 0, 'L', dry_run=True, output='LINES')
+        h = len(lines) * 5 + 6
+        pdf.set_fill_color(245, 245, 250); pdf.rect(18, y, 174, h, 'F')
+        pdf.set_draw_color(*PURPLE); pdf.set_line_width(0.6); pdf.line(18, y, 18, y+h)
+        pdf.set_xy(24, y+3); pdf.multi_cell(162, 5, _c(f'"{text}"'), 0, 'L')
         pdf.ln(3)
-        pdf.set_x(8); pdf.set_font("Helvetica","B",9.5); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0, 5, pdf._c("DIRECIONAMENTO ESTRATEGICO"), new_x="LMARGIN", new_y="NEXT"); pdf.ln(2)
-
-        # Extract recommendations from sections
-        recs = []
-        for sec in sections:
-            if any(k in sec.get("title","").lower() for k in ["recomend","estrateg"]):
-                for m in re.finditer(r'#\d+\s+(.+?)(?:\n|$)', sec.get("content","")):
-                    recs.append(m.group(1).strip()[:65])
-        if not recs:
-            recs = ["Validar posicionamento com clientes reais", "Monitorar metricas de recompra e indicacao", "Preservar margem sobre volume"]
-
-        for i, rec in enumerate(recs[:3], 1):
-            if pdf.get_y() > 265: pdf.add_page()
-            y0 = pdf.get_y()
-            pdf.set_fill_color(*P.SURFACE); pdf.rect(8, y0, pdf.w-18, 10, "F")
-            num_colors = [P.ACCENT, P.ACCENT2, P.GOLD]
-            pdf.set_fill_color(*num_colors[(i-1)%3])
-            pdf.rect(8, y0, 10, 10, "F")
-            pdf.set_xy(9, y0+1)
-            pdf.set_font("Helvetica","B",8); pdf.set_text_color(255,255,255)
-            pdf.cell(8, 8, str(i), align="C")
-            pdf.set_xy(20, y0+2)
-            pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.TEXT)
-            pdf.cell(pdf.w-32, 5, pdf._c(rec))
-            pdf.set_y(y0 + 12)
-
-        # Monitoring signals
-        pdf.ln(3)
-        pdf.set_x(8); pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0, 5, pdf._c("SINAIS PARA MONITORAR"), new_x="LMARGIN", new_y="NEXT"); pdf.ln(1)
-        signals = [
-            ("Consolidacao", "Recompra acima de 15%, indicacao espontanea, margem preservada", P.SUCCESS),
-            ("Alerta", "Conversao abaixo de 8%, desconto acima de 15%, dependencia de promocao", P.GOLD),
-            ("Risco critico", "Break-even nao atinge ate M18, guerra de preco, reputacao negativa", P.DANGER),
-        ]
-        for label, text, color in signals:
-            if pdf.get_y() > 268: pdf.add_page()
-            pdf.set_x(8); pdf.set_font("Helvetica","B",7); pdf.set_text_color(*color)
-            pdf.cell(28, 4.5, pdf._c(f"  {label}:"))
-            pdf.set_font("Helvetica","",7); pdf.set_text_color(*P.BODY)
-            pdf.multi_cell(pdf.w-46, 4.5, pdf._c(text)); pdf.ln(1)
-
+    
     @classmethod
-    def _p_back(cls, pdf, verdict):
+    def _chart(cls, pdf, chart_path, w=None):
+        if not chart_path or not os.path.exists(chart_path): return
+        if w is None: w = 174
+        x = 18 + (174 - w) / 2
+        pdf.image(chart_path, x=x, w=w); pdf.ln(3)
+    
+    @classmethod
+    def _kpi_grid(cls, pdf, items):
+        """items: [(value, label, color), ...]"""
+        n = len(items); w = (174 - (n-1)*3) / n; y0 = pdf.get_y()
+        for i, (val, label, color) in enumerate(items):
+            x = 18 + i*(w+3)
+            pdf.set_fill_color(248,248,252); pdf.rect(x, y0, w, 20, 'DF')
+            pdf.set_font('Mono', 'B', 13); pdf.set_text_color(*color)
+            pdf.set_xy(x, y0+2); pdf.cell(w, 8, _c(val), 0, 0, 'C')
+            pdf.set_font('DejaVu', '', 7); pdf.set_text_color(*GRAY)
+            pdf.set_xy(x, y0+11); pdf.cell(w, 5, _c(label), 0, 0, 'C')
+        pdf.set_y(y0 + 24)
+    
+    @classmethod
+    def _footer_line(cls, pdf):
+        pdf.set_y(-14); pdf.set_font('DejaVu','',7); pdf.set_text_color(*GRAY)
+        pdf.cell(87, 5, _c('augur.itcast.com.br'), 0, 0, 'L')
+        pdf.cell(87, 5, _c(f'Pagina {pdf.page_no()-1}'), 0, 0, 'R')
+    
+    # ── Page builders ──
+    # Each method consumes ONE section of the schema JSON directly.
+    # No parsing. No regex. Just data → layout.
+    
+    @classmethod
+    def _page_cover(cls, pdf, meta, veredicto):
         pdf.add_page()
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(4,0,103,2.5,"F")
-        pdf.set_fill_color(*P.ACCENT2); pdf.rect(107,0,103,2.5,"F")
-        pdf.set_fill_color(*P.ACCENT2); pdf.rect(4,294.5,103,2.5,"F")
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(107,294.5,103,2.5,"F")
-        for i in range(0,300,12):
-            pdf.set_draw_color(230,230,240); pdf.set_line_width(0.15)
-            pdf.line(4,i,min(4+i,210),max(0,i-200))
-
-        pdf.set_y(85)
-        vc = {"GO":P.SUCCESS,"NO-GO":P.DANGER,"AJUSTAR":P.GOLD}
-        pdf.set_fill_color(*vc.get(verdict,P.GOLD))
-        pdf.rect((pdf.w-80)/2,pdf.get_y(),80,10,"F")
-        pdf.set_font("Helvetica","B",10); pdf.set_text_color(255,255,255)
-        pdf.cell(0,10,pdf._c(verdict),align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.ln(4)
-        msgs = {"GO":"Sinal verde. Avance com as recomendacoes do relatorio.",
-                "NO-GO":"Nao recomendado neste formato. Revise a estrategia.",
-                "AJUSTAR":"Ha espaco, mas exige ajustes antes de avancar."}
-        pdf.set_font("Helvetica","",8.5); pdf.set_text_color(*P.MUTED)
-        pdf.cell(0,5,pdf._c(msgs.get(verdict,"")),align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.ln(25)
-        pdf.set_font("Helvetica","B",24); pdf.set_text_color(*P.TEXT)
-        pdf.cell(0,10,"A U G U R",align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.set_font("Helvetica","",8.5); pdf.set_text_color(*P.MUTED)
-        pdf.cell(0,5,pdf._c("Preveja o futuro. Antes que ele aconteca."),align="C",new_x="LMARGIN",new_y="NEXT")
+        pdf.set_fill_color(*WHITE); pdf.rect(0,0,210,297,'F')
+        pdf.set_fill_color(*TEAL); pdf.rect(0,0,6,297,'F')  # left bar
+        pdf.set_fill_color(*TEAL); pdf.rect(6,30,204,1.5,'F')
+        pdf.set_xy(18,50); pdf.set_font('Mono','B',38); pdf.set_text_color(*DARK)
+        pdf.cell(0,18,_c('A U G U R'),0,1,'C')
+        pdf.set_font('DejaVu','',10); pdf.set_text_color(*GRAY)
+        pdf.cell(0,7,_c('Plataforma de Previsao de Mercado por IA'),0,1,'C')
         pdf.ln(12)
-        pdf.set_font("Helvetica","",7)
-        pdf.cell(0,4,"augur.itcast.com.br",align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.cell(0,4,"contato@itcast.com.br",align="C",new_x="LMARGIN",new_y="NEXT")
+        pdf.set_font('DejaVu','',11); pdf.set_text_color(*DARK)
+        pdf.cell(0,6,_c('Relatorio de Previsao:'),0,1,'C'); pdf.ln(2)
+        pdf.set_font('DejaVu','B',15)
+        pdf.multi_cell(0,8,_c(meta.get('projeto','Projeto AUGUR')),0,'C')
+        # Gauge
+        if HAS_MPL:
+            pdf.ln(10)
+            gp = chart_gauge(veredicto.get('tipo','AJUSTAR'))
+            cls._chart(pdf, gp, w=85)
+        # Verdict badge
+        vt = veredicto.get('tipo','AJUSTAR')
+        vc = AMBER if vt=='AJUSTAR' else (GREEN if vt=='GO' else RED)
+        pdf.ln(2); y = pdf.get_y(); bw=90; bx=(210-bw)/2
+        pdf.set_fill_color(255,248,230); pdf.set_draw_color(*vc); pdf.set_line_width(0.8)
+        pdf.rect(bx,y,bw,12,'DF')
+        pdf.set_font('DejaVu','B',13); pdf.set_text_color(*vc)
+        pdf.set_xy(bx,y+1); pdf.cell(bw,10,_c(f'VEREDICTO: {vt}'),0,1,'C')
         pdf.ln(6)
-        # CTA box
-        pdf.set_fill_color(*P.SURFACE)
-        pdf.rect(35, pdf.get_y(), pdf.w-70, 22, "F")
-        pdf.set_fill_color(*P.ACCENT); pdf.rect(35, pdf.get_y(), pdf.w-70, 1.5, "F")
-        y0 = pdf.get_y() + 4
-        pdf.set_xy(40, y0)
-        pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*P.TEXT)
-        pdf.cell(pdf.w-80, 4, pdf._c("Quer explorar outros cenarios?"), align="C", new_x="LMARGIN", new_y="NEXT")
-        pdf.set_x(40); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.MUTED)
-        pdf.cell(pdf.w-80, 3.5, pdf._c("Entreviste os agentes, simule variacoes e compare cenarios"), align="C", new_x="LMARGIN", new_y="NEXT")
-        pdf.set_x(40); pdf.set_font("Helvetica","B",7); pdf.set_text_color(*P.ACCENT)
-        pdf.cell(pdf.w-80, 4, pdf._c("Acesse o relatorio interativo em augur.itcast.com.br"), align="C", new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(6)
-        pdf.set_font("Helvetica","",6); pdf.set_text_color(180,180,200)
-        pdf.multi_cell(0,3.5,pdf._c(
-            "Este relatorio foi gerado por inteligencia artificial com base em simulacoes de opiniao publica. "
-            "Os resultados representam cenarios possiveis e nao garantem resultados futuros. "
-            "Recomenda-se utilizar estas previsoes como complemento a outras analises de mercado."
-        ),align="C")
-
-    # ─── CONTENT RENDERER ───
-
+        pdf.set_font('DejaVu','I',9); pdf.set_text_color(*GRAY); pdf.set_x(25)
+        pdf.multi_cell(160,5,_c(veredicto.get('frase_chave','')),0,'C')
+        # Footer
+        pdf.set_y(255); pdf.set_draw_color(*LGRAY); pdf.line(50,pdf.get_y(),160,pdf.get_y()); pdf.ln(6)
+        pdf.set_font('DejaVu','',9); pdf.set_text_color(*GRAY)
+        pdf.cell(0,5,_c(meta.get('data_geracao','')[:10]),0,1,'C')
+        pdf.set_font('DejaVu','B',8); pdf.set_text_color(180,180,190)
+        pdf.cell(0,5,_c('CONFIDENCIAL'),0,1,'C')
+        pdf.set_fill_color(*TEAL); pdf.rect(6,285,204,1.5,'F')
+    
     @classmethod
-    def _render_content(cls, pdf, content):
-        if not content: return
-        content = re.sub(r'^#{1,6}\s+','',content,flags=re.MULTILINE)
-        content = re.sub(r'\[([^\]]+)\]\([^)]+\)',r'\1',content)
-        for para in content.split('\n\n'):
-            para = para.strip()
-            if not para: continue
-            if pdf.get_y() > 268: pdf.add_page()
-            if para.startswith('>') or (para.startswith('"') and len(para)<500 and para.count('"')<=2):
-                cls._bq(pdf, para)
-            elif para.lstrip().startswith('- ') or para.lstrip().startswith('• '):
-                cls._bl(pdf, para)
-            elif para.startswith('**') and '**' in para[2:] and len(para)<150:
-                cls._bh(pdf, para)
-            else:
-                cls._pp(pdf, para)
-
+    def _page_decision(cls, pdf, veredicto, dashboard):
+        cls._header(pdf, title='Decisao em 30 segundos')
+        cls._body(pdf, 'O que voce precisa saber para decidir agora:')
+        cls._kpi_grid(pdf, [
+            (dashboard.get('capital_giro_necessario','?'), 'Capital giro crediario', DARK),
+            (dashboard.get('breakeven_cenario1','?'), 'Break-even provavel', PURPLE),
+            (dashboard.get('prob_sobrevivencia_24m','?'), 'Prob. sobrevivencia', TEAL),
+            (dashboard.get('margem_bruta_alvo','?'), 'Margem bruta alvo', AMBER),
+        ])
+        cls._bold(pdf, 'Fatos que definem esta decisao:')
+        for f in veredicto.get('top5_fatos', []):
+            cls._bold(pdf, f'  {f.get("titulo","")}', 9)
+            cls._body(pdf, f'  {f.get("descricao","")}', 8.5)
+        cls._quote(pdf, veredicto.get('frase_chave',''))
+    
     @classmethod
-    def _pp(cls, pdf, text):
-        clean = pdf._c(text.replace('**',''))
-        if re.match(r'^#\d+\s', text):
-            pdf.ln(2); pdf.set_x(8)
-            pdf.set_font("Helvetica","B",9.5); pdf.set_text_color(*P.TEXT)
-            pdf.multi_cell(pdf.w-18,5,clean); pdf.ln(1); return
-        pdf.set_x(8); pdf.set_font("Helvetica","",8.2); pdf.set_text_color(*P.BODY)
-        pdf.multi_cell(pdf.w-18,5,clean); pdf.ln(2)
-
+    def _page_toc(cls, pdf, meta):
+        cls._header(pdf, title='Sumario')
+        sections = ['01 Resumo Executivo','02 Dashboard de KPIs (NOVO)','03 Cenarios Futuros',
+            '04 Cenarios Financeiros (NOVO)','05 Fatores de Risco','06 Analise Emocional',
+            '07 Perfis dos Agentes (NOVO)','08 Mapa de Forcas','09 Cronologia',
+            '10 Padroes Emergentes','11 Recomendacoes Estrategicas','12 Checklist GO (NOVO)',
+            '13 Previsoes com Intervalo de Confianca','14 Posicionamento',
+            '15 ROI da Analise (NOVO)','16 Sintese Final']
+        for s in sections:
+            is_new = 'NOVO' in s
+            pdf.set_font('DejaVu','B' if is_new else '',9.5)
+            pdf.set_text_color(*(TEAL if is_new else DARK))
+            pdf.cell(0,6.5,_c(s),0,1,'L')
+        pdf.ln(6); cls._bold(pdf, 'Sobre esta analise', 10)
+        cls._body(pdf, f'Projeto: {meta.get("projeto","")}\nAgentes: {meta.get("num_agentes",0)} perfis sinteticos\nRodadas: {meta.get("num_rodadas",0)} ciclos ({meta.get("periodo_simulado_meses",24)} meses)\nModelo: {meta.get("modelo_ia","GPT-5.4")}', 8.5)
+    
     @classmethod
-    def _bh(cls, pdf, text):
-        clean = pdf._c(text.replace('**','').replace('#','').strip())
-        pdf.ln(1.5); pdf.set_x(8)
-        pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
-        pdf.multi_cell(pdf.w-18,5,clean); pdf.ln(1)
-
+    def _page_executive(cls, pdf, veredicto):
+        cls._header(pdf, 1, title='Resumo Executivo')
+        cls._bold(pdf, veredicto.get('resumo_executivo',''))
+        if veredicto.get('leitura_para_decisao'):
+            cls._bold(pdf, 'Leitura para decisao:', 9)
+            cls._body(pdf, veredicto.get('leitura_para_decisao',''))
+    
     @classmethod
-    def _bq(cls, pdf, text):
-        if pdf.get_y()>262: pdf.add_page()
-        clean = text.lstrip('> "').rstrip('"')
-        clean = pdf._c(clean.replace('**',''))
-        y0 = pdf.get_y()
-        pdf.set_fill_color(*P.SURFACE)
-        # Estimate box height
-        est_lines = max(1, len(clean)/80)
-        est_h = est_lines*4.5 + 4
-        pdf.rect(8, y0, pdf.w-18, est_h, "F")
-        pdf.set_fill_color(*P.ACCENT2); pdf.rect(8, y0, 2, est_h, "F")
-        pdf.set_xy(13, y0+2)
-        pdf.set_font("Helvetica","I",7.5); pdf.set_text_color(80,80,110)
-        pdf.multi_cell(pdf.w-26, 4.5, f'"{clean}"')
-        actual_h = pdf.get_y() - y0
-        if actual_h > est_h:
-            pdf.set_fill_color(*P.SURFACE); pdf.rect(8, y0, pdf.w-18, actual_h, "F")
-            pdf.set_fill_color(*P.ACCENT2); pdf.rect(8, y0, 2, actual_h, "F")
-            pdf.set_xy(13, y0+2)
-            pdf.multi_cell(pdf.w-26, 4.5, f'"{clean}"')
-        pdf.ln(2.5)
-
+    def _page_dashboard(cls, pdf, dashboard):
+        cls._header(pdf, 2, title='Dashboard de KPIs - 24 Meses', is_new=True)
+        d = dashboard
+        cls._kpi_grid(pdf, [
+            (d.get('ticket_medio','?'),'Ticket medio',TEAL),
+            (d.get('volume_breakeven','?'),'Volume break-even',PURPLE),
+            (d.get('margem_bruta_alvo','?'),'Margem bruta',DARK),
+            (d.get('capital_giro_necessario','?'),'Capital giro',AMBER),
+        ])
+        cls._kpi_grid(pdf, [
+            (d.get('recompra_alvo','?'),'Recompra alvo',TEAL),
+            (d.get('vendas_por_indicacao','?'),'Vendas indicacao',PURPLE),
+            (d.get('erosao_margem_sazonal','?'),'Erosao sazonal',RED),
+            (d.get('breakeven_cenario1','?'),'Break-even cen.1',DARK),
+        ])
+        if d.get('investimento_total_estimado'):
+            cls._bold(pdf, f'Investimento total estimado: {d["investimento_total_estimado"]}')
+            for item in d.get('composicao_investimento',[]):
+                cls._body(pdf, f'  - {item.get("item","")}: {item.get("valor","")}', 8.5)
+        # Semaforo
+        cls._bold(pdf, 'Faixas de monitoramento')
+        # Simple 3-column layout
+        y0 = pdf.get_y(); w = (174-6)/3
+        for i,(items,color,bg,title) in enumerate([
+            (d.get('sinais_consolidacao',[]),(15,80,10),(234,243,222),'Consolidacao'),
+            (d.get('sinais_alerta',[]),(133,79,11),(250,238,218),'Alerta'),
+            (d.get('sinais_risco_critico',[]),(163,45,45),(252,235,235),'Risco critico'),
+        ]):
+            x = 18 + i*(w+3)
+            pdf.set_fill_color(*bg); pdf.rect(x,y0,w,45,'F')
+            pdf.set_font('DejaVu','B',8); pdf.set_text_color(*color)
+            pdf.set_xy(x+3,y0+2); pdf.cell(w-6,5,_c(title),0,1,'L')
+            pdf.set_font('DejaVu','',7.5); cur_y = y0+8
+            for it in items:
+                pdf.set_xy(x+3,cur_y); pdf.multi_cell(w-6,4,_c(f'- {it}'),0,'L')
+                cur_y = pdf.get_y()
+        pdf.set_y(y0+50)
+    
     @classmethod
-    def _bl(cls, pdf, text):
-        for line in text.split('\n'):
-            line = line.strip()
-            if not line: continue
-            if pdf.get_y()>272: pdf.add_page()
-            clean = re.sub(r'^[-•]\s*','',line)
-            clean = pdf._c(clean.replace('**',''))
-            pdf.set_x(10); pdf.set_font("Helvetica","B",7); pdf.set_text_color(*P.ACCENT)
-            pdf.cell(4,4.2,"-")
-            pdf.set_font("Helvetica","",7.8); pdf.set_text_color(*P.BODY)
-            pdf.multi_cell(pdf.w-24,4.2,clean)
-        pdf.ln(1)
-
-    # ─── PARSERS ───
-
-    @staticmethod
-    def _verdict(title, summary):
-        t = f"{title} {summary}".upper()
-        if "NO-GO" in t or "NO GO" in t: return "NO-GO"
-        if "AJUSTAR" in t: return "AJUSTAR"
-        if "GO" in t: return "GO"
-        return "AJUSTAR"
-
-    @staticmethod
-    def _parse_scenarios(sections):
-        for sec in sections:
-            if any(k in sec.get("title","").lower() for k in ["cenário","cenario","futuro"]):
-                content = sec.get("content","")
-                scenarios = []
-                blocks = re.split(r'(?=Cen[aá]rio\s*\d)', content)
-                for block in blocks:
-                    nm = re.match(r'Cen[aá]rio\s*\d*[:\.\s]*(.+?)(?:\n|$)', block)
-                    pm = re.search(r'[Pp]robabilidade[:\s]*(\d+)%', block)
-                    if nm and pm:
-                        scenarios.append({"name": nm.group(1).strip()[:65], "probability": int(pm.group(1))})
-                return scenarios if scenarios else []
-        return []
-
-    @staticmethod
-    def _parse_risks(sections):
-        for sec in sections:
-            if "risco" in sec.get("title","").lower():
-                content = sec.get("content",""); risks = []
-                blocks = re.split(r'\n(?=#\d+\s)', content)
-                for block in blocks:
-                    if not re.match(r'#\d+', block.strip()): continue
-                    nm = re.match(r'#\d+\s+(.+?)(?:\n|$)', block.strip())
-                    pm = re.search(r'[Pp]robabilidade[:\s]*(\d+)%', block)
-                    im = re.search(r'[Ii]mpacto[:\s]*(Alto|Médio|Baixo|Médio-Alto|Crítico)', block, re.I)
-                    if nm: risks.append({"name":nm.group(1).strip()[:60],"probability":int(pm.group(1)) if pm else 50,"impact":im.group(1) if im else "Médio"})
-                return risks
-        return []
-
-    @staticmethod
-    def _parse_emotions(sections):
-        for sec in sections:
-            if any(k in sec.get("title","").lower() for k in ["emocional","sentimento"]):
-                emos = {}
-                for m in re.finditer(r'[-•]?\s*(\w[\w\sçãéêí]*?)\s*:\s*(\d+)%', sec.get("content","")):
-                    l = m.group(1).strip()
-                    if 2<len(l)<25: emos[l] = float(m.group(2))
-                return emos
-        return {}
-
-    @staticmethod
-    def _parse_kpis(summary, sections):
-        kpis = []
-        for m in re.finditer(r'\*\*(.+?)\*\*[:\s]*([^*\n]{3,30})', summary):
-            kpis.append({"label":m.group(1).strip()[:20],"value":m.group(2).strip()[:12]})
-        if len(kpis)<3:
-            for sec in sections:
-                if "resumo" in sec.get("title","").lower() or "executivo" in sec.get("title","").lower():
-                    for m in re.finditer(r'\*\*(.+?)\*\*[:\s]*([^*\n]{3,30})', sec.get("content","")):
-                        kpis.append({"label":m.group(1).strip()[:20],"value":m.group(2).strip()[:12]})
-                    break
-        return kpis[:5]
-
-    @staticmethod
-    def _parse_predictions(sections):
-        for sec in sections:
-            if any(k in sec.get("title","").lower() for k in ["previsão","previsao","intervalo","confiança"]):
-                preds = []
-                for m in re.finditer(r'[Pp]robabilidade[:\s]*(\d+)%\s*[±+/-]*\s*(\d+)', sec.get("content","")):
-                    preds.append({"prob":int(m.group(1)),"margin":int(m.group(2))})
-                return preds if preds else None
-        return None
-
+    def _page_scenarios(cls, pdf, cenarios, cenarios_data):
+        cls._header(pdf, 3, title='Cenarios Futuros')
+        if HAS_MPL and cenarios: cls._chart(pdf, chart_scenarios_bars(cenarios), w=150)
+        for c in cenarios:
+            cls._bold(pdf, f'{c.get("nome","")}')
+            pdf.set_font('Mono','B',9); pdf.set_text_color(*TEAL)
+            pdf.cell(0,5,_c(f'Probabilidade: {c.get("probabilidade",0)}%  |  Break-even: {c.get("breakeven","")}'),0,1,'L'); pdf.ln(2)
+            cls._body(pdf, c.get('descricao',''))
+            if c.get('citacao_agente'): cls._quote(pdf, c['citacao_agente'])
+        if cenarios_data.get('ponto_bifurcacao'):
+            cls._body(pdf, f'Ponto de bifurcacao: {cenarios_data["ponto_bifurcacao"]}', 9)
+    
     @classmethod
-    def _filter(cls, sections, depth):
-        if depth == "deep": return sections
-        exec_keys = {"resumo executivo","cenários futuros","cenarios futuros","fatores de risco","recomendações estratégicas","recomendacoes estrategicas"}
-        if depth == "executive":
-            f = [s for s in sections if s.get("title","").lower().strip() in exec_keys]
-            return f if len(f)>=3 else sections[:4]
-        return sections  # standard = all
+    def _page_financial(cls, pdf, cenarios):
+        cls._header(pdf, 4, title='Cenarios Financeiros Comparados', is_new=True)
+        if HAS_MPL and cenarios and cenarios[0].get('projecao_faturamento_24m'):
+            cls._chart(pdf, chart_financial_projection(cenarios), w=155)
+        # Table
+        cls._bold(pdf, 'Comparativo por cenario')
+        col_w = [45,38,38,38]
+        headers = ['Metrica'] + [f'Cen. {i+1} ({c.get("probabilidade",0)}%)' for i,c in enumerate(cenarios)]
+        rows = [
+            ['Break-even'] + [c.get('breakeven','') for c in cenarios],
+            ['Faturamento M24'] + [c.get('faturamento_m24','') for c in cenarios],
+            ['Margem bruta'] + [c.get('margem_bruta','') for c in cenarios],
+            ['Risco central'] + [c.get('risco_central','') for c in cenarios],
+        ]
+        y = pdf.get_y()
+        for i, h in enumerate(headers[:4]):
+            x = 18 + sum(col_w[:i])
+            pdf.set_fill_color(240,253,250); pdf.set_font('DejaVu','B',8); pdf.set_text_color(*TEAL)
+            pdf.set_xy(x,y); pdf.cell(col_w[i],7,_c(h),1,0,'C',True)
+        pdf.ln(7)
+        for row in rows:
+            y = pdf.get_y()
+            for i, val in enumerate(row[:4]):
+                x = 18 + sum(col_w[:i])
+                pdf.set_font('DejaVu','' if i>0 else 'B',8); pdf.set_text_color(*(DARK if i==0 else GRAY))
+                pdf.set_xy(x,y); pdf.cell(col_w[i],6,_c(val),1,0,'C' if i>0 else 'L')
+            pdf.ln(6)
+    
+    @classmethod
+    def _page_risks(cls, pdf, riscos_data, riscos):
+        cls._header(pdf, 5, title='Fatores de Risco')
+        cls._body(pdf, riscos_data.get('texto_introducao',''))
+        if HAS_MPL and riscos: cls._chart(pdf, chart_risk_scatter(riscos), w=135)
+        for r in riscos:
+            y = pdf.get_y()
+            if y > 255: pdf.add_page(); y = pdf.get_y()
+            imp = r.get('impacto','Medio')
+            pdf.set_fill_color(*(RED if imp=='Alto' else AMBER)); pdf.rect(18,y,3,18,'F')
+            pdf.set_font('DejaVu','B',9.5); pdf.set_text_color(*DARK); pdf.set_xy(24,y)
+            pdf.cell(0,5,_c(f'#{r.get("numero",0)} {r.get("titulo","")}'),0,1,'L')
+            pdf.set_font('Mono','',8); pdf.set_text_color(*GRAY); pdf.set_x(24)
+            pdf.cell(0,4,_c(f'Probabilidade: {r.get("probabilidade",0)}%  |  Impacto: {imp}'),0,1,'L')
+            pdf.set_font('DejaVu','',8.5); pdf.set_text_color(75,85,99); pdf.set_x(24)
+            pdf.multi_cell(168,4.5,_c(r.get('descricao','')),0,'L'); pdf.ln(1)
+            if r.get('citacao_agente'): cls._quote(pdf, r['citacao_agente'])
+    
+    @classmethod
+    def _page_emotions(cls, pdf, emocional):
+        cls._header(pdf, 6, title='Analise Emocional')
+        emocoes = emocional.get('emocoes',[])
+        if HAS_MPL and emocoes: cls._chart(pdf, chart_emotion_radar(emocoes), w=160)
+        cls._body(pdf, emocional.get('saldo_positivo_vs_negativo',''))
+        if emocional.get('texto_confianca'):
+            cls._bold(pdf, 'Confianca - emocao mais relevante')
+            cls._body(pdf, emocional['texto_confianca'])
+            if emocional.get('citacao_confianca'): cls._quote(pdf, emocional['citacao_confianca'])
+        if emocional.get('texto_ceticismo'):
+            cls._bold(pdf, 'Ceticismo - defesa natural')
+            cls._body(pdf, emocional['texto_ceticismo'])
+            if emocional.get('citacao_ceticismo'): cls._quote(pdf, emocional['citacao_ceticismo'])
+        evolucao = emocional.get('evolucao_24m',{})
+        if HAS_MPL and evolucao:
+            cls._bold(pdf, 'Evolucao temporal das emocoes')
+            cls._chart(pdf, chart_emotion_timeline(evolucao), w=150)
+    
+    @classmethod
+    def _page_agents(cls, pdf, agentes):
+        cls._header(pdf, 7, title='Perfis dos Agentes - Quem disse o que', is_new=True)
+        cls._body(pdf, 'Cada agente e um perfil sintetico que representa um segmento real do mercado.')
+        type_colors = {'Apoiador':TEAL,'Neutro':AMBER,'Resistente':RED,'Cauteloso':PURPLE}
+        for a in agentes:
+            y = pdf.get_y()
+            if y > 248: pdf.add_page(); y = pdf.get_y()
+            color = type_colors.get(a.get('tipo','Neutro'), GRAY)
+            pdf.set_fill_color(*color); pdf.rect(18,y,3,22,'F')
+            pdf.set_font('DejaVu','B',10); pdf.set_text_color(*DARK); pdf.set_x(24)
+            pdf.cell(40,5,_c(a.get('nome','')),0,0,'L')
+            pdf.set_font('DejaVu','',8); pdf.set_text_color(*color)
+            pdf.cell(0,5,_c(f'  {a.get("papel_na_dinamica","")}'),0,1,'L')
+            pdf.set_font('DejaVu','',8.5); pdf.set_text_color(*GRAY); pdf.set_x(24)
+            pdf.cell(0,4.5,_c(a.get('descricao','')),0,1,'L')
+            pdf.set_font('DejaVu','I',8.5); pdf.set_text_color(90,90,110); pdf.set_x(24)
+            pdf.multi_cell(168,4.5,_c(f'"{a.get("citacao_chave","")}"'),0,'L'); pdf.ln(4)
+        if HAS_MPL and agentes:
+            cls._bold(pdf, 'Espectro de posicionamento')
+            cls._chart(pdf, chart_agent_spectrum(agentes), w=155)
+    
+    @classmethod
+    def _page_forces(cls, pdf, forcas):
+        cls._header(pdf, 8, title='Mapa de Forcas')
+        # Use chart if matplotlib available, otherwise text
+        if HAS_MPL:
+            from matplotlib.patches import Arc
+            # Generate force map from structured data - simplified
+            pass  # TODO: generate from forcas.blocos dynamically
+        for b in forcas.get('blocos',[]):
+            cls._bold(pdf, b.get('nome',''), 9.5)
+            cls._body(pdf, f'{b.get("base_clientes","")}. {b.get("descricao","")}', 8.5)
+            if b.get('citacao'): cls._quote(pdf, b['citacao'])
+        if forcas.get('hierarquia_poder'):
+            cls._bold(pdf, 'Hierarquia de poder:', 9)
+            cls._body(pdf, forcas['hierarquia_poder'], 8.5)
+    
+    @classmethod
+    def _page_timeline(cls, pdf, cronologia):
+        cls._header(pdf, 9, title='Cronologia da Simulacao')
+        for fase in cronologia.get('fases',[]):
+            cls._bold(pdf, f'{fase.get("periodo","")}: {fase.get("nome","")}')
+            cls._body(pdf, fase.get('descricao',''))
+            if fase.get('citacao'): cls._quote(pdf, fase['citacao'])
+    
+    @classmethod
+    def _page_patterns(cls, pdf, padroes):
+        cls._header(pdf, 10, title='Padroes Emergentes')
+        for p in padroes:
+            cls._bold(pdf, f'{p.get("numero","")}. {p.get("titulo","")}', 9.5)
+            cls._body(pdf, p.get('descricao',''), 8.5)
+    
+    @classmethod
+    def _page_recommendations(cls, pdf, recomendacoes):
+        cls._header(pdf, 11, title='Recomendacoes Estrategicas')
+        cls._body(pdf, 'Stack ranking: #1 decide sobrevivencia.')
+        if HAS_MPL and recomendacoes:
+            cls._chart(pdf, chart_stack_ranking(recomendacoes), w=155)
+        for r in recomendacoes:
+            cls._bold(pdf, r.get('titulo',''), 10)
+            cls._body(pdf, r.get('descricao',''), 8.5)
+            if r.get('citacao'): cls._quote(pdf, r['citacao'])
+    
+    @classmethod
+    def _page_checklist(cls, pdf, checklist):
+        cls._header(pdf, 12, title='Checklist: AJUSTAR para GO', is_new=True)
+        cls._body(pdf, 'Condicoes mensuraveis para transformar AJUSTAR em GO.')
+        for item in checklist:
+            y = pdf.get_y()
+            if y > 265: pdf.add_page()
+            pdf.set_draw_color(*AMBER); pdf.set_line_width(0.6)
+            pdf.ellipse(19, pdf.get_y()+1, 5, 5)
+            pdf.set_font('DejaVu','B',9); pdf.set_text_color(*DARK); pdf.set_x(27)
+            pdf.cell(0,5,_c(item.get('titulo','')),0,1,'L')
+            pdf.set_font('DejaVu','',8); pdf.set_text_color(*GRAY); pdf.set_x(27)
+            pdf.cell(0,4,_c(f'{item.get("timing","")} - {item.get("justificativa","")}'),0,1,'L')
+            pdf.ln(3)
+    
+    @classmethod
+    def _page_predictions(cls, pdf, previsoes):
+        cls._header(pdf, 13, title='Previsoes com Intervalo de Confianca')
+        if HAS_MPL and previsoes: cls._chart(pdf, chart_confidence_bars(previsoes), w=155)
+        for p in previsoes:
+            pdf.set_font('DejaVu','B',8.5); pdf.set_text_color(*DARK)
+            pdf.cell(95,4.5,_c(p.get('titulo','')),0,0,'L')
+            pdf.set_font('Mono','',8); pdf.set_text_color(*TEAL)
+            pdf.cell(30,4.5,_c(f'{p.get("probabilidade",0)}% +/-{p.get("margem_erro",0)}'),0,0,'C')
+            pdf.set_font('DejaVu','',8); pdf.set_text_color(*GRAY)
+            pdf.cell(0,4.5,_c(p.get('descricao','')),0,1,'L'); pdf.ln(1)
+    
+    @classmethod
+    def _page_positioning(cls, pdf, posicionamento):
+        cls._header(pdf, 14, title='Posicionamento Percebido vs Desejado')
+        players = posicionamento.get('players',[])
+        if HAS_MPL and players: cls._chart(pdf, chart_positioning(players), w=130)
+        cls._bold(pdf, 'Percebido:')
+        cls._body(pdf, posicionamento.get('percebido_descricao',''))
+        if posicionamento.get('percebido_citacao'): cls._quote(pdf, posicionamento['percebido_citacao'])
+        cls._bold(pdf, 'Desejado:')
+        cls._body(pdf, posicionamento.get('desejado_descricao',''))
+        if posicionamento.get('desejado_citacao'): cls._quote(pdf, posicionamento['desejado_citacao'])
+        evitar = posicionamento.get('rotulos_a_evitar',[])
+        if evitar:
+            cls._bold(pdf, 'Rotulos a evitar:', 9)
+            cls._body(pdf, '. '.join(f'{i+1}. {r}' for i,r in enumerate(evitar)), 8.5)
+        if posicionamento.get('posicionamento_vencedor'):
+            pdf.set_font('DejaVu','B',12); pdf.set_text_color(*TEAL)
+            pdf.cell(0,8,_c(f'Posicionamento vencedor: "{posicionamento["posicionamento_vencedor"]}"'),0,1,'C')
+    
+    @classmethod
+    def _page_roi(cls, pdf, roi):
+        cls._header(pdf, 15, title='ROI da Analise', is_new=True)
+        cls._body(pdf, 'Custo de errar vs custo de saber.')
+        riscos_ev = roi.get('riscos_evitados',[])
+        if HAS_MPL and riscos_ev:
+            cls._chart(pdf, chart_roi(riscos_ev, roi.get('custo_analise','5k'), roi.get('risco_total_evitado','150k')), w=130)
+        for r in riscos_ev:
+            pdf.set_font('DejaVu','B',9); pdf.set_text_color(*RED)
+            pdf.cell(90,5,_c(r.get('titulo','')),0,0,'L')
+            pdf.set_font('Mono','',8); pdf.cell(0,5,_c(r.get('valor_risco','')),0,1,'R')
+            pdf.set_font('DejaVu','',8.5); pdf.set_text_color(*GRAY)
+            pdf.cell(0,4.5,_c(f'Solucao: {r.get("solucao","")}'),0,1,'L'); pdf.ln(2)
+        # ROI highlight box
+        pdf.ln(3); y=pdf.get_y()
+        pdf.set_fill_color(240,253,250); pdf.rect(18,y,174,18,'F')
+        pdf.set_font('DejaVu','B',11); pdf.set_text_color(*TEAL)
+        pdf.set_xy(18,y+2); pdf.cell(174,7,_c(f'Investimento: {roi.get("custo_analise","")}'),0,1,'C')
+        pdf.set_font('Mono','B',10)
+        pdf.cell(174,7,_c(f'Risco evitado: {roi.get("risco_total_evitado","")}  |  ROI: {roi.get("roi_multiplicador","")}'),0,1,'C')
+        pdf.ln(5)
+        for c in roi.get('citacoes',[]): cls._quote(pdf, c)
+    
+    @classmethod
+    def _page_synthesis(cls, pdf, sintese, veredicto):
+        cls._header(pdf, 16, title='Sintese e Direcionamento')
+        scores = sintese.get('scores',{})
+        if HAS_MPL and scores: cls._chart(pdf, chart_final_radar(scores), w=100)
+        vt = veredicto.get('tipo','AJUSTAR')
+        vc = AMBER if vt=='AJUSTAR' else (GREEN if vt=='GO' else RED)
+        pdf.set_font('DejaVu','B',13); pdf.set_text_color(*vc)
+        pdf.cell(0,8,_c(f'VEREDICTO: {vt}'),0,1,'C'); pdf.ln(2)
+        cls._body(pdf, f'Cenario mais provavel: {sintese.get("cenario_mais_provavel","")}\nRisco principal: {sintese.get("risco_principal","")}')
+        cls._bold(pdf, 'Direcionamento estrategico')
+        for d in sintese.get('direcionamento',[]): cls._body(pdf, f'- {d}', 8.5)
+    
+    @classmethod
+    def _page_back(cls, pdf, veredicto):
+        pdf.add_page(); pdf.ln(30)
+        vt = veredicto.get('tipo','AJUSTAR')
+        pdf.set_font('DejaVu','B',14); pdf.set_text_color(*AMBER)
+        pdf.cell(0,10,_c(vt),0,1,'C')
+        pdf.set_font('Mono','B',28); pdf.set_text_color(*DARK)
+        pdf.cell(0,15,_c('A U G U R'),0,1,'C')
+        pdf.set_font('DejaVu','I',11); pdf.set_text_color(*TEAL)
+        pdf.cell(0,8,_c('Preveja o futuro. Antes que ele aconteca.'),0,1,'C')
+        pdf.ln(10)
+        pdf.set_font('DejaVu','',9); pdf.set_text_color(*GRAY)
+        pdf.cell(0,6,_c('augur.itcast.com.br'),0,1,'C')
+        pdf.cell(0,6,_c('contato@itcast.com.br'),0,1,'C')
+        pdf.ln(15)
+        pdf.set_font('DejaVu','',7); pdf.set_text_color(180,180,180)
+        pdf.multi_cell(0,4,_c('Este relatorio foi gerado por IA com base em simulacoes de opiniao publica. Os resultados representam cenarios possiveis e nao garantem resultados futuros.'),0,'C')
 
-    @staticmethod
-    def _truncate(content, max_chars):
-        t = content[:max_chars]
-        p = t.rfind('\n\n')
-        if p > max_chars*0.5: t = t[:p]
-        return t.rstrip() + "\n\n[...continua no relatorio completo]"
+
+# ============================================================
+# INTEGRATION GUIDE
+# ============================================================
+#
+# No endpoint /api/report/:id/download:
+#
+# ANTES:
+#   from app.services.pdf_generator import PDFGenerator
+#   pdf_bytes = PDFGenerator.generate(report_data)
+#
+# DEPOIS:
+#   from app.services.pdf_generator_v2 import PDFGeneratorV2
+#   structured = report_data.get("structured", None)
+#   if structured:
+#       pdf_bytes = PDFGeneratorV2.generate(structured)
+#   else:
+#       # Fallback para o gerador antigo (compatibilidade)
+#       from app.services.pdf_generator import PDFGenerator
+#       pdf_bytes = PDFGenerator.generate(report_data)
+#
+# ============================================================
