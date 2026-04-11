@@ -66,11 +66,12 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Light theme (default - for white header backgrounds) */
+/* Inherits color from parent so it works on both dark navbars and light headers */
 .switcher-trigger {
   background: transparent;
-  color: #333;
-  border: 1px solid #CCC;
+  color: inherit;
+  border: 1px solid currentColor;
+  opacity: 0.75;
   padding: 4px 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
@@ -78,11 +79,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: border-color 0.2s, opacity 0.2s;
+  transition: opacity 0.2s;
 }
 
 .switcher-trigger:hover {
-  border-color: #999;
+  opacity: 1;
 }
 
 .caret {
@@ -94,30 +95,30 @@ onUnmounted(() => {
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: #FFFFFF;
-  border: 1px solid #DDD;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border, #ddd);
   list-style: none;
   padding: 4px 0;
   min-width: 100%;
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .switcher-option {
   padding: 6px 12px;
   font-size: 0.8rem;
-  color: #333;
+  color: var(--text-secondary, #333);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
 }
 
 .switcher-option:hover {
-  background: #F0F0F0;
+  background: var(--bg-hover, #f0f0f0);
 }
 
 .switcher-option.active {
-  color: var(--orange, #FF4500);
+  color: var(--accent, #ff6b35);
 }
 
 

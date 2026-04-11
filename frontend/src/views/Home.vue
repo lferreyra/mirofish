@@ -4,6 +4,7 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <ThemeToggle />
         <LanguageSwitcher />
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           {{ $t('nav.visitGithub') }} <span class="arrow">↗</span>
@@ -216,6 +217,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 const router = useRouter()
 
@@ -312,35 +314,27 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
+/* Font variables */
 :root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF4500;
-  --gray-light: #F5F5F5;
-  --gray-text: #666666;
-  --border: #E5E5E5;
-  /* 
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
-  */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
   --font-cn: 'Noto Sans SC', system-ui, sans-serif;
+  --orange: #ff4500;
 }
 
 .home-container {
   min-height: 100vh;
-  background: var(--white);
+  background: var(--bg-primary);
   font-family: var(--font-sans);
-  color: var(--black);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* 顶部导航 */
+/* 顶部导航 — always dark */
 .navbar {
   height: 60px;
-  background: var(--black);
-  color: var(--white);
+  background: #000;
+  color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -361,7 +355,7 @@ const startSimulation = () => {
 }
 
 .github-link {
-  color: var(--white);
+  color: #fff;
   text-decoration: none;
   font-family: var(--font-mono);
   font-size: 0.9rem;
@@ -411,7 +405,7 @@ const startSimulation = () => {
 
 .orange-tag {
   background: var(--orange);
-  color: var(--white);
+  color: #fff;
   padding: 4px 10px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -419,7 +413,7 @@ const startSimulation = () => {
 }
 
 .version-text {
-  color: #999;
+  color: var(--text-faint);
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -430,11 +424,11 @@ const startSimulation = () => {
   font-weight: 500;
   margin: 0 0 40px 0;
   letter-spacing: -2px;
-  color: var(--black);
+  color: var(--text-primary);
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, #000000 0%, #444444 100%);
+  background: linear-gradient(90deg, var(--text-primary) 0%, var(--text-muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -443,7 +437,7 @@ const startSimulation = () => {
 .hero-desc {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: var(--gray-text);
+  color: var(--text-muted);
   max-width: 640px;
   margin-bottom: 50px;
   font-weight: 400;
@@ -455,7 +449,7 @@ const startSimulation = () => {
 }
 
 .highlight-bold {
-  color: var(--black);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -466,19 +460,19 @@ const startSimulation = () => {
 }
 
 .highlight-code {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 2px;
   font-family: var(--font-mono);
   font-size: 0.9em;
-  color: var(--black);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .slogan-text {
   font-size: 1.2rem;
   font-weight: 520;
-  color: var(--black);
+  color: var(--text-primary);
   letter-spacing: 1px;
   border-left: 3px solid var(--orange);
   padding-left: 15px;
@@ -518,7 +512,7 @@ const startSimulation = () => {
 }
 
 .hero-logo {
-  max-width: 500px; /* 调整logo大小 */
+  max-width: 500px;
   width: 100%;
 }
 
@@ -563,7 +557,7 @@ const startSimulation = () => {
 .panel-header {
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-faint);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -582,7 +576,7 @@ const startSimulation = () => {
 }
 
 .section-desc {
-  color: var(--gray-text);
+  color: var(--text-muted);
   margin-bottom: 25px;
   line-height: 1.6;
 }
@@ -597,6 +591,7 @@ const startSimulation = () => {
   border: 1px solid var(--border);
   padding: 20px 30px;
   min-width: 150px;
+  background: var(--bg-primary);
 }
 
 .metric-value {
@@ -608,7 +603,7 @@ const startSimulation = () => {
 
 .metric-label {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--text-faint);
 }
 
 /* 项目模拟步骤介绍 */
@@ -616,12 +611,13 @@ const startSimulation = () => {
   border: 1px solid var(--border);
   padding: 30px;
   position: relative;
+  background: var(--bg-primary);
 }
 
 .steps-header {
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-faint);
   margin-bottom: 25px;
   display: flex;
   align-items: center;
@@ -648,7 +644,7 @@ const startSimulation = () => {
 .step-num {
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--black);
+  color: var(--text-primary);
   opacity: 0.3;
 }
 
@@ -664,7 +660,7 @@ const startSimulation = () => {
 
 .step-desc {
   font-size: 0.85rem;
-  color: var(--gray-text);
+  color: var(--text-muted);
 }
 
 /* 右侧交互控制台 */
@@ -673,8 +669,9 @@ const startSimulation = () => {
 }
 
 .console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
+  border: 1px solid var(--border-medium);
+  padding: 8px;
+  background: var(--bg-primary);
 }
 
 .console-section {
@@ -691,11 +688,11 @@ const startSimulation = () => {
   margin-bottom: 15px;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .upload-zone {
-  border: 1px dashed #CCC;
+  border: 1px dashed var(--border-medium);
   height: 200px;
   overflow-y: auto;
   display: flex;
@@ -703,7 +700,7 @@ const startSimulation = () => {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
-  background: #FAFAFA;
+  background: var(--bg-input);
 }
 
 .upload-zone.has-files {
@@ -711,8 +708,8 @@ const startSimulation = () => {
 }
 
 .upload-zone:hover {
-  background: #F0F0F0;
-  border-color: #999;
+  background: var(--bg-hover);
+  border-color: var(--text-faint);
 }
 
 .upload-placeholder {
@@ -722,24 +719,25 @@ const startSimulation = () => {
 .upload-icon {
   width: 40px;
   height: 40px;
-  border: 1px solid #DDD;
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 15px;
-  color: #999;
+  color: var(--text-faint);
 }
 
 .upload-title {
   font-weight: 500;
   font-size: 0.9rem;
   margin-bottom: 5px;
+  color: var(--text-primary);
 }
 
 .upload-hint {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-faint);
 }
 
 .file-list {
@@ -753,9 +751,9 @@ const startSimulation = () => {
 .file-item {
   display: flex;
   align-items: center;
-  background: var(--white);
+  background: var(--bg-primary);
   padding: 8px 12px;
-  border: 1px solid #EEE;
+  border: 1px solid var(--border-light);
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
@@ -770,7 +768,7 @@ const startSimulation = () => {
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #999;
+  color: var(--text-faint);
 }
 
 .console-divider {
@@ -784,21 +782,21 @@ const startSimulation = () => {
   content: '';
   flex: 1;
   height: 1px;
-  background: #EEE;
+  background: var(--border-light);
 }
 
 .console-divider span {
   padding: 0 15px;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: #BBB;
+  color: var(--text-faint);
   letter-spacing: 1px;
 }
 
 .input-wrapper {
   position: relative;
-  border: 1px solid #DDD;
-  background: #FAFAFA;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
 }
 
 .code-input {
@@ -812,6 +810,11 @@ const startSimulation = () => {
   resize: vertical;
   outline: none;
   min-height: 150px;
+  color: var(--text-primary);
+}
+
+.code-input::placeholder {
+  color: var(--text-faint);
 }
 
 .model-badge {
@@ -820,13 +823,13 @@ const startSimulation = () => {
   right: 15px;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: #AAA;
+  color: var(--text-faint);
 }
 
 .start-engine-btn {
   width: 100%;
-  background: var(--black);
-  color: var(--white);
+  background: #000;
+  color: #fff;
   border: none;
   padding: 20px;
   font-family: var(--font-mono);
@@ -844,8 +847,8 @@ const startSimulation = () => {
 
 /* 可点击状态（非禁用） */
 .start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
+  background: #000;
+  border: 1px solid #000;
   animation: pulse-border 2s infinite;
 }
 
@@ -860,11 +863,24 @@ const startSimulation = () => {
 }
 
 .start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
+  background: var(--bg-secondary);
+  color: var(--text-faint);
   cursor: not-allowed;
   transform: none;
-  border: 1px solid #E5E5E5;
+  border: 1px solid var(--border);
+}
+
+/* Dark mode button override */
+html.dark .start-engine-btn:not(:disabled) {
+  background: var(--bg-surface);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+html.dark .start-engine-btn:hover:not(:disabled) {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
 }
 
 /* 引导动画：微妙的边框脉冲 */
@@ -879,16 +895,16 @@ const startSimulation = () => {
   .dashboard-section {
     flex-direction: column;
   }
-  
+
   .hero-section {
     flex-direction: column;
   }
-  
+
   .hero-left {
     padding-right: 0;
     margin-bottom: 40px;
   }
-  
+
   .hero-logo {
     max-width: 200px;
     margin-bottom: 20px;
