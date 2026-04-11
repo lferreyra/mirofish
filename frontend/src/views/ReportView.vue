@@ -828,6 +828,23 @@ function md(text) {
     .replace(/^(?!<)(.+)$/gm, m => `<p>${m}</p>`)
     .replace(/<p><\/p>/g, '')
 }
+const wordCloudWords = computed(() => {
+  const text = secoes.value.map(s => s.content || '').join(' ')
+  const words = text.toLowerCase().replace(/[^a-záàâãéèêíïóôõúüçñ\s]/gi, ' ').split(/\s+/)
+  const freq = {}
+  const stop = new Set(['que','para','com','uma','por','como','mais','mas','não','nao','dos','das','esse','essa','este','esta','são','ser','tem','pode','seu','sua','foi','quando','entre','sobre','muito','sem','nos','pelo','pela','até','ela','ele','isso','isto','cada','após','onde','bem','ainda','mesmo','todo','toda','já','ou','ao','aos','num','numa','ter','ver','dar','fazer','suas','seus'])
+  words.forEach(w => { if (w.length > 3 && !stop.has(w)) freq[w] = (freq[w]||0) + 1 })
+  return Object.entries(freq)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 30)
+    .map(([text, count]) => ({ text, size: Math.max(12, Math.min(32, 10 + count * 3)) }))
+})
+
+const secoesExtras = computed(() => {
+  const known = ['resumo','cenarios','riscos','recomendacoes','emocional','comunicacao','posicionamento','previsoes','insights','deep_mapa','deep_cronologia','deep_padroes','deep_hipoteses','valor']
+  return secoes.value.filter(s => !known.includes(categ(s.title)))
+})
+
 function truncar(t, n=160) { return t?.length > n ? t.slice(0,n)+'...' : (t||'') }
 
 async function voltar() {
