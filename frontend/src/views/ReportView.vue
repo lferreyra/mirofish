@@ -951,7 +951,15 @@ function abrirChat() {
         <!-- MAIN CONTENT -->
         <main class="aug-main">
 
-          <!-- CONTEXTO -->
+          <!-- TABS -->
+          <nav class="aug-tabs">
+            <button class="aug-tab" :class="{'aug-tab-on': activeTab==='decisao'}" @click="activeTab='decisao'">⚡ Decisão</button>
+            <button class="aug-tab" :class="{'aug-tab-on': activeTab==='analise'}" @click="activeTab='analise'">📊 Análise</button>
+            <button class="aug-tab" :class="{'aug-tab-on': activeTab==='estrategia'}" @click="activeTab='estrategia'">🎯 Estratégia</button>
+            <button class="aug-tab" :class="{'aug-tab-on': activeTab==='profunda'}" @click="activeTab='profunda'">🔬 Profunda</button>
+          </nav>
+
+          <!-- CONTEXTO (sempre visível) -->
           <section id="ctx" class="aug-card aug-card-accent">
             <div class="aug-ctx-row">
               <div class="aug-ctx-left">
@@ -966,6 +974,9 @@ function abrirChat() {
             </div>
             <p class="aug-disclaimer">Esta análise simula a reação de agentes autônomos ao cenário descrito. Os resultados representam cenários possíveis e não garantem resultados futuros.</p>
           </section>
+
+          <!-- TAB: DECISÃO -->
+          <div v-show="activeTab==='decisao' || printMode">
 
           <!-- RESUMO EXECUTIVO -->
           <section id="resumo" class="aug-card">
@@ -1029,7 +1040,7 @@ function abrirChat() {
             <div class="aug-prob-legend">
               <span v-for="c in cenarios" :key="c.nome"><span class="aug-dot" :style="{background: c.cor}"></span>{{ c.nome }} {{ c.prob }}%</span>
             </div>
-            <div class="aug-cenarios-grid">
+            <div class="aug-cenarios-grid" :class="{'aug-collapsed': !isExpanded('cenarios')}">
               <div v-for="c in cenarios" :key="c.nome" class="aug-cenario" :style="{'border-top-color': c.cor}">
                 <div class="aug-cenario-head">
                   <h3>{{ c.nome }}</h3>
@@ -1044,6 +1055,11 @@ function abrirChat() {
               </div>
             </div>
           </section>
+
+          </div><!-- /decisao -->
+
+          <!-- TAB: ANÁLISE -->
+          <div v-show="activeTab==='analise' || printMode">
 
           <!-- INSIGHTS -->
           <section id="insights" class="aug-card" v-if="secInsights?.content || achadosRelevantes.length">
@@ -1104,6 +1120,11 @@ function abrirChat() {
             <div v-else-if="secRecomendacoes?.content" class="aug-prose" v-html="md(secRecomendacoes.content)"></div>
           </section>
 
+          </div><!-- /analise -->
+
+          <!-- TAB: ESTRATÉGIA -->
+          <div v-show="activeTab==='estrategia' || printMode">
+
           <!-- COMUNICAÇÃO -->
           <section id="comm" class="aug-card" v-if="secComunicacao?.content">
             <div class="aug-section-header" @click="toggleSection('comm')">
@@ -1138,6 +1159,11 @@ function abrirChat() {
             <div v-else-if="secPrevisoes?.content" class="aug-prose" v-html="md(secPrevisoes.content)"></div>
           </section>
 
+          </div><!-- /estrategia -->
+
+          <!-- TAB: PROFUNDA -->
+          <div v-show="activeTab==='profunda' || printMode">
+
           <!-- ANÁLISE PROFUNDA -->
           <section id="profunda" class="aug-card" v-if="deepSections.length">
             <h2 class="aug-section-title">🔬 Análise Profunda</h2>
@@ -1152,6 +1178,9 @@ function abrirChat() {
             <div v-if="!deepSections.length" class="aug-empty">Análise profunda não disponível para esta simulação.</div>
           </section>
 
+          </div><!-- /profunda -->
+
+          <!-- VALOR (sempre visível) -->
           <!-- VALOR DA ANÁLISE -->
           <section class="aug-card" v-if="secValorAnalise?.content">
             <div class="aug-section-header" @click="toggleSection('valor')">
@@ -1260,6 +1289,12 @@ function abrirChat() {
 .aug-nav-item { padding:8px 12px; font-size:12px; font-weight:500; color:#8888aa; border-radius:6px; cursor:pointer; transition:all .15s; text-decoration:none; border-left:2px solid transparent; }
 .aug-nav-item:hover { color:#1a1a2e; background:#f5f5fa; }
 .aug-nav-active { color:#00e5c3 !important; border-left-color:#00e5c3; background:rgba(0,229,195,0.06); font-weight:600; }
+
+/* Tabs */
+.aug-tabs { display:flex; gap:4px; background:#fff; border:1px solid #eeeef2; border-radius:12px; padding:4px; margin-bottom:20px; }
+.aug-tab { flex:1; padding:10px 16px; border:none; background:none; border-radius:8px; font-size:13px; font-weight:600; color:#8888aa; cursor:pointer; transition:all .2s; }
+.aug-tab:hover { color:#1a1a2e; background:#f5f5fa; }
+.aug-tab-on { background:#00e5c3 !important; color:#09090f !important; box-shadow:0 2px 8px rgba(0,229,195,0.25); }
 
 /* Cards */
 .aug-card { background:#fff; border:1px solid #eeeef2; border-radius:16px; padding:28px 32px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:box-shadow .2s; }
