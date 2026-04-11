@@ -10,9 +10,12 @@
         <div class="step-name">图谱构建</div>
       </div>
 
-      <div class="nav-status">
-        <span class="status-dot" :class="statusClass"></span>
-        <span class="status-text">{{ statusText }}</span>
+      <div class="nav-right">
+        <ThemeToggle />
+        <div class="nav-status">
+          <span class="status-dot" :class="statusClass"></span>
+          <span class="status-text">{{ statusText }}</span>
+        </div>
       </div>
     </nav>
 
@@ -416,6 +419,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import ThemeToggle from '../components/ThemeToggle.vue'
 import * as d3 from 'd3'
 
 const route = useRoute()
@@ -1091,24 +1095,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 变量 */
-:root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF6B35;
-  --gray-light: #F5F5F5;
-  --gray-border: #E0E0E0;
-  --gray-text: #666666;
-}
-
 .process-page {
   min-height: 100vh;
-  background: var(--white);
+  background: var(--bg-primary);
   font-family: 'JetBrains Mono', 'Noto Sans SC', monospace;
-  overflow: hidden; /* Prevent body scroll in fullscreen */
+  overflow: hidden;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* 导航栏 */
+/* 导航栏 — always dark */
 .navbar {
   display: flex;
   align-items: center;
@@ -1119,6 +1114,12 @@ onUnmounted(() => {
   color: #fff;
   z-index: 10;
   position: relative;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .nav-brand {
@@ -1191,7 +1192,7 @@ onUnmounted(() => {
 
 .status-text {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-faint);
 }
 
 /* 主内容区 */
@@ -1204,12 +1205,12 @@ onUnmounted(() => {
 /* 左侧面板 - 50% default */
 .left-panel {
   width: 50%;
-  flex: none; /* Fixed width initially */
+  flex: none;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #E0E0E0;
+  border-right: 1px solid var(--border);
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #fff;
+  background: var(--bg-primary);
   z-index: 5;
 }
 
@@ -1223,8 +1224,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  border-bottom: 1px solid #E0E0E0;
-  background: #fff;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
   height: 50px;
 }
 
@@ -1250,7 +1251,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .stat-item {
@@ -1261,11 +1262,11 @@ onUnmounted(() => {
 
 .stat-val {
   font-weight: 600;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .stat-divider {
-  color: #eee;
+  color: var(--border-light);
 }
 
 .action-buttons {
@@ -1284,13 +1285,13 @@ onUnmounted(() => {
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--text-muted);
   border-radius: 2px;
 }
 
 .action-btn:hover:not(:disabled) {
-  background: #F5F5F5;
-  color: #000;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .action-btn:disabled {
@@ -1345,7 +1346,7 @@ onUnmounted(() => {
 .loading-ring:nth-child(1) {
   width: 80px;
   height: 80px;
-  border-top-color: #000;
+  border-top-color: var(--text-primary);
 }
 
 .loading-ring:nth-child(2) {
@@ -1373,13 +1374,13 @@ onUnmounted(() => {
 .loading-text,
 .waiting-text {
   font-size: 0.9rem;
-  color: #333;
+  color: var(--text-secondary);
   margin: 0 0 8px;
 }
 
 .waiting-hint {
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-faint);
   margin: 0;
 }
 
@@ -1434,9 +1435,9 @@ onUnmounted(() => {
   right: 16px;
   width: 320px;
   max-height: calc(100% - 32px);
-  background: #fff;
-  border: 1px solid #E0E0E0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1448,14 +1449,14 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: #FAFAFA;
-  border-bottom: 1px solid #E0E0E0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .detail-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .detail-badge {
@@ -1475,13 +1476,13 @@ onUnmounted(() => {
   background: none;
   border: none;
   font-size: 1.2rem;
-  color: #999;
+  color: var(--text-faint);
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .detail-close:hover {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .detail-content {
@@ -1498,21 +1499,21 @@ onUnmounted(() => {
 
 .detail-label {
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-faint);
   min-width: 70px;
   flex-shrink: 0;
 }
 
 .detail-value {
   font-size: 0.85rem;
-  color: #333;
+  color: var(--text-secondary);
   word-break: break-word;
 }
 
 .detail-value.uuid {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .detail-section {
@@ -1522,11 +1523,11 @@ onUnmounted(() => {
 .detail-summary {
   margin: 8px 0 0 0;
   font-size: 0.85rem;
-  color: #333;
+  color: var(--text-secondary);
   line-height: 1.6;
   padding: 10px;
-  background: #F9F9F9;
-  border-left: 3px solid #FF6B35;
+  background: var(--bg-surface);
+  border-left: 3px solid #ff6b35;
 }
 
 .detail-labels {
@@ -1538,9 +1539,9 @@ onUnmounted(() => {
 .label-tag {
   padding: 2px 8px;
   font-size: 0.75rem;
-  background: #F0F0F0;
-  border: 1px solid #E0E0E0;
-  color: #666;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 /* 边详情关系展示 */
@@ -1551,48 +1552,48 @@ onUnmounted(() => {
   gap: 8px;
   margin-bottom: 16px;
   padding: 12px;
-  background: #F9F9F9;
-  border: 1px solid #E0E0E0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 
 .edge-source,
 .edge-target {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .edge-arrow {
-  color: #999;
+  color: var(--text-faint);
 }
 
 .edge-type {
   padding: 2px 8px;
   font-size: 0.75rem;
-  background: #FF6B35;
+  background: #ff6b35;
   color: #fff;
 }
 
 .detail-value.highlight {
   font-weight: 600;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .detail-subtitle {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-secondary);
   margin: 16px 0 12px 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--border);
 }
 
 /* Properties 属性列表 */
 .properties-list {
   margin-top: 8px;
   padding: 10px;
-  background: #F9F9F9;
-  border: 1px solid #E0E0E0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 
 .property-item {
@@ -1606,13 +1607,13 @@ onUnmounted(() => {
 }
 
 .property-key {
-  color: #666;
+  color: var(--text-muted);
   margin-right: 8px;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .property-value {
-  color: #333;
+  color: var(--text-secondary);
   word-break: break-word;
 }
 
@@ -1629,9 +1630,9 @@ onUnmounted(() => {
   padding: 6px 10px;
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', monospace;
-  background: #F0F0F0;
-  border: 1px solid #E0E0E0;
-  color: #666;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   word-break: break-all;
 }
 
@@ -1647,8 +1648,8 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 16px;
   padding: 12px 24px;
-  border-top: 1px solid #E0E0E0;
-  background: #FAFAFA;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
 }
 
 .legend-item {
@@ -1665,11 +1666,11 @@ onUnmounted(() => {
 }
 
 .legend-label {
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .legend-count {
-  color: #999;
+  color: var(--text-faint);
 }
 
 /* 右侧面板 - 50% default */
@@ -1678,7 +1679,7 @@ onUnmounted(() => {
   flex: none;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--bg-primary);
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, transform 0.3s ease;
   overflow: hidden;
   opacity: 1;
@@ -1691,6 +1692,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+/* dark-header stays black regardless of theme */
 .right-panel .panel-header.dark-header {
   background: #000;
   color: #fff;
@@ -1698,7 +1700,7 @@ onUnmounted(() => {
 }
 
 .right-panel .header-icon {
-  color: #FF6B35;
+  color: #ff6b35;
   margin-right: 8px;
 }
 
@@ -1712,7 +1714,7 @@ onUnmounted(() => {
 /* 流程阶段 */
 .process-phase {
   margin-bottom: 24px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--border);
   opacity: 0.5;
   transition: all 0.3s;
 }
@@ -1723,11 +1725,11 @@ onUnmounted(() => {
 }
 
 .process-phase.active {
-  border-color: #FF6B35;
+  border-color: #ff6b35;
 }
 
 .process-phase.completed {
-  border-color: #1A936F;
+  border-color: #1a936f;
 }
 
 .phase-header {
@@ -1735,31 +1737,31 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  background: #FAFAFA;
-  border-bottom: 1px solid #E0E0E0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .process-phase.active .phase-header {
-  background: #FFF5F2;
+  background: rgba(255, 107, 53, 0.07);
 }
 
 .process-phase.completed .phase-header {
-  background: #F2FAF6;
+  background: rgba(26, 147, 111, 0.07);
 }
 
 .phase-num {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ddd;
+  color: var(--border-medium);
   line-height: 1;
 }
 
 .process-phase.active .phase-num {
-  color: #FF6B35;
+  color: #ff6b35;
 }
 
 .process-phase.completed .phase-num {
-  color: #1A936F;
+  color: #1a936f;
 }
 
 .phase-info {
@@ -1770,28 +1772,29 @@ onUnmounted(() => {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 4px;
+  color: var(--text-primary);
 }
 
 .phase-api {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-faint);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .phase-status {
   font-size: 0.75rem;
   padding: 4px 10px;
-  background: #eee;
-  color: #666;
+  background: var(--bg-hover);
+  color: var(--text-muted);
 }
 
 .phase-status.active {
-  background: #FF6B35;
+  background: #ff6b35;
   color: #fff;
 }
 
 .phase-status.completed {
-  background: #1A936F;
+  background: #1a936f;
   color: #fff;
 }
 
@@ -1810,9 +1813,9 @@ onUnmounted(() => {
 .entity-tag {
   font-size: 0.75rem;
   padding: 4px 10px;
-  background: #F5F5F5;
-  border: 1px solid #E0E0E0;
-  color: #333;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
 }
 
 /* 关系列表 */
@@ -1825,7 +1828,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  border-bottom: 1px dashed #eee;
+  border-bottom: 1px dashed var(--border-light);
 }
 
 .relation-item:last-child {
@@ -1834,21 +1837,21 @@ onUnmounted(() => {
 
 .rel-source,
 .rel-target {
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .rel-arrow {
-  color: #ccc;
+  color: var(--border-medium);
 }
 
 .rel-name {
-  color: #FF6B35;
+  color: #ff6b35;
   font-weight: 500;
 }
 
 .relation-more {
   padding-top: 8px;
-  color: #999;
+  color: var(--text-faint);
   font-size: 0.75rem;
 }
 
@@ -1858,48 +1861,48 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #FFF5F2;
-  border: 1px solid #FFE0D6;
+  background: rgba(255, 107, 53, 0.07);
+  border: 1px solid rgba(255, 107, 53, 0.3);
 }
 
 .progress-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #FFE0D6;
-  border-top-color: #FF6B35;
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  border-top-color: #ff6b35;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .progress-text {
   font-size: 0.85rem;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 /* 等待状态 */
 .waiting-state {
   padding: 16px;
-  background: #F9F9F9;
-  border: 1px dashed #E0E0E0;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border);
   text-align: center;
 }
 
 .waiting-hint {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--text-faint);
 }
 
 /* 进度条 */
 .progress-bar {
   height: 6px;
-  background: #E0E0E0;
+  background: var(--border);
   margin-bottom: 8px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #FF6B35;
+  background: #ff6b35;
   transition: width 0.3s;
 }
 
@@ -1910,11 +1913,11 @@ onUnmounted(() => {
 }
 
 .progress-message {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .progress-percent {
-  color: #FF6B35;
+  color: #ff6b35;
   font-weight: 600;
 }
 
@@ -1928,20 +1931,20 @@ onUnmounted(() => {
   flex: 1;
   text-align: center;
   padding: 12px;
-  background: #F5F5F5;
+  background: var(--bg-secondary);
 }
 
 .result-value {
   display: block;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #000;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .result-label {
   font-size: 0.7rem;
-  color: #999;
+  color: var(--text-faint);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1950,7 +1953,7 @@ onUnmounted(() => {
 .next-step-section {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid var(--border);
 }
 
 .next-step-btn {
@@ -1970,12 +1973,26 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
+html.dark .next-step-btn:not(:disabled) {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
 .next-step-btn:hover:not(:disabled) {
-  background: #FF6B35;
+  background: #ff6b35;
+  color: #fff;
+}
+
+html.dark .next-step-btn:hover:not(:disabled) {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  color: #fff;
 }
 
 .next-step-btn:disabled {
-  background: #ccc;
+  background: var(--bg-secondary);
+  color: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -1985,8 +2002,8 @@ onUnmounted(() => {
 
 /* 项目信息面板 */
 .project-panel {
-  border-top: 1px solid #E0E0E0;
-  background: #FAFAFA;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
 }
 
 .project-header {
@@ -1994,16 +2011,17 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--border);
 }
 
 .project-icon {
-  color: #FF6B35;
+  color: #ff6b35;
 }
 
 .project-title {
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .project-details {
@@ -2015,7 +2033,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 8px 0;
-  border-bottom: 1px dashed #E0E0E0;
+  border-bottom: 1px dashed var(--border);
   font-size: 0.8rem;
 }
 
@@ -2024,12 +2042,12 @@ onUnmounted(() => {
 }
 
 .item-label {
-  color: #999;
+  color: var(--text-faint);
   flex-shrink: 0;
 }
 
 .item-value {
-  color: #333;
+  color: var(--text-secondary);
   text-align: right;
   max-width: 60%;
   word-break: break-all;
@@ -2038,7 +2056,7 @@ onUnmounted(() => {
 .item-value.code {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 /* 响应式 */
@@ -2046,23 +2064,37 @@ onUnmounted(() => {
   .main-content {
     flex-direction: column;
   }
-  
+
   .left-panel {
     width: 100% !important;
     border-right: none;
-    border-bottom: 1px solid #E0E0E0;
+    border-bottom: 1px solid var(--border);
     height: 50vh;
   }
-  
+
   .right-panel {
     width: 100% !important;
     height: 50vh;
     opacity: 1 !important;
     transform: none !important;
   }
-  
+
   .right-panel.hidden {
-      display: none;
+    display: none;
   }
+}
+
+/* D3 graph dark mode overrides (D3 sets fill/stroke as inline styles, so we use !important) */
+html.dark .graph-svg text {
+  fill: #aaaaaa !important;
+}
+html.dark .graph-svg .links line {
+  stroke: #444444 !important;
+}
+html.dark .graph-svg .node-circle {
+  stroke: #111111 !important;
+}
+html.dark .graph-svg .link-labels text {
+  fill: #666666 !important;
 }
 </style>

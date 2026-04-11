@@ -1,0 +1,59 @@
+/* ===== Light mode (default) ===== */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-surface: #fafafa;
+  --bg-input: #fafafa;
+  --bg-hover: #f0f0f0;
+
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-muted: #666666;
+  --text-faint: #999999;
+
+  --border: #e0e0e0;
+  --border-light: #eeeeee;
+  --border-medium: #cccccc;
+
+  --accent: #ff6b35;
+  --status-success: #1a936f;
+  --status-error: #c5283d;
+}
+
+/* ===== Dark mode ===== */
+html.dark {
+  --bg-primary: #111111;
+  --bg-secondary: #1a1a1a;
+  --bg-surface: #1e1e1e;
+  --bg-input: #1a1a1a;
+  --bg-hover: #2a2a2a;
+
+  --text-primary: #e5e5e5;
+  --text-secondary: #cccccc;
+  --text-muted: #a0a0a0;
+  --text-faint: #555555;
+
+  --border: #2e2e2e;
+  --border-light: #222222;
+  --border-medium: #3a3a3a;
+
+  --accent: #ff6b35;
+  --status-success: #1a936f;
+  --status-error: #c5283d;
+}
+
+/* ===== Global dark mode overrides ===== */
+html.dark body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #444;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
