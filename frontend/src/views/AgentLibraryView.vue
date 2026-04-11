@@ -310,13 +310,32 @@ function saveEditAgent(catId) {
 </template>
 
 <style scoped>
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 .alib { max-width:960px; margin:0 auto; padding:0 16px 60px; }
 .alib-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; flex-wrap:wrap; gap:16px; }
 .alib-header h1 { font-size:22px; font-weight:700; color:var(--text-primary, #f0f0ff); }
 .alib-sub { font-size:13px; color:var(--text-secondary, #8888aa); margin-top:4px; }
 .alib-actions { display:flex; gap:8px; }
 
-.alib-btn { padding:8px 18px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
+.alib-btn { padding:8px 18px; border-radius:14px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
 .alib-btn-pri { background:#00e5c3; color:#09090f; }
 .alib-btn-pri:hover { transform:translateY(-1px); }
 .alib-btn-sec { background:rgba(255,255,255,0.05); color:#8888aa; border:1px solid rgba(255,255,255,0.1); }
@@ -346,7 +365,7 @@ function saveEditAgent(catId) {
 .alib-cat-info h3 { font-size:15px; font-weight:700; color:#f0f0ff; letter-spacing:0.3px; }
 .alib-cat-count { font-size:11px; color:#555570; }
 .alib-cat-tags { display:flex; gap:4px; flex-shrink:0; }
-.alib-mini-tag { font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(255,255,255,0.04); color:#8888aa; white-space:nowrap; }
+.alib-mini-tag { font-size:10px; padding:2px 8px; border-radius:14px; background:rgba(255,255,255,0.04); color:#8888aa; white-space:nowrap; }
 .alib-mini-more { background:rgba(0,229,195,0.08); color:#00e5c3; }
 .alib-cat-del { background:none; border:none; color:#ff5a5a; font-size:14px; cursor:pointer; opacity:0.5; padding:4px; }
 .alib-cat-del:hover { opacity:1; }
@@ -354,14 +373,14 @@ function saveEditAgent(catId) {
 .alib-cat-arrow.open { transform:rotate(90deg); }
 
 .alib-agents { padding:0 18px 14px; border-top:1px solid rgba(255,255,255,0.04); }
-.alib-agent { display:flex; gap:14px; padding:14px 16px; border-bottom:none; align-items:flex-start; margin:2px 0; border-radius:10px; transition:background .15s; }
+.alib-agent { display:flex; gap:14px; padding:14px 16px; border-bottom:none; align-items:flex-start; margin:2px 0; border-radius:14px; transition:background .15s; }
 .alib-agent-dot { width:10px; height:10px; border-radius:50%; margin-top:6px; flex-shrink:0; box-shadow:0 0 6px currentColor; }
 .alib-agent-body { flex:1; min-width:0; }
 .alib-agent:hover { background:rgba(255,255,255,0.03); }
 .alib-agent-name { font-size:14px; font-weight:600; color:#f0f0ff; }
 .alib-agent-desc { font-size:12px; color:#8888aa; line-height:1.5; margin-top:3px; }
 .alib-agent-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
-.alib-tag { font-size:10px; padding:3px 10px; border-radius:10px; background:rgba(124,111,247,0.08); color:#7c6ff7; font-weight:600; letter-spacing:0.3px; }
+.alib-tag { font-size:10px; padding:3px 10px; border-radius:14px; background:rgba(124,111,247,0.08); color:#7c6ff7; font-weight:600; letter-spacing:0.3px; }
 .alib-agent-actions { display:flex; gap:2px; flex-shrink:0; }
 .alib-agent-actions button { background:none; border:none; font-size:13px; cursor:pointer; padding:4px; opacity:0.4; transition:opacity .15s; }
 .alib-agent-actions button:hover { opacity:1; }
@@ -370,7 +389,7 @@ function saveEditAgent(catId) {
 .alib-edit-btns { display:flex; gap:6px; }
 
 .alib-add-agent { padding:10px 0 4px; }
-.alib-add-trigger { background:none; border:1px dashed rgba(0,229,195,0.2); color:#00e5c3; font-size:13px; font-weight:600; padding:10px; width:100%; border-radius:10px; cursor:pointer; transition:all .15s; }
+.alib-add-trigger { background:none; border:1px dashed rgba(0,229,195,0.2); color:#00e5c3; font-size:13px; font-weight:600; padding:10px; width:100%; border-radius:14px; cursor:pointer; transition:all .15s; }
 .alib-add-trigger:hover { background:rgba(0,229,195,0.04); border-color:rgba(0,229,195,0.4); }
 .alib-add-form { display:flex; flex-direction:column; gap:8px; }
 .alib-add-btns { display:flex; gap:6px; }
