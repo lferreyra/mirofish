@@ -84,25 +84,31 @@ def ch_gauge(verdict: str) -> str:
     return _save(fig)
 
 def ch_scenarios(scenarios: list) -> str:
+    import textwrap
     _augur_style()
     n = len(scenarios)
-    fig, ax = plt.subplots(figsize=(5.2, 0.9+0.4*n))
-    names = [s.get("name","")[:42] for s in scenarios]
+    fig, ax = plt.subplots(figsize=(6.2, 1.1+0.55*n))
+    names = ["\n".join(textwrap.wrap(s.get("name",""), 42)) for s in scenarios]
     probs = [s.get("probability",33) for s in scenarios]
     cols = [P.m(P.SUCCESS), P.m(P.GOLD), P.m(P.DANGER), P.m(P.ACCENT2), P.m(P.MUTED)]
     bars = ax.barh(range(n), probs, color=[cols[i%len(cols)] for i in range(n)],
                    height=0.55, edgecolor='white', linewidth=0.3)
-    ax.set_yticks(range(n)); ax.set_yticklabels(names, fontsize=7)
-    ax.set_xlim(0,105); ax.invert_yaxis()
+    ax.set_yticks(range(n)); ax.set_yticklabels(names, fontsize=5.5)
+    ax.set_xlim(0,112); ax.invert_yaxis()
     ax.set_xlabel('Probabilidade (%)', fontsize=6.5)
     for b, p in zip(bars, probs):
-        ax.text(b.get_width()+1, b.get_y()+b.get_height()/2, f'{p}%', va='center', fontsize=8, fontweight='bold', color=P.m(P.TEXT))
-    ax.tick_params(labelsize=6.5)
+        ax.text(b.get_width()+1.5, b.get_y()+b.get_height()/2, f'{p}%',
+                va='center', fontsize=8, fontweight='bold', color=P.m(P.TEXT))
+    ax.tick_params(labelsize=5.5)
     plt.tight_layout(); return _save(fig)
 
 def ch_risk_matrix(risks: list) -> str:
     _augur_style()
-    fig, ax = plt.subplots(figsize=(5.5, 3))
+    fig = plt.figure(figsize=(7, 3.2))
+    gs = fig.add_gridspec(1, 2, width_ratios=[3, 2], wspace=0.05)
+    ax = fig.add_subplot(gs[0, 0])
+    ax_leg = fig.add_subplot(gs[0, 1])
+    ax_leg.axis('off')
     imap = {"baixo":1,"médio":2,"medio":2,"médio-alto":2.5,"alto":3,"crítico":3.5,"low":1,"medium":2,"high":3}
     for i, r in enumerate(risks[:8]):
         prob = r.get("probability",50); imp = imap.get(r.get("impact","médio").lower(),2)
@@ -114,9 +120,10 @@ def ch_risk_matrix(risks: list) -> str:
     ax.set_xlim(35,100); ax.set_ylim(0.3,3.7)
     ax.set_yticks([1,2,3]); ax.set_yticklabels(['Baixo','Médio','Alto'], fontsize=6.5)
     ax.axhspan(0.3,1.5,alpha=0.04,color='green'); ax.axhspan(1.5,2.5,alpha=0.04,color='orange'); ax.axhspan(2.5,3.7,alpha=0.04,color='red')
-    leg = "\n".join([f"R{i+1} {r.get('name','')[:28]}" for i,r in enumerate(risks[:8])])
-    ax.text(1.02,0.98,leg,transform=ax.transAxes,fontsize=5,va='top',fontfamily='monospace',
-            bbox=dict(boxstyle='round',facecolor=P.m(P.SURFACE),alpha=0.95,edgecolor=P.m(P.BORDER)))
+    # Legend in separate panel — full names visible
+    leg = "\n".join([f"R{i+1} {r.get('name','')[:55]}" for i,r in enumerate(risks[:8])])
+    ax_leg.text(0.05,0.95,leg,transform=ax_leg.transAxes,fontsize=5,va='top',fontfamily='monospace',
+                bbox=dict(boxstyle='round,pad=0.4',facecolor=P.m(P.SURFACE),alpha=0.95,edgecolor=P.m(P.BORDER)))
     plt.tight_layout(); return _save(fig)
 
 def ch_emotion_dual(emotions: dict) -> str:
@@ -295,15 +302,23 @@ def ch_kpis(kpis: list) -> str:
     _augur_style()
     n = min(len(kpis),5)
     if n==0: return None
-    fig, axes = plt.subplots(1, n, figsize=(6, 1))
+    fig, axes = plt.subplots(1, n, figsize=(6.5, 1.2))
     if n==1: axes=[axes]
     cc = [P.ACCENT, P.ACCENT2, P.SUCCESS, P.GOLD, P.DANGER]
     for i,(ax,kpi) in enumerate(zip(axes,kpis[:5])):
         ax.set_xlim(0,1); ax.set_ylim(0,1); ax.axis('off')
         r = FancyBboxPatch((0.02,0.05),0.96,0.9,boxstyle="round,pad=0.04",facecolor=P.m(P.SURFACE),edgecolor=P.m(P.BORDER),lw=0.5)
         ax.add_patch(r)
-        ax.text(0.5,0.6,str(kpi.get("value",""))[:12],ha='center',va='center',fontsize=11,fontweight='bold',color=P.m(cc[i%len(cc)]))
-        ax.text(0.5,0.2,kpi.get("label","")[:18],ha='center',va='center',fontsize=4.5,color=P.m(P.MUTED))
+        val = str(kpi.get("value",""))[:18]
+        label = kpi.get("label","")[:25]
+        # Auto-size value font based on length
+        vfont = 9 if len(val)>10 else (10 if len(val)>6 else 11)
+        ax.text(0.5,0.58,val,ha='center',va='center',fontsize=vfont,fontweight='bold',color=P.m(cc[i%len(cc)]),
+                wrap=True)
+        # Label with wrapping
+        lfont = 4 if len(label)>18 else 5
+        ax.text(0.5,0.18,label,ha='center',va='center',fontsize=lfont,color=P.m(P.MUTED),
+                wrap=True)
     plt.tight_layout(); return _save(fig)
 
 
@@ -604,55 +619,55 @@ class PDFGenerator:
     def _pp(cls, pdf, text):
         clean = pdf._c(text.replace('**',''))
         if re.match(r'^#\d+\s', text):
-            pdf.ln(2); pdf.set_x(8)
+            pdf.ln(3); pdf.set_x(8)
             pdf.set_font("Helvetica","B",9.5); pdf.set_text_color(*P.TEXT)
-            pdf.multi_cell(pdf.w-18,5,clean); pdf.ln(1); return
+            pdf.multi_cell(pdf.w-18,5.5,clean); pdf.ln(2); return
         pdf.set_x(8); pdf.set_font("Helvetica","",8.2); pdf.set_text_color(*P.BODY)
-        pdf.multi_cell(pdf.w-18,4.5,clean); pdf.ln(1.5)
+        pdf.multi_cell(pdf.w-18,5.2,clean); pdf.ln(2.5)
 
     @classmethod
     def _bh(cls, pdf, text):
         clean = pdf._c(text.replace('**','').replace('#','').strip())
         pdf.ln(1.5); pdf.set_x(8)
         pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
-        pdf.multi_cell(pdf.w-18,5,clean); pdf.ln(1)
+        pdf.multi_cell(pdf.w-18,5.5,clean); pdf.ln(1.5)
 
     @classmethod
     def _bq(cls, pdf, text):
-        if pdf.get_y()>262: pdf.add_page()
+        if pdf.get_y()>258: pdf.add_page()
         clean = text.lstrip('> "').rstrip('"')
         clean = pdf._c(clean.replace('**',''))
         y0 = pdf.get_y()
         pdf.set_fill_color(*P.SURFACE)
         # Estimate box height
-        est_lines = max(1, len(clean)/80)
-        est_h = est_lines*4.5 + 4
+        est_lines = max(1, len(clean)/75)
+        est_h = est_lines*5 + 6
         pdf.rect(8, y0, pdf.w-18, est_h, "F")
         pdf.set_fill_color(*P.ACCENT2); pdf.rect(8, y0, 2, est_h, "F")
-        pdf.set_xy(13, y0+2)
+        pdf.set_xy(13, y0+3)
         pdf.set_font("Helvetica","I",7.5); pdf.set_text_color(80,80,110)
-        pdf.multi_cell(pdf.w-26, 4.2, f'"{clean}"')
-        actual_h = pdf.get_y() - y0
+        pdf.multi_cell(pdf.w-26, 4.5, f'"{clean}"')
+        actual_h = pdf.get_y() - y0 + 2
         if actual_h > est_h:
             pdf.set_fill_color(*P.SURFACE); pdf.rect(8, y0, pdf.w-18, actual_h, "F")
             pdf.set_fill_color(*P.ACCENT2); pdf.rect(8, y0, 2, actual_h, "F")
-            pdf.set_xy(13, y0+2)
-            pdf.multi_cell(pdf.w-26, 4.2, f'"{clean}"')
-        pdf.ln(2)
+            pdf.set_xy(13, y0+3)
+            pdf.multi_cell(pdf.w-26, 4.5, f'"{clean}"')
+        pdf.ln(3)
 
     @classmethod
     def _bl(cls, pdf, text):
         for line in text.split('\n'):
             line = line.strip()
             if not line: continue
-            if pdf.get_y()>272: pdf.add_page()
+            if pdf.get_y()>268: pdf.add_page()
             clean = re.sub(r'^[-•]\s*','',line)
             clean = pdf._c(clean.replace('**',''))
             pdf.set_x(10); pdf.set_font("Helvetica","B",7); pdf.set_text_color(*P.ACCENT)
-            pdf.cell(4,4.2,"-")
+            pdf.cell(4,4.5,"-")
             pdf.set_font("Helvetica","",7.8); pdf.set_text_color(*P.BODY)
-            pdf.multi_cell(pdf.w-24,4.2,clean)
-        pdf.ln(1)
+            pdf.multi_cell(pdf.w-24,4.8,clean)
+        pdf.ln(2)
 
     # ─── PARSERS ───
 
@@ -675,7 +690,7 @@ class PDFGenerator:
                     nm = re.match(r'Cen[aá]rio\s*\d*[:\.\s]*(.+?)(?:\n|$)', block)
                     pm = re.search(r'[Pp]robabilidade[:\s]*(\d+)%', block)
                     if nm and pm:
-                        scenarios.append({"name": nm.group(1).strip()[:50], "probability": int(pm.group(1))})
+                        scenarios.append({"name": nm.group(1).strip()[:65], "probability": int(pm.group(1))})
                 return scenarios if scenarios else []
         return []
 
