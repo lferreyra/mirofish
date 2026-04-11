@@ -831,22 +831,41 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </template>
 
 <style scoped>
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 /* Config */
 .config-wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 60px; }
 .config-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .config-titulo { font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px; letter-spacing: -.4px; }
 .config-sub { font-size: 13px; color: var(--text-secondary); margin: 0; }
-.config-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+.config-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px;box-shadow:0 1px 3px rgba(0,0,0,0.04); padding: 28px; display: flex; flex-direction: column; gap: 24px; }
 
 .param-block { display: flex; flex-direction: column; gap: 8px; }
 .param-h { display: flex; justify-content: space-between; align-items: center; }
 .param-l { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .param-v { font-size: 26px; font-weight: 800; color: var(--accent2); font-family: var(--font-mono); }
 .param-bounds { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
-.param-desc { font-size: 12px; color: var(--text-secondary); background: var(--bg-raised); border-radius: 6px; padding: 8px 12px; }
+.param-desc { font-size: 12px; color: var(--text-secondary); background: var(--bg-raised); border-radius:8px; padding: 8px 12px; }
 .slider { width: 100%; accent-color: var(--accent2); cursor: pointer; }
 
-.estimativas { display: flex; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.estimativas { display: flex; background: var(--bg-raised); border: 1px solid var(--border); border-radius:14px; overflow: hidden; }
 .est { flex: 1; padding: 12px 14px; }
 .el { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
 .ev { font-size: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); }
@@ -867,7 +886,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .prog-fill.prog-done   { background: var(--accent); }
 .prog-pct { font-size: 13px; color: var(--text-secondary); min-width: 38px; text-align: right; font-family: var(--font-mono); }
 
-.status-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 36px 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: border-color 0.4s; }
+.status-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px;box-shadow:0 1px 3px rgba(0,0,0,0.04); padding: 36px 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: border-color 0.4s; }
 .status-card.card-error   { border-color: rgba(255,90,90,.3); }
 .status-card.card-done    { border-color: rgba(0,229,195,.3); }
 .status-card.card-aborted { border-color: rgba(107,107,128,.3); }
@@ -912,11 +931,11 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .erro-actions { display: flex; gap: 12px; }
 
 /* Info */
-.info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
 .info-title { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 10px 16px 6px; text-transform: uppercase; letter-spacing: .6px; }
 .info-row { display: flex; justify-content: space-between; padding: 8px 16px; border-top: 1px solid var(--border); font-size: 13px; }
 .ik { color: var(--text-muted); }
-.iv { color: var(--text-primary); font-weight: 500; }
+.iv { color: var(--text-primary); font-weight:600; }
 
 /* Global buttons */
 .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all .15s; }
@@ -939,7 +958,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .as-sub { font-size:12px; color:var(--text-muted, #555570); margin-bottom:14px; }
 
 .as-chips { display:flex; flex-wrap:wrap; gap:8px; }
-.as-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:24px; border:2px solid rgba(124,111,247,0.2); background:rgba(124,111,247,0.04); cursor:pointer; transition:all .2s; font-size:13px; color:#f0f0ff; font-weight:500; }
+.as-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:24px; border:2px solid rgba(124,111,247,0.2); background:rgba(124,111,247,0.04); cursor:pointer; transition:all .2s; font-size:13px; color:#f0f0ff; font-weight:600; }
 .as-chip:hover { border-color:rgba(124,111,247,0.5); }
 .as-chip-on { border-color:#7c6ff7; background:rgba(124,111,247,0.15); }
 .as-chip-check { width:18px; height:18px; border-radius:50%; background:rgba(124,111,247,0.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#7c6ff7; }
@@ -948,14 +967,14 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .as-cats { display:flex; flex-direction:column; gap:4px; }
 .as-cat-head { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; cursor:pointer; transition:all .15s; }
 .as-cat-head:hover { background:rgba(255,255,255,0.03); }
-.as-cat-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.as-cat-icon { width:36px; height:36px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
 .as-cat-name { flex:1; font-size:14px; font-weight:600; color:#f0f0ff; }
 .as-cat-badge { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; }
 .as-cat-arrow { font-size:18px; color:#555570; transition:transform .2s; font-weight:700; }
 .as-open { transform:rotate(90deg); }
 
 .as-cat-body { padding:4px 0 8px 48px; }
-.as-agent { display:flex; gap:12px; align-items:flex-start; padding:10px 14px; border-radius:10px; cursor:pointer; transition:background .15s; }
+.as-agent { display:flex; gap:12px; align-items:flex-start; padding:10px 14px; border-radius:14px; cursor:pointer; transition:background .15s; }
 .as-agent:hover { background:rgba(255,255,255,0.03); }
 .as-agent-added { opacity:0.5; cursor:default; }
 .as-agent-dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
@@ -966,12 +985,12 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .as-agent-ok { font-size:12px; color:#00e5c3; font-weight:600; }
 
 .as-custom-row { display:flex; gap:8px; }
-.as-input { flex:1; padding:10px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
+.as-input { flex:1; padding:10px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
 .as-input:focus { border-color:rgba(0,229,195,0.4); }
-.as-add-btn { width:40px; height:40px; border-radius:10px; border:none; background:#00e5c3; color:#09090f; font-size:20px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.as-add-btn { width:40px; height:40px; border-radius:14px; border:none; background:#00e5c3; color:#09090f; font-size:20px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
 .as-selected { display:flex; flex-wrap:wrap; gap:6px; }
-.as-sel-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; background:rgba(255,255,255,0.04); border:1px solid; color:#f0f0ff; font-size:12px; font-weight:500; }
+.as-sel-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; background:rgba(255,255,255,0.04); border:1px solid; color:#f0f0ff; font-size:12px; font-weight:600; }
 .as-sel-x { cursor:pointer; opacity:0.5; font-size:10px; }
 .as-sel-x:hover { opacity:1; }
 
@@ -1001,11 +1020,11 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .asp-chip-check { width:16px; height:16px; border-radius:50%; background:rgba(124,111,247,0.2); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#7c6ff7; }
 .asp-chip-on .asp-chip-check { background:#7c6ff7; color:#fff; }
 .asp-chip-name { font-size:13px; font-weight:600; color:#f0f0ff; }
-.asp-chip-badge { font-size:9px; font-weight:700; color:#7c6ff7; background:rgba(124,111,247,0.1); padding:2px 8px; border-radius:10px; letter-spacing:0.5px; }
+.asp-chip-badge { font-size:9px; font-weight:700; color:#7c6ff7; background:rgba(124,111,247,0.1); padding:2px 8px; border-radius:14px; letter-spacing:0.5px; }
 
 /* Categories */
 .asp-categories { display:flex; flex-direction:column; gap:2px; }
-.asp-cat-header { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; cursor:pointer; transition:background .2s; }
+.asp-cat-header { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; cursor:pointer; transition:background .2s; }
 .asp-cat-header:hover { background:rgba(255,255,255,0.03); }
 .asp-cat-icon { font-size:20px; }
 .asp-cat-label { flex:1; font-size:14px; font-weight:600; color:#f0f0ff; }
@@ -1015,22 +1034,22 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 
 /* Agent list */
 .asp-cat-agents { padding:4px 0 8px 46px; display:flex; flex-direction:column; gap:4px; }
-.asp-agent { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; cursor:pointer; transition:all .15s; border:1px solid transparent; }
+.asp-agent { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:14px; cursor:pointer; transition:all .15s; border:1px solid transparent; }
 .asp-agent:hover { background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.06); }
 .asp-agent-added { opacity:0.6; cursor:default; }
 .asp-agent-left { display:flex; gap:10px; align-items:flex-start; flex:1; }
 .asp-agent-dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
 .asp-agent-name { font-size:13px; font-weight:600; color:#f0f0ff; }
 .asp-agent-desc { font-size:11px; color:#8888aa; margin-top:2px; line-height:1.4; }
-.asp-agent-add { border:none; background:none; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; padding:4px 10px; border-radius:6px; transition:background .2s; }
+.asp-agent-add { border:none; background:none; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; padding:4px 10px; border-radius:8px; transition:background .2s; }
 .asp-agent-add:hover { background:rgba(255,255,255,0.06); }
 .asp-agent-ok { font-size:11px; color:#00e5c3; font-weight:600; }
 
 /* Custom input */
 .asp-custom-row { display:flex; gap:8px; }
-.asp-input { flex:1; padding:10px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
+.asp-input { flex:1; padding:10px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
 .asp-input:focus { border-color:rgba(0,229,195,0.4); }
-.asp-add-btn { padding:10px 20px; border-radius:10px; border:none; background:#00e5c3; color:#09090f; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+.asp-add-btn { padding:10px 20px; border-radius:14px; border:none; background:#00e5c3; color:#09090f; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
 
 /* Selected tags */
 .asp-selected-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
@@ -1058,7 +1077,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .asp-toggle-cat:hover { background:rgba(0,229,195,0.12); }
 .asp-new-cat-form { margin-top:12px; }
 .asp-new-cat-row { display:flex; gap:8px; align-items:center; }
-.asp-cat-icon-input { width:44px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:18px; text-align:center; outline:none; }
+.asp-cat-icon-input { width:44px; padding:10px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:18px; text-align:center; outline:none; }
 .asp-color-input { width:40px; height:40px; border:none; border-radius:8px; cursor:pointer; background:transparent; }
 
 @media (max-width:768px) { .asp-cat-agents { padding-left:20px; } .asp-title-row { flex-direction:column; align-items:flex-start; gap:8px; } .asp-new-cat-row { flex-wrap:wrap; } }</style>
