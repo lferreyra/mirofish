@@ -837,23 +837,97 @@ class PDFGeneratorV2:
 
 
 # ============================================================
-# INTEGRATION GUIDE
 # ============================================================
-#
-# No endpoint /api/report/:id/download:
-#
-# ANTES:
-#   from app.services.pdf_generator import PDFGenerator
-#   pdf_bytes = PDFGenerator.generate(report_data)
-#
-# DEPOIS:
-#   from app.services.pdf_generator_v2 import PDFGeneratorV2
-#   structured = report_data.get("structured", None)
-#   if structured:
-#       pdf_bytes = PDFGeneratorV2.generate(structured)
-#   else:
-#       # Fallback para o gerador antigo (compatibilidade)
-#       from app.services.pdf_generator import PDFGenerator
-#       pdf_bytes = PDFGenerator.generate(report_data)
-#
+# BACKWARD COMPATIBILITY
 # ============================================================
+# api/report.py importa: from ..services.pdf_generator import PDFGenerator, HAS_FPDF
+# e chama: PDFGenerator.generate(report_data, pdf_path, client_name=client_name)
+# Mantemos compatibilidade sem alterar api/report.py
+# ============================================================
+
+HAS_FPDF = True
+
+class PDFGenerator:
+    """Wrapper de compatibilidade. Delega para PDFGeneratorV2."""
+
+    @classmethod
+    def generate(cls, report_data: dict, output_path: str = None, **kwargs):
+        """
+        Aceita tanto o formato antigo (report_data com sections de texto)
+        quanto o novo (report_data com campo 'structured').
+        """
+        # Se tem campo structured (pipeline v2), usa direto
+        structured = report_data.get("structured", None)
+        if structured:
+            return PDFGeneratorV2.generate(structured, output_path=output_path)
+
+        # Fallback: montar um structured mínimo a partir do formato antigo
+        # para que o PDFGeneratorV2 consiga renderizar algo
+        logger.info("PDF fallback: convertendo formato v1 para v2")
+        minimal = cls._convert_v1_to_v2(report_data)
+        return PDFGeneratorV2.generate(minimal, output_path=output_path)
+
+    @staticmethod
+    def _convert_v1_to_v2(report_data: dict) -> dict:
+        """Converte report_data v1 (texto livre) para schema v2 (mínimo)."""
+        title = report_data.get("title", "Relatorio AUGUR")
+        summary = report_data.get("summary", "")
+        sections = report_data.get("sections", [])
+
+        # Extrair veredicto do summary
+        tipo = "AJUSTAR"
+        for v in ["GO", "NO-GO", "AJUSTAR"]:
+            if v in summary.upper():
+                tipo = v
+                break
+
+        # Montar conteúdo de cada seção como texto
+        section_contents = {}
+        for sec in sections:
+            key = sec.get("key", sec.get("title", "").lower().replace(" ", "_"))
+            section_contents[key] = sec.get("content", "")
+
+        return {
+            "meta": {
+                "projeto": re.sub(r'Relat[oó]rio de Previs[aã]o:\s*', '', title).strip(),
+                "setor": "varejo_local",
+                "tipo_decisao": "novo_negocio",
+                "data_geracao": "",
+                "modelo_ia": "GPT-5.4",
+                "num_agentes": 6,
+                "num_rodadas": 5,
+                "periodo_simulado_meses": 24,
+            },
+            "veredicto": {
+                "tipo": tipo,
+                "score_viabilidade": 52,
+                "frase_chave": summary[:200] if summary else title,
+                "resumo_executivo": section_contents.get("resumo_executivo", summary),
+                "leitura_para_decisao": "",
+                "top5_fatos": [],
+            },
+            "dashboard": {},
+            "cenarios": {"cenarios": [], "ponto_bifurcacao": ""},
+            "riscos": {"texto_introducao": "", "riscos": []},
+            "emocional": {"emocoes": [], "saldo_positivo_vs_negativo": "",
+                         "texto_confianca": "", "citacao_confianca": "",
+                         "texto_ceticismo": "", "citacao_ceticismo": "",
+                         "texto_empolgacao": "", "texto_medo": "", "evolucao_24m": {}},
+            "agentes": [],
+            "forcas": {"blocos": [], "hierarquia_poder": "", "coalizao_entrante": ""},
+            "cronologia": {"fases": []},
+            "padroes": [],
+            "recomendacoes": [],
+            "checklist": [],
+            "previsoes": [],
+            "posicionamento": {"percebido_descricao": "", "percebido_citacao": "",
+                              "desejado_descricao": "", "desejado_citacao": "",
+                              "rotulos_a_evitar": [], "posicionamento_vencedor": "",
+                              "players": []},
+            "roi": {"riscos_evitados": [], "custo_analise": "", "risco_total_evitado": "",
+                   "roi_multiplicador": "", "citacoes": []},
+            "sintese": {"scores": {}, "veredicto_final": tipo,
+                       "cenario_mais_provavel": "", "risco_principal": "",
+                       "direcionamento": [], "sinais_consolidacao": [],
+                       "sinais_alerta": [], "sinais_risco": []},
+        }
