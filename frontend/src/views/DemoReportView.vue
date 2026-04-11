@@ -151,6 +151,25 @@ const demo = {
 </template>
 
 <style scoped>
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 .demo-wrap { max-width:1100px; margin:0 auto; padding:0 20px 60px; }
 .demo-banner { display:flex; align-items:center; gap:12px; padding:12px 20px; background:linear-gradient(90deg, rgba(124,111,247,0.08), rgba(0,229,195,0.06)); border:1px solid rgba(124,111,247,0.2); border-radius:12px; margin-bottom:24px; flex-wrap:wrap; font-size:13px; font-weight:700; color:#7c6ff7; }
 .demo-sub { font-weight:400; color:#8888aa; font-size:12px; }
