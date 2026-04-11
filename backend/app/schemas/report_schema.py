@@ -237,6 +237,22 @@ class ROIAnalise(TypedDict):
     citacoes: list[str]
 
 
+class DadoMercado(TypedDict):
+    titulo: str
+    conteudo: str
+    fontes: list[str]
+
+
+class ContextoMercado(TypedDict):
+    """Seção NOVA: Dados de mercado verificados via Perplexity."""
+    localizacao: str
+    setor_detalhe: str
+    dados: list[DadoMercado]
+    fontes_unicas: list[str]
+    total_queries: int
+    disclaimer: str
+
+
 class SinteseFinal(TypedDict):
     scores: dict                    # {viabilidade_financeira: 67, demanda: 81, ...}
     veredicto_final: str
@@ -256,6 +272,7 @@ class AugurReportSchema(TypedDict):
     meta: MetaAnalise
     veredicto: VeredictoPrincipal
     dashboard: DashboardKPIs
+    contexto_mercado: Optional[ContextoMercado]  # Perplexity — dados verificados
     cenarios: CenariosFuturos
     riscos: FatoresRisco
     emocional: DistribuicaoEmocional
@@ -280,6 +297,9 @@ GRAFICOS_POR_SECAO = {
     "dashboard": {
         "kpi_grid_3x4": {"dados": "dashboard.*"},
         "semaforo_3col": {"dados": "dashboard.sinais_*"},
+    },
+    "contexto_mercado": {
+        "cards_dados_verificados": {"dados": "contexto_mercado.dados[]"},
     },
     "cenarios": {
         "barras_horizontais": {"dados": "cenarios[].probabilidade"},
