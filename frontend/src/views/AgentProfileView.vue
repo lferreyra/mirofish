@@ -90,6 +90,25 @@ function sent(p){const l=p.num_likes||0,d=p.num_dislikes||0;if(l>d*2)return 'pos
   </AppShell>
 </template>
 <style scoped>
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 .st{display:flex;flex-direction:column;align-items:center;gap:14px;padding:60px;color:var(--text-muted)}.err{color:var(--danger)}
 .spin{width:24px;height:24px;border:3px solid var(--border-md);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 .page{display:flex;flex-direction:column;gap:16px}
