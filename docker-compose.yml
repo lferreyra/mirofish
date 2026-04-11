@@ -14,10 +14,8 @@ services:
       - "127.0.0.1:5001:5001"
     restart: unless-stopped
     command: >
-      sh -c "echo '=== Installing deps ===' &&
-             /usr/local/bin/pip install fpdf2 flask-jwt-extended --break-system-packages &&
-             echo '=== deps installed ===' &&
-             npm run dev"
+      sh -c "cd /app/backend && uv pip install fpdf2 flask-jwt-extended &&
+             cd /app && npm run dev"
     volumes:
       - ./backend/uploads:/app/backend/uploads
       - ./frontend/src:/app/frontend/src
