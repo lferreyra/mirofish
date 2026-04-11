@@ -311,6 +311,34 @@ def ch_kpis(kpis: list) -> str:
         ax.text(0.5,0.2,lab,ha='center',va='center',fontsize=lfs,color=P.m(P.MUTED))
     plt.tight_layout(); return _save(fig)
 
+def ch_viability_radar(verdict: str, scenarios: list, risks: list) -> str:
+    """5-dimension viability radar for conclusion page."""
+    _augur_style()
+    fig, ax = plt.subplots(figsize=(3.5, 3.5), subplot_kw=dict(polar=True))
+    dims = ['Demanda', 'Viabilidade\nFinanceira', 'Competitividade', 'Risco\nOperacional', 'Timing']
+    # Derive scores from data
+    top_prob = scenarios[0]["probability"] if scenarios else 50
+    avg_risk = sum(r.get("probability",50) for r in risks[:5])/max(len(risks[:5]),1) if risks else 50
+    demand = min(95, top_prob * 1.8)
+    financial = min(95, top_prob * 1.5) if top_prob > 30 else 30
+    competitive = max(20, 100 - avg_risk)
+    risk_op = max(20, 100 - avg_risk * 0.9)
+    timing = 70 if verdict == "GO" else (50 if verdict == "AJUSTAR" else 25)
+    vals = [demand, financial, competitive, risk_op, timing]
+    angs = np.linspace(0, 2*np.pi, len(dims), endpoint=False).tolist()
+    vp = vals + [vals[0]]; ap = angs + [angs[0]]
+    ax.plot(ap, vp, 'o-', lw=2.5, color=P.m(P.ACCENT), markersize=5)
+    ax.fill(ap, vp, alpha=0.15, color=P.m(P.ACCENT))
+    ax.set_xticks(angs); ax.set_xticklabels(dims, fontsize=6.5, fontweight='bold')
+    ax.set_ylim(0, 100); ax.set_yticks([25, 50, 75, 100])
+    ax.set_yticklabels(['25','50','75','100'], fontsize=4.5, color=P.m(P.MUTED))
+    ax.grid(color='#ddd', lw=0.4)
+    for a, v in zip(angs, vals):
+        ax.text(a, v + 8, f'{int(v)}', ha='center', fontsize=6, fontweight='bold', color=P.m(P.TEXT))
+    avg = int(sum(vals)/len(vals))
+    ax.set_title(f'Viabilidade Geral: {avg}/100', fontsize=8, fontweight='bold', color=P.m(P.TEXT), pad=12)
+    plt.tight_layout(); return _save(fig)
+
 
 # ═══════════════════════════════════════════════════
 # PDF CLASS
@@ -397,10 +425,14 @@ class PDFGenerator:
         # P3: TOC
         secs = cls._filter(sections, depth)
         cls._p_toc(pdf, secs)
-        # P4-P17: SECTIONS
+        # P4: METHODOLOGY
+        cls._p_methodology(pdf, title)
+        # P5-P15: SECTIONS
         for i, sec in enumerate(secs):
             cls._p_section(pdf, i, len(secs), sec, depth, scenarios, risks, emotions, predictions)
-        # P18: BACK COVER
+        # P16: CONCLUSION
+        cls._p_conclusion(pdf, verdict, scenarios, risks, sections)
+        # P17: BACK COVER
         cls._p_back(pdf, verdict)
 
         out = pdf.output()
@@ -541,6 +573,151 @@ class PDFGenerator:
         cls._render_content(pdf, content)
 
     @classmethod
+    def _p_methodology(cls, pdf, title):
+        """Page: How the simulation works."""
+        pdf.add_page()
+        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
+        pdf.set_x(8); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.ACCENT)
+        pdf.cell(0,3.5,pdf._c("SOBRE ESTA ANALISE"),new_x="LMARGIN",new_y="NEXT")
+        pdf.set_x(8); pdf.set_font("Helvetica","B",13); pdf.set_text_color(*P.TEXT)
+        pdf.cell(0,7,pdf._c("Metodologia da Simulacao"),new_x="LMARGIN",new_y="NEXT")
+        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
+        pdf.line(8,pdf.get_y()+1,50,pdf.get_y()+1); pdf.ln(6)
+
+        blocks = [
+            ("Como funciona o AUGUR",
+             "O AUGUR e uma plataforma de previsao de mercado por inteligencia artificial. "
+             "Ele cria agentes sinteticos com personalidade, renda, habitos de consumo e opinioes proprias, "
+             "calibrados com dados reais do mercado local. Esses agentes simulam rodadas de interacao "
+             "que representam meses de operacao real."),
+            ("O que sao os agentes",
+             "Cada agente e um perfil de consumidor gerado por IA que representa um segmento real do mercado. "
+             "Eles tem nome, idade, profissao, faixa de renda e comportamento de compra. "
+             "As citacoes entre aspas neste relatorio sao falas desses agentes -- nao de pessoas reais, "
+             "mas de simulacoes calibradas com dados reais."),
+            ("Como ler as probabilidades",
+             "As probabilidades indicam o grau de convergencia entre os agentes. "
+             "Quando 45% dos cenarios apontam para um resultado, significa que a maioria dos agentes, "
+             "sob diferentes condicoes, chegou a essa conclusao de forma independente. "
+             "Os intervalos de confianca mostram a margem de variacao entre simulacoes."),
+            ("Limitacoes",
+             "Esta analise e um complemento a outras formas de pesquisa, nao uma substituicao. "
+             "Os agentes simulam comportamento humano com base em padroes, mas nao capturam "
+             "eventos imprevisiveis, mudancas regulatorias ou crises externas. "
+             "Use este relatorio como ferramenta de reducao de risco, nao como garantia."),
+        ]
+        for heading, text in blocks:
+            if pdf.get_y() > 255: pdf.add_page()
+            pdf.set_x(8); pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
+            pdf.cell(0,5,pdf._c(heading),new_x="LMARGIN",new_y="NEXT"); pdf.ln(1)
+            pdf.set_x(8); pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.BODY)
+            pdf.multi_cell(pdf.w-18, 5, pdf._c(text)); pdf.ln(4)
+
+        # Stats box
+        pdf.ln(4)
+        clean = re.sub(r'Relat.*?:\s*','',title)
+        pdf.set_fill_color(*P.SURFACE)
+        pdf.rect(8, pdf.get_y(), pdf.w-18, 28, "F")
+        pdf.set_fill_color(*P.ACCENT); pdf.rect(8, pdf.get_y(), 2.5, 28, "F")
+        y0 = pdf.get_y()
+        pdf.set_xy(14, y0+3)
+        pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*P.ACCENT)
+        pdf.cell(0,4,pdf._c("PARAMETROS DA SIMULACAO"),new_x="LMARGIN",new_y="NEXT")
+        pdf.set_x(14); pdf.set_font("Helvetica","",7.5); pdf.set_text_color(*P.BODY)
+        for line in [
+            f"Projeto: {clean[:60]}",
+            "Agentes: 6 perfis sinteticos com personalidade e comportamento unicos",
+            "Rodadas: 5 ciclos representando 24 meses de mercado",
+            "Modelo: IA de ultima geracao (GPT-5.4)",
+        ]:
+            pdf.set_x(14); pdf.cell(0, 4, pdf._c(f"  - {line}"), new_x="LMARGIN", new_y="NEXT")
+
+    @classmethod
+    def _p_conclusion(cls, pdf, verdict, scenarios, risks, sections):
+        """Page: Conclusion + Next Steps + Viability Radar."""
+        pdf.add_page()
+        pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
+        pdf.set_x(8); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.ACCENT)
+        pdf.cell(0,3.5,pdf._c("CONCLUSAO"),new_x="LMARGIN",new_y="NEXT")
+        pdf.set_x(8); pdf.set_font("Helvetica","B",13); pdf.set_text_color(*P.TEXT)
+        pdf.cell(0,7,pdf._c("Conclusao e Proximos Passos"),new_x="LMARGIN",new_y="NEXT")
+        pdf.set_draw_color(*P.ACCENT); pdf.set_line_width(0.5)
+        pdf.line(8,pdf.get_y()+1,50,pdf.get_y()+1); pdf.ln(4)
+
+        # Viability radar
+        if HAS_MPL:
+            try:
+                rp = ch_viability_radar(verdict, scenarios, risks)
+                pdf.img(rp, x=55, w=80); pdf.ln(2)
+            except Exception as e:
+                logger.warning(f"Viability radar error: {e}")
+
+        # Verdict summary
+        vc = {"GO":P.SUCCESS,"NO-GO":P.DANGER,"AJUSTAR":P.GOLD}
+        pdf.set_fill_color(*vc.get(verdict,P.GOLD))
+        bw = 60
+        pdf.rect((pdf.w-bw)/2, pdf.get_y(), bw, 8, "F")
+        pdf.set_font("Helvetica","B",9); pdf.set_text_color(255,255,255)
+        pdf.cell(0, 8, pdf._c(f"VEREDICTO FINAL: {verdict}"), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(4)
+
+        # Extract top recommendation from sections
+        top_rec = ""
+        for sec in sections:
+            if any(k in sec.get("title","").lower() for k in ["recomend","estrateg"]):
+                content = sec.get("content","")
+                m = re.search(r'#1\s+(.+?)(?:\n|$)', content)
+                if m: top_rec = m.group(1).strip()
+                break
+
+        # 3 immediate actions
+        pdf.set_x(8); pdf.set_font("Helvetica","B",9.5); pdf.set_text_color(*P.TEXT)
+        pdf.cell(0, 5, pdf._c("O QUE FAZER ESTA SEMANA"), new_x="LMARGIN", new_y="NEXT"); pdf.ln(2)
+
+        actions = []
+        if top_rec:
+            actions.append(top_rec[:80])
+        if scenarios:
+            best = max(scenarios, key=lambda s: s.get("probability",0))
+            actions.append(f"Planejar para o cenario mais provavel: {best['name'][:50]}")
+        if risks:
+            top_risk = risks[0]
+            actions.append(f"Mitigar risco #1: {top_risk['name'][:50]}")
+        if not actions:
+            actions = ["Revisar as recomendacoes estrategicas", "Definir cronograma de execucao", "Agendar sessao de estrategia"]
+
+        for i, action in enumerate(actions[:3], 1):
+            if pdf.get_y() > 265: pdf.add_page()
+            y0 = pdf.get_y()
+            pdf.set_fill_color(*P.SURFACE); pdf.rect(8, y0, pdf.w-18, 12, "F")
+            num_colors = [P.ACCENT, P.ACCENT2, P.GOLD]
+            pdf.set_fill_color(*num_colors[(i-1)%3])
+            pdf.rect(8, y0, 12, 12, "F")
+            pdf.set_xy(10, y0+1)
+            pdf.set_font("Helvetica","B",9); pdf.set_text_color(255,255,255)
+            pdf.cell(8, 10, str(i), align="C")
+            pdf.set_xy(22, y0+2)
+            pdf.set_font("Helvetica","",8); pdf.set_text_color(*P.TEXT)
+            pdf.multi_cell(pdf.w-34, 4.5, pdf._c(action))
+            pdf.set_y(y0 + 14)
+
+        # Monitoring signals
+        pdf.ln(4)
+        pdf.set_x(8); pdf.set_font("Helvetica","B",9); pdf.set_text_color(*P.TEXT)
+        pdf.cell(0, 5, pdf._c("SINAIS PARA MONITORAR"), new_x="LMARGIN", new_y="NEXT"); pdf.ln(1)
+        signals = [
+            ("Sinal positivo", "Recompra acima de 15%, indicacao espontanea, margem preservada", P.SUCCESS),
+            ("Sinal de alerta", "Conversao abaixo de 8%, desconto acima de 15%, dependencia de promocao", P.GOLD),
+            ("Sinal critico", "Break-even nao atinge ate M18, guerra de preco instalada, reputacao negativa", P.DANGER),
+        ]
+        for label, text, color in signals:
+            if pdf.get_y() > 268: pdf.add_page()
+            pdf.set_x(8); pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*color)
+            pdf.cell(35, 4.5, pdf._c(f"  {label}:"))
+            pdf.set_font("Helvetica","",7.5); pdf.set_text_color(*P.BODY)
+            pdf.multi_cell(pdf.w-53, 4.5, pdf._c(text)); pdf.ln(1)
+
+    @classmethod
     def _p_back(cls, pdf, verdict):
         pdf.add_page()
         pdf.set_fill_color(*P.ACCENT); pdf.rect(0,0,4,297,"F")
@@ -573,11 +750,25 @@ class PDFGenerator:
         pdf.set_font("Helvetica","",7)
         pdf.cell(0,4,"augur.itcast.com.br",align="C",new_x="LMARGIN",new_y="NEXT")
         pdf.cell(0,4,"contato@itcast.com.br",align="C",new_x="LMARGIN",new_y="NEXT")
-        pdf.ln(8)
+        pdf.ln(6)
+        # CTA box
+        pdf.set_fill_color(*P.SURFACE)
+        pdf.rect(35, pdf.get_y(), pdf.w-70, 22, "F")
+        pdf.set_fill_color(*P.ACCENT); pdf.rect(35, pdf.get_y(), pdf.w-70, 1.5, "F")
+        y0 = pdf.get_y() + 4
+        pdf.set_xy(40, y0)
+        pdf.set_font("Helvetica","B",7.5); pdf.set_text_color(*P.TEXT)
+        pdf.cell(pdf.w-80, 4, pdf._c("Quer explorar outros cenarios?"), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_x(40); pdf.set_font("Helvetica","",6.5); pdf.set_text_color(*P.MUTED)
+        pdf.cell(pdf.w-80, 3.5, pdf._c("Entreviste os agentes, simule variacoes e compare cenarios"), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_x(40); pdf.set_font("Helvetica","B",7); pdf.set_text_color(*P.ACCENT)
+        pdf.cell(pdf.w-80, 4, pdf._c("Acesse o relatorio interativo em augur.itcast.com.br"), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(6)
         pdf.set_font("Helvetica","",6); pdf.set_text_color(180,180,200)
         pdf.multi_cell(0,3.5,pdf._c(
-            "Este relatorio foi gerado por inteligencia artificial. "
-            "Os resultados representam cenarios possiveis e nao garantem resultados futuros."
+            "Este relatorio foi gerado por inteligencia artificial com base em simulacoes de opiniao publica. "
+            "Os resultados representam cenarios possiveis e nao garantem resultados futuros. "
+            "Recomenda-se utilizar estas previsoes como complemento a outras analises de mercado."
         ),align="C")
 
     # ─── CONTENT RENDERER ───
