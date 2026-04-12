@@ -1,14 +1,24 @@
 services:
   mirofish:
-    image: ghcr.io/666ghj/mirofish:latest
-    # 加速镜像（如拉取缓慢可替换上方地址）
-    # image: ghcr.nju.edu.cn/666ghj/mirofish:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: mirofish
     env_file:
       - .env
+    environment:
+      - LLM_MODEL_NAME=gpt-5.4-mini
+      - CORS_ORIGINS=*
     ports:
-      - "3000:3000"
-      - "5001:5001"
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:5001:5001"
     restart: unless-stopped
+    command: >
+      sh -c "cd /app/backend && uv pip install fpdf2 flask-jwt-extended &&
+             cd /app && npm run dev"
     volumes:
       - ./backend/uploads:/app/backend/uploads
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/index.html:/app/frontend/index.html
+      - ./backend/app:/app/backend/app:rw
+      - ./data:/app/data

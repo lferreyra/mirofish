@@ -1,7 +1,7 @@
 [project]
 name = "mirofish-backend"
 version = "0.1.0"
-description = "MiroFish - 简洁通用的群体智能引擎，预测万物"
+description = "AUGUR - Plataforma de previsao de mercado por IA"
 requires-python = ">=3.11"
 license = { text = "AGPL-3.0" }
 authors = [
@@ -32,6 +32,10 @@ dependencies = [
     # 工具库
     "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
+    
+    # AUGUR extras
+    "fpdf2>=2.7.0",
+    "flask-jwt-extended>=4.6.0",
 ]
 
 [project.optional-dependencies]

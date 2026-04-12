@@ -1,0 +1,73 @@
+:root {
+  /* ═══ AUGUR LIGHT THEME — Premium Clean ═══ */
+  --bg-base: #f8f9fc;
+  --bg-surface: #ffffff;
+  --bg-raised: #f0f1f6;
+  --bg-overlay: #e8e9f0;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-md: rgba(0, 0, 0, 0.12);
+  --border-hi: rgba(0, 0, 0, 0.18);
+
+  --accent: #00b894;
+  --accent-dim: rgba(0, 184, 148, 0.10);
+  --accent2: #6c5ce7;
+  --accent2-dim: rgba(108, 92, 231, 0.08);
+
+  --danger: #e74c3c;
+  --warn: #f39c12;
+  --success: #00b894;
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted: #8888a0;
+
+  --font-sans: 'Helvetica Neue', -apple-system, Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Courier New', monospace;
+  --font-head: 'Georgia', serif;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  --t-fast: 0.15s ease;
+  --t-mid: 0.25s ease;
+
+  /* ═══ Shadows (light theme gets shadows instead of borders) ═══ */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 36px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* ═══ Scrollbar light ═══ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
