@@ -28,6 +28,7 @@ const dragOver = ref(false)
 // ─── Etapa 4: Parâmetros ──────────────────────────────────────
 const agentes = ref(50)
 const rodadas = ref(20)
+const escalaTempo = ref('meses') // meses | semanas | dias
 
 // ─── Validações ───────────────────────────────────────────────
 const e1ok = computed(() => pNome.value.trim().length >= 3)
@@ -41,10 +42,8 @@ const descAgentes = computed(() => {
   return 'Máxima riqueza — simulação de alta complexidade'
 })
 const descRodadas = computed(() => {
-  if (rodadas.value <= 5)  return 'Reação imediata ao evento'
-  if (rodadas.value <= 25) return 'Captura tendências de curto prazo'
-  if (rodadas.value <= 60) return 'Evolução completa da opinião ao longo do tempo'
-  return 'Análise profunda — evolução de longo prazo'
+  const u = escalaTempo.value === 'meses' ? 'meses' : escalaTempo.value === 'semanas' ? 'semanas' : 'dias'
+  return `${rodadas.value} ${u} simulados — cada rodada = 1 ${u.slice(0,-1)}`
 })
 const estMinutos = computed(() => Math.round(Math.max(2, agentes.value * rodadas.value * 0.04)))
 const estCusto   = computed(() => (agentes.value * rodadas.value * 0.0008).toFixed(2))
@@ -121,7 +120,7 @@ async function criar() {
     await service.post('/api/graph/build', { project_id: pid, simulation_requirement: sHipotese.value })
 
     // 3. Ir para o pipeline passando todos os parâmetros
-    router.push(`/simulacao/${pid}?agentes=${agentes.value}&rodadas=${rodadas.value}`)
+    router.push(`/simulacao/${pid}?agentes=${agentes.value}&rodadas=${rodadas.value}&escala=${escalaTempo.value}`)
   } catch (e) {
     erro.value = e?.response?.data?.error || e?.message || 'Erro ao criar. Tente novamente.'
   } finally {
@@ -310,6 +309,14 @@ const steps = ['Projeto', 'Simulação', 'Materiais', 'Parâmetros']
             <input type="range" min="1" max="100" step="1" v-model.number="rodadas" class="slider"/>
             <div class="param-bounds"><span>1 — instantâneo</span><span>100 — evolução completa</span></div>
             <div class="param-desc">{{ descRodadas }}</div>
+            <div class="escala-row">
+              <span class="escala-label">Cada rodada representa:</span>
+              <div class="escala-btns">
+                <button :class="['escala-btn', { active: escalaTempo === 'dias' }]" @click="escalaTempo = 'dias'">1 Dia</button>
+                <button :class="['escala-btn', { active: escalaTempo === 'semanas' }]" @click="escalaTempo = 'semanas'">1 Semana</button>
+                <button :class="['escala-btn', { active: escalaTempo === 'meses' }]" @click="escalaTempo = 'meses'">1 Mês</button>
+              </div>
+            </div>
           </div>
 
           <!-- Estimativas -->
@@ -477,6 +484,14 @@ const steps = ['Projeto', 'Simulação', 'Materiais', 'Parâmetros']
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .erro { background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--danger); }
+
+/* Escala de tempo */
+.escala-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+.escala-label { font-size:12px; color:var(--text-muted); white-space:nowrap; }
+.escala-btns { display:flex; gap:4px; }
+.escala-btn { padding:5px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-surface); color:var(--text-secondary); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+.escala-btn:hover { border-color:var(--accent2); }
+.escala-btn.active { background:var(--accent2); color:#fff; border-color:var(--accent2); }
 
 /* Transitions */
 .slide-enter-active { transition: all 0.25s ease; }
