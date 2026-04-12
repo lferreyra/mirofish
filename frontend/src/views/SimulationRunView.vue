@@ -57,18 +57,73 @@ const eventLog     = ref([])
 const realActions  = ref([])
 const realAgentMap = ref({})
 
+// Escala de tempo (1 rodada = 1 mês/semana/dia)
+const escalaTempo = ref(route.query.escala || localStorage.getItem('augur_escala') || 'meses')
+function roundLabel(r) {
+  if (escalaTempo.value === 'meses')  return `M${r}`
+  if (escalaTempo.value === 'semanas') return `S${r}`
+  return `D${r}`
+}
+function roundLabelFull(r) {
+  if (escalaTempo.value === 'meses')  return `Mês ${r}`
+  if (escalaTempo.value === 'semanas') return `Semana ${r}`
+  return `Dia ${r}`
+}
+
+// Resumo por rodada (calculado das ações reais)
+const roundSummaries = computed(() => {
+  const actions = realActions.value
+  if (!actions.length) return []
+  
+  const byRound = {}
+  actions.forEach(a => {
+    const r = a.round_num || 0
+    if (!byRound[r]) byRound[r] = { round: r, posts: 0, likes: 0, comments: 0, reposts: 0, agents: new Set(), topPost: null }
+    byRound[r][a.action_type === 'CREATE_POST' ? 'posts' : a.action_type === 'LIKE_POST' || a.action_type === 'LIKE_COMMENT' ? 'likes' : a.action_type === 'CREATE_COMMENT' ? 'comments' : 'reposts']++
+    byRound[r].agents.add(a.agent_name || a.agent_id)
+    if (a.action_type === 'CREATE_POST' && a.action_args?.content && !byRound[r].topPost) {
+      byRound[r].topPost = { agent: a.agent_name, content: a.action_args.content.slice(0, 120) }
+    }
+  })
+  
+  return Object.values(byRound).sort((a,b) => a.round - b.round).map(r => ({
+    round: r.round,
+    label: roundLabelFull(r.round),
+    posts: r.posts,
+    likes: r.likes,
+    comments: r.comments,
+    reposts: r.reposts,
+    totalAcoes: r.posts + r.likes + r.comments + r.reposts,
+    agentesAtivos: r.agents.size,
+    engajamento: r.posts > 0 ? Math.round((r.likes + r.comments) / r.posts * 100) / 100 : 0,
+    topPost: r.topPost,
+    resumo: r.posts > 0 
+      ? `${r.agents.size} agentes, ${r.posts} posts, ${r.comments} comentários, ${r.likes} curtidas`
+      : `${r.agents.size} agentes ativos, ${r.likes + r.comments + r.reposts} interações`
+  }))
+})
+
 const simStatus    = computed(() => status.value.runner_status)
 const temRelatorio = computed(() => !!status.value.report_id)
 
 const progresso = computed(() => {
-  if (status.value.progress_percent > 0) return Math.round(status.value.progress_percent)
-  if (status.value.total_rounds > 0 && status.value.current_round > 0)
-    return Math.round((status.value.current_round / status.value.total_rounds) * 100)
-  return 0
+  // Simulação = 0-80%, Relatório = 80-100%
+  if (temRelatorio.value) return 100
+  if (gerandoRelatorio.value) return 85 + Math.min(10, erroCount.value) // 85-95% durante geração
+  
+  // Progresso da simulação (0-80%)
+  let simProg = 0
+  if (status.value.progress_percent > 0) simProg = status.value.progress_percent
+  else if (status.value.total_rounds > 0 && status.value.current_round > 0)
+    simProg = (status.value.current_round / status.value.total_rounds) * 100
+  
+  return Math.round(Math.min(80, simProg * 0.8))
 })
 
 const pageTitle = computed(() => {
-  if (concluida.value) return '✅ Simulação Concluída'
+  if (temRelatorio.value) return '✅ Relatório Pronto'
+  if (gerandoRelatorio.value) return '📊 Gerando Relatório...'
+  if (concluida.value) return '🎉 Simulação Concluída'
   if (parada.value)    return '⏸ Simulação Parada'
   if (erroExec.value)  return '❌ Erro na Execução'
   return '⏳ Execução ao vivo'
@@ -78,18 +133,43 @@ const pageTitle = computed(() => {
 const totalAcoes = computed(() => Math.max(status.value.total_actions_count, 1))
 
 const consenso = computed(() => {
-  const twR  = status.value.twitter_actions_count / totalAcoes.value
-  const prog = progresso.value
-  return Math.min(99, Math.max(0, Math.round(twR * 65 + prog * 0.32 + 8)))
+  // Consenso = ratio de ações positivas (LIKE + REPOST) vs total
+  // Se não tem dados de ação, usar ratio de ações/rodada como proxy
+  const actions = realActions.value
+  if (actions.length > 5) {
+    const positivas = actions.filter(a => ['LIKE_POST','LIKE_COMMENT','REPOST','FOLLOW'].includes(a.action_type)).length
+    return Math.min(99, Math.round((positivas / actions.length) * 100))
+  }
+  // Fallback: baseado em ações acumuladas por rodada
+  const round = status.value.current_round || 1
+  const acoesPorRodada = status.value.total_actions_count / Math.max(round, 1)
+  return Math.min(99, Math.max(5, Math.round(acoesPorRodada * 8)))
 })
 const inovacao = computed(() => {
-  const rdR  = status.value.reddit_actions_count / totalAcoes.value
-  const prog = progresso.value
-  return Math.min(99, Math.max(0, Math.round(rdR * 80 + prog * 0.28 + 15)))
+  // Inovação = ratio de criação de conteúdo novo (CREATE_POST) vs total
+  const actions = realActions.value
+  if (actions.length > 5) {
+    const criacoes = actions.filter(a => ['CREATE_POST','CREATE_COMMENT'].includes(a.action_type)).length
+    return Math.min(99, Math.round((criacoes / actions.length) * 100))
+  }
+  const total = status.value.total_actions_count
+  const round = status.value.current_round || 1
+  return Math.min(99, Math.max(10, Math.round(total / Math.max(round, 1) * 5)))
 })
 const tensao = computed(() => {
-  const prog = progresso.value
-  return Math.max(5, Math.round(52 - prog * 0.38 + Math.sin(prog * 0.1) * 6))
+  // Tensão = ratio de comentários vs posts (mais debate = mais tensão)
+  const actions = realActions.value
+  if (actions.length > 5) {
+    const comments = actions.filter(a => a.action_type === 'CREATE_COMMENT').length
+    const posts = actions.filter(a => a.action_type === 'CREATE_POST').length
+    if (posts > 0) return Math.min(99, Math.round((comments / posts) * 40))
+    return 15
+  }
+  // Fallback
+  const rd = status.value.reddit_actions_count
+  const tw = status.value.twitter_actions_count
+  if (tw + rd === 0) return 10
+  return Math.min(60, Math.max(5, Math.round(Math.abs(tw - rd) / (tw + rd) * 80 + 10)))
 })
 
 // SVG gauge arc
@@ -309,34 +389,39 @@ async function carregarStatus() {
     if ((s === 'completed' || s === 'finished') && !concluida.value) {
       concluida.value = true; poll.stop()
       
-      // Gerar dados sinteticos se grafico vazio
-      if (roundHistory.value.length < 2) {
-        const totalR = status.value.total_rounds || status.value.current_round || 6
-        const synth = []
-        for (let i = 1; i <= totalR; i++) {
-          synth.push({
-            r: i, tw: Math.floor(Math.random() * 3) + 1, rd: Math.floor(Math.random() * 3) + 1,
-            tot: 0, c: Math.min(100, 50 + i * 4 + Math.floor(Math.random() * 10)),
-            iv: Math.min(100, 60 + i * 3 + Math.floor(Math.random() * 8)),
-            ts: Math.max(0, 20 - i * 2 + Math.floor(Math.random() * 5))
-          })
-          synth[synth.length-1].tot = synth[synth.length-1].tw + synth[synth.length-1].rd
-        }
-        roundHistory.value = synth
-      }
-      // Backfill chart data from analytics
+      // Preencher roundHistory com dados REAIS do analytics (não sintéticos)
       try {
         const aRes = await service.get('/api/analytics/' + route.params.simulationId)
-        const ana = aRes?.data?.data || {}
+        const ana = aRes?.data?.data || aRes?.data || {}
         const twR = ana?.twitter?.rounds || []; const rdR = ana?.reddit?.rounds || []
-        if ((twR.length || rdR.length) && roundHistory.value.length <= 1) {
+        if (twR.length || rdR.length) {
           const byR = {}
           twR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].tw += (r.actions||r.count||1) })
           rdR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].rd += (r.actions||r.count||1) })
           const rnds = Object.keys(byR).map(Number).sort((a,b)=>a-b)
-          roundHistory.value = rnds.map(r => ({ r, tw:byR[r].tw, rd:byR[r].rd, tot:byR[r].tw+byR[r].rd, c:75, iv:80, ts:12 }))
+          roundHistory.value = rnds.map(r => ({
+            r, tw:byR[r].tw, rd:byR[r].rd, tot:byR[r].tw+byR[r].rd,
+            c: consenso.value, iv: inovacao.value, ts: tensao.value
+          }))
+          lastRound.value = rnds[rnds.length - 1] || 0
         }
-      } catch {}
+        
+        // Backfill events from top_posts
+        if (eventLog.value.length === 0) {
+          const twPosts = ana?.twitter?.top_posts || []
+          const rdPosts = ana?.reddit?.top_posts || []
+          ;[...twPosts.slice(0, 4), ...rdPosts.slice(0, 4)].forEach(p => {
+            eventLog.value.push({
+              round: 0,
+              platform: p.user_name ? 'Twitter' : 'Reddit',
+              agent: p.name || p.user_name || 'Agente',
+              acao: 'publicou um post',
+              time: new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
+            })
+          })
+        }
+      } catch { /* analytics indisponível — gráfico mostra dados do polling */ }
+      
       toast.success('🎉 Simulação concluída! Gerando relatório...', 5000)
       await iniciarGeracaoRelatorio()
     } else if ((s === 'stopped' || s === 'paused') && !parada.value) {
@@ -453,7 +538,7 @@ onMounted(async () => {
           roundHistory.value = rounds.map(r => ({
             r, tw: byRound[r].tw, rd: byRound[r].rd,
             tot: byRound[r].tw + byRound[r].rd,
-            c: 80, iv: 70, ts: 15
+            c: consenso.value, iv: inovacao.value, ts: tensao.value
           }))
           lastRound.value = rounds[rounds.length - 1]
         }
@@ -482,7 +567,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
 <template>
   <AppShell :title="pageTitle">
     <template #actions>
-      <div class="round-badge">Rodada {{ status.current_round }}/{{ status.total_rounds || '?' }}</div>
+      <div class="round-badge">{{ roundLabelFull(status.current_round) }} de {{ status.total_rounds || '?' }}</div>
       <AugurButton v-if="!concluida && !parada && !erroExec" variant="ghost" :disabled="parando" @click="pararSimulacao">
         {{ parando ? 'Parando...' : '⏸ Pausar' }}
       </AugurButton>
@@ -509,7 +594,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
     <Transition name="sd">
       <div v-if="parada && !concluida" class="banner banner-paused">
         <span class="bi">⏸</span>
-        <div class="bb"><div class="bt">Simulação pausada</div><div class="bs">Rodada {{ status.current_round }}/{{ status.total_rounds }}.</div></div>
+        <div class="bb"><div class="bt">Simulação pausada</div><div class="bs">{{ roundLabelFull(status.current_round) }} de {{ status.total_rounds }}.</div></div>
         <button class="btn-g" @click="voltarProjeto">← Projeto</button>
       </div>
     </Transition>
@@ -605,9 +690,11 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
         </div>
 
         <div class="round-st">
-          <span v-if="concluida" style="color:var(--accent)">✅ Concluída</span>
-          <span v-else-if="parada" style="color:#f5a623">⏸ Pausada na R{{ status.current_round }}</span>
-          <span v-else style="color:var(--text-secondary)">▶ R{{ status.current_round }}/{{ status.total_rounds||'?' }}</span>
+          <span v-if="temRelatorio" style="color:var(--accent)">✅ Relatório pronto</span>
+          <span v-else-if="gerandoRelatorio" style="color:#7c6ff7">📊 Gerando relatório... ({{ progresso }}%)</span>
+          <span v-else-if="concluida" style="color:var(--accent)">🎉 Simulação concluída — preparando relatório...</span>
+          <span v-else-if="parada" style="color:#f5a623">⏸ Pausada em {{ roundLabelFull(status.current_round) }}</span>
+          <span v-else style="color:var(--text-secondary)">▶ {{ roundLabel(status.current_round) }}/{{ roundLabel(status.total_rounds||'?') }} · Simulação {{ progresso }}%</span>
         </div>
 
         <!-- Chart -->
@@ -621,7 +708,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
               <text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(0,0,0,0.3)" font-size="8">{{ l.v }}%</text>
             </g>
             <g v-for="lb in evoChart.labels" :key="lb.r">
-              <text :x="lb.x" :y="CH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="8">R{{ lb.r }}</text>
+              <text :x="lb.x" :y="CH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="8">{{ roundLabel(lb.r) }}</text>
             </g>
             <path :d="evoChart.c"  fill="none" stroke="#00e5c3" stroke-width="2"   stroke-linejoin="round"/>
             <path :d="evoChart.iv" fill="none" stroke="#7c6ff7" stroke-width="2"   stroke-linejoin="round"/>
@@ -670,7 +757,7 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
         <div v-if="!eventsFeed.length" class="feed-ph"><template v-if="!concluida"><div class="mspin"></div><span>Aguardando rodadas...</span></template><span v-else style="color:var(--text-secondary,#8888aa)">Sem eventos registrados.</span></div>
         <div class="feed-list" v-else>
           <div v-for="(ev,i) in eventsFeed" :key="i" class="fi">
-            <span class="fi-r">R{{ ev.round }}</span>
+            <span class="fi-r">{{ roundLabel(ev.round) }}</span>
             <div class="fi-b">
               <span class="fi-a">{{ ev.agent }}</span>
               <span class="fi-t">{{ ev.acao }} <span :class="['fi-p', ev.platform==='Twitter'?'ptw':'prd']">{{ ev.platform }}</span></span>
@@ -680,6 +767,35 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
         </div>
       </div>
 
+    </div>
+
+    <!-- Resumo por Rodada -->
+    <div v-if="roundSummaries.length" class="rounds-section">
+      <div class="rs-header">
+        <h3>📋 Resumo por {{ escalaTempo === 'meses' ? 'Mês' : escalaTempo === 'semanas' ? 'Semana' : 'Dia' }}</h3>
+        <span class="rs-count">{{ roundSummaries.length }} {{ escalaTempo }}</span>
+      </div>
+      <div class="rs-grid">
+        <div v-for="rs in roundSummaries" :key="rs.round" class="rs-card">
+          <div class="rs-card-head">
+            <span class="rs-round">{{ rs.label }}</span>
+            <span class="rs-agents">{{ rs.agentesAtivos }} agentes</span>
+          </div>
+          <div class="rs-stats">
+            <span class="rs-stat"><b>{{ rs.posts }}</b> posts</span>
+            <span class="rs-stat"><b>{{ rs.comments }}</b> coment.</span>
+            <span class="rs-stat"><b>{{ rs.likes }}</b> curtidas</span>
+            <span class="rs-stat"><b>{{ rs.reposts }}</b> reposts</span>
+          </div>
+          <div v-if="rs.engajamento > 0" class="rs-eng">
+            Engajamento: <b>{{ rs.engajamento }}x</b> por post
+          </div>
+          <div v-if="rs.topPost" class="rs-top-post">
+            <span class="rs-tp-agent">{{ rs.topPost.agent }}:</span>
+            <span class="rs-tp-text">"{{ rs.topPost.content }}"</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- CTA após conclusão -->
@@ -815,4 +931,23 @@ onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.val
   .kpi-d { display:none; }
   .stat-row { grid-template-columns:1fr; }
 }
+
+/* ─── Round Summary ─── */
+.rounds-section { margin-top:20px; background:var(--bg-surface,#fff); border:1px solid var(--border,#eeeef2); border-radius:16px; padding:20px; }
+.rs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border,#eeeef2); }
+.rs-header h3 { font-size:15px; font-weight:700; color:var(--text-primary,#1a1a2e); margin:0; }
+.rs-count { font-size:11px; font-weight:700; color:var(--accent,#00e5c3); background:rgba(0,229,195,0.08); padding:3px 10px; border-radius:12px; }
+.rs-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; max-height:400px; overflow-y:auto; }
+.rs-card { background:var(--bg-raised,#fafafe); border:1px solid var(--border,#eeeef2); border-radius:12px; padding:14px; transition:box-shadow .2s; }
+.rs-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+.rs-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.rs-round { font-size:14px; font-weight:800; color:var(--accent2,#7c6ff7); }
+.rs-agents { font-size:11px; color:var(--text-muted,#8888aa); }
+.rs-stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.rs-stat { font-size:11px; color:var(--text-secondary,#444466); background:var(--bg-surface,#fff); padding:2px 8px; border-radius:6px; border:1px solid var(--border,#eeeef2); }
+.rs-stat b { color:var(--text-primary,#1a1a2e); }
+.rs-eng { font-size:11px; color:var(--accent,#00e5c3); margin-bottom:6px; }
+.rs-top-post { font-size:11px; color:var(--text-secondary,#444466); background:rgba(124,111,247,0.04); border-left:3px solid var(--accent2,#7c6ff7); padding:6px 10px; border-radius:0 8px 8px 0; line-height:1.5; }
+.rs-tp-agent { font-weight:700; color:var(--text-primary,#1a1a2e); }
+.rs-tp-text { font-style:italic; }
 </style>
