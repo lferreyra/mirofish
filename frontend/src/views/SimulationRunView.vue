@@ -1,953 +1,1189 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '../components/layout/AppShell.vue'
-import AugurButton from '../components/ui/AugurButton.vue'
+import AgentPreview from '../components/AgentPreview.vue'
 import service from '../api'
-import { usePolling } from '../composables/usePolling'
-import { useToast } from '../composables/useToast'
 
 const route  = useRoute()
 const router = useRouter()
-const toast  = useToast()
 
-const status = ref({
-  current_round: 0, total_rounds: 0, progress_percent: 0,
-  runner_status: null, project_id: null,
-  twitter_actions_count: 0, reddit_actions_count: 0, total_actions_count: 0,
-  twitter_running: false, reddit_running: false,
-  twitter_completed: false, reddit_completed: false,
-  report_id: null, error: null,
-})
+// ─── Tela: 'config' ou 'pipeline' ─────────────────────────────
+// Se agentes e rodadas já vierem no query (do wizard/modal), pular config
+const _fromWizard = !!(route.query.agentes && route.query.rodadas)
+const tela = ref(_fromWizard ? 'pipeline' : 'config')
 
-const concluida        = ref(false)
-const showCusto        = ref(false)
+// ─── Config ───────────────────────────────────────────────────
+const cfgAgentes  = ref(Number(route.query.agentes)  || 50)
+const cfgRodadas  = ref(Number(route.query.rodadas)  || 20)
+const cfgPeriodo  = ref(Number(route.query.periodo)  || 24)
+const cfgEscala   = ref(route.query.escala || 'meses')
+// Salvar escala no localStorage para SimulationRunView acessar
+if (route.query.escala) localStorage.setItem('augur_escala', route.query.escala)
+if (route.query.periodo) localStorage.setItem('augur_periodo', route.query.periodo)
+// Hipótese e título opcionais passados pelo ProjetoView (nova simulação)
+const cfgHipotese = ref(route.query.hipotese ? decodeURIComponent(route.query.hipotese) : '')
+const cfgTitulo   = ref(route.query.titulo   ? decodeURIComponent(route.query.titulo)   : '')
 
-// Custo estimado da operação
-const custoEstimado = computed(() => {
-  const agentes = Object.keys(realAgentMap.value).length || status.value.total_agents || 20
-  const rodadas = status.value.total_rounds || 12
-  const episodios = Math.round(agentes * 8.65) // ~8.65 episódios por agente no Zep
-  const zepUSD = episodios * 0.00625 // $25 / 4000 episódios
-  const zepBRL = zepUSD * 5.5
-  const openaiCalls = agentes + 10 // perfis + config + report
-  const openaiBRL = openaiCalls * 0.03 // ~R$0.03 por call GPT-4o-mini
-  const total = zepBRL + openaiBRL
-  return {
-    episodios,
-    zepBRL: zepBRL.toFixed(2),
-    openaiBRL: openaiBRL.toFixed(2),
-    total: total.toFixed(2),
-    agentes,
-    rodadas
-  }
-})
-const parada           = ref(false)
-const erroExec         = ref('')
-const parando          = ref(false)
-const erroCount        = ref(0)
-const gerandoRelatorio = ref(false)
-const reportTaskId     = ref(null)
-const reportPollTimer  = ref(null)
+// ─── Pipeline ─────────────────────────────────────────────────
+const phase       = ref('init')
+const erro        = ref('')
+const progress    = ref(0)
+const statusMsg   = ref('Iniciando...')
+const detalhe     = ref('')
+const projectData = ref(null)
+const simulationId = ref(null)
+const abortado    = ref(false)
+let pollTimer     = null
 
-// Histórico local acumulado por poll
-const roundHistory = ref([])
-const lastRound    = ref(0)
-const eventLog     = ref([])
-const realActions  = ref([])
-const realAgentMap = ref({})
+// ─── Seleção de Agentes ───────────────────────────────────────
+const entityTypes = ref([])          // Tipos de entidade do ontology (auto-detectados)
+const selectedTypes = ref([])        // Tipos selecionados pelo usuário
+const customAgents = ref([])         // Agentes adicionados da biblioteca
+const showAgentSelection = ref(false)
+const novoAgente = ref('')
+const activeCategory = ref(null)     // Categoria expandida
+const showNewCategory = ref(false)
+const novaCategoria = ref({ icon: '🏷', label: '', color: '#00e5c3' })
 
-// Escala de tempo (1 rodada = 1 mês/semana/dia)
-const escalaTempo = ref(route.query.escala || localStorage.getItem('augur_escala') || 'meses')
-function roundLabel(r) {
-  if (escalaTempo.value === 'meses')  return `M${r}`
-  if (escalaTempo.value === 'semanas') return `S${r}`
-  return `D${r}`
+// ─── Preview de Agentes ──────────────────────────────────────
+const previewAgents = ref([])
+const previewLoading = ref(false)
+const previewRegenerating = ref(false)
+const customCategories = ref([])
+
+// ─── Biblioteca de Agentes por Categoria ──────────────────────
+const AGENT_LIBRARY_BASE = [
+  { id: 'consumidores', icon: '🛒', label: 'Consumidores', color: '#00e5c3', agents: [
+    { name: 'Jovem Urbano (18-25)', desc: 'Digital native, compra por impulso, influenciado por redes sociais', tags: ['varejo','tech','moda'] },
+    { name: 'Mãe com Filhos', desc: 'Prioriza qualidade e segurança, sensível a preço, busca praticidade', tags: ['varejo','alimentação','saúde'] },
+    { name: 'Idoso Tradicional (60+)', desc: 'Fiel a marcas, prefere atendimento presencial, resistente a mudanças', tags: ['varejo','saúde','financeiro'] },
+    { name: 'Profissional Classe A', desc: 'Alto poder aquisitivo, valoriza exclusividade e experiência premium', tags: ['luxo','tech','serviços'] },
+    { name: 'Consumidor Classe C', desc: 'Sensível a preço, busca parcelamento, compara muito antes de comprar', tags: ['varejo','financeiro'] },
+    { name: 'Empreendedor PME', desc: 'Busca custo-benefício, decide rápido, precisa de ROI claro', tags: ['b2b','tech','serviços'] },
+    { name: 'Consumidor Digital', desc: 'Compra 100% online, compara em marketplaces, valoriza frete grátis', tags: ['ecommerce','tech'] },
+    { name: 'Consumidor Local', desc: 'Prefere comércio do bairro, valoriza relacionamento e confiança', tags: ['varejo','alimentação'] },
+  ]},
+  { id: 'reguladores', icon: '🏛', label: 'Reguladores & Governo', color: '#7c6ff7', agents: [
+    { name: 'PROCON', desc: 'Defesa do consumidor — fiscaliza práticas abusivas, propaganda enganosa', tags: ['todos'] },
+    { name: 'ANVISA', desc: 'Vigilância sanitária — regulamenta alimentos, cosméticos, medicamentos', tags: ['saúde','alimentação'] },
+    { name: 'BACEN', desc: 'Banco Central — regula serviços financeiros, fintechs, meios de pagamento', tags: ['financeiro','fintech'] },
+    { name: 'INMETRO', desc: 'Metrologia — certifica qualidade e segurança de produtos', tags: ['varejo','indústria'] },
+    { name: 'IBAMA', desc: 'Meio ambiente — fiscaliza impacto ambiental e sustentabilidade', tags: ['indústria','agro'] },
+    { name: 'CADE', desc: 'Defesa econômica — combate monopólio e práticas anticompetitivas', tags: ['todos'] },
+    { name: 'ANATEL', desc: 'Telecomunicações — regula internet, telefonia, dados', tags: ['tech','telecom'] },
+    { name: 'CVM', desc: 'Valores mobiliários — regula investimentos, tokens, crowdfunding', tags: ['financeiro','crypto'] },
+    { name: 'LGPD/ANPD', desc: 'Proteção de dados pessoais — fiscaliza uso de dados do consumidor', tags: ['tech','todos'] },
+  ]},
+  { id: 'financeiro', icon: '💰', label: 'Mercado Financeiro', color: '#f5a623', agents: [
+    { name: 'Banco Tradicional', desc: 'Conservador, burocrático, grande base de clientes, crédito restritivo', tags: ['financeiro'] },
+    { name: 'Fintech', desc: 'Ágil, digital first, taxas baixas, experiência moderna', tags: ['financeiro','tech'] },
+    { name: 'Investidor Anjo', desc: 'Busca oportunidades early-stage, avalia equipe e mercado', tags: ['startup'] },
+    { name: 'Analista de Mercado', desc: 'Avalia riscos e oportunidades com dados, visão macro', tags: ['financeiro'] },
+    { name: 'Consultor Financeiro', desc: 'Orienta clientes sobre investimentos e planejamento', tags: ['financeiro','serviços'] },
+    { name: 'Operadora de Crédito', desc: 'Crediário, BNPL, parcelamento — sensível a inadimplência', tags: ['varejo','financeiro'] },
+  ]},
+  { id: 'influenciadores', icon: '📱', label: 'Influenciadores & Mídia', color: '#e91e9c', agents: [
+    { name: 'Influenciador Digital Local', desc: 'Micro-influencer da cidade, alta credibilidade local, 5k-50k seguidores', tags: ['todos'] },
+    { name: 'Creator de Nicho', desc: 'Especialista no tema, audiência engajada, review detalhado', tags: ['todos'] },
+    { name: 'Jornalista/Blogueiro', desc: 'Cobertura editorial, busca fatos e novidades, amplifica narrativa', tags: ['todos'] },
+    { name: 'Influenciador Nacional', desc: 'Grande alcance, 500k+ seguidores, alto custo, impacto massivo', tags: ['moda','tech','lifestyle'] },
+    { name: 'Podcaster', desc: 'Formato longo, audiência fiel, análise profunda', tags: ['tech','negócios'] },
+    { name: 'TikToker/Reels', desc: 'Conteúdo curto e viral, público jovem, tendências rápidas', tags: ['moda','varejo','alimentação'] },
+  ]},
+  { id: 'concorrentes', icon: '🏪', label: 'Concorrentes & Mercado', color: '#ff5a5a', agents: [
+    { name: 'Líder de Mercado', desc: 'Marca dominante no setor, alto market share, define tendências', tags: ['todos'] },
+    { name: 'Novo Entrante', desc: 'Startup ou empresa entrando no mercado, agressiva em preço', tags: ['todos'] },
+    { name: 'Marketplace/E-commerce', desc: 'Shopee, Mercado Livre, Amazon — concorrência de preço e conveniência', tags: ['varejo','ecommerce'] },
+    { name: 'Concorrente Regional', desc: 'Forte na região, conhece o público local, relacionamento sólido', tags: ['varejo'] },
+    { name: 'Franquia Nacional', desc: 'Marca conhecida, padronização, poder de marketing', tags: ['varejo','alimentação'] },
+  ]},
+  { id: 'industria', icon: '🏭', label: 'Indústria & Fornecedores', color: '#4caf50', agents: [
+    { name: 'Fabricante/Fornecedor', desc: 'Produz o que você vende, define preço de custo e prazos', tags: ['varejo','indústria'] },
+    { name: 'Distribuidor/Atacadista', desc: 'Intermedia entre fábrica e varejo, logística e volume', tags: ['varejo'] },
+    { name: 'Representante Comercial', desc: 'Vende para lojistas, conhece o mercado e as dores', tags: ['varejo','b2b'] },
+    { name: 'Operador Logístico', desc: 'Entrega, frete, última milha — custo e prazo impactam tudo', tags: ['ecommerce','varejo'] },
+  ]},
+  { id: 'servicos', icon: '🔧', label: 'Serviços & Tech', color: '#1da1f2', agents: [
+    { name: 'Cliente de Delivery', desc: 'Pede por app, sensível a tempo e preço de entrega', tags: ['delivery','alimentação'] },
+    { name: 'Restaurante Parceiro', desc: 'Depende de plataformas, margem apertada, busca volume', tags: ['delivery','alimentação'] },
+    { name: 'Entregador', desc: 'Gig economy, sensível a taxa por entrega, flexibilidade', tags: ['delivery'] },
+    { name: 'Desenvolvedor/Tech', desc: 'Avalia produto pela tecnologia, API, integração', tags: ['tech','saas'] },
+    { name: 'Usuário SaaS B2B', desc: 'Empresa que compra software, precisa de ROI e suporte', tags: ['tech','saas','b2b'] },
+  ]},
+  { id: 'institucional', icon: '🏢', label: 'Institucional & Social', color: '#795548', agents: [
+    { name: 'Associação Comercial', desc: 'Representa o comércio local, advocacy, networking', tags: ['varejo'] },
+    { name: 'Sindicato/Classe', desc: 'Representa trabalhadores, negocia direitos, influência política', tags: ['indústria','serviços'] },
+    { name: 'Universidade/Pesquisador', desc: 'Análise acadêmica, dados de pesquisa, credibilidade técnica', tags: ['todos'] },
+    { name: 'ONG/Instituto Social', desc: 'Causa social, sustentabilidade, impacto comunitário', tags: ['todos'] },
+    { name: 'Reclame Aqui', desc: 'Plataforma de reclamações — reputação e resolução pública', tags: ['todos'] },
+    { name: 'SEBRAE', desc: 'Apoio a pequenas empresas — capacitação, crédito, mentoria', tags: ['pme','varejo'] },
+  ]},
+]
+
+// Biblioteca completa = base + custom
+const AGENT_LIBRARY = computed(() => savedLibrary ? [...savedLibrary, ...customCategories.value] : [...AGENT_LIBRARY_BASE, ...customCategories.value])
+
+// Carregar biblioteca do localStorage (compartilhada com AgentLibraryView)
+function loadAgentLibrary() {
+  try {
+    const saved = localStorage.getItem('augur_agent_library')
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return null
 }
-function roundLabelFull(r) {
-  if (escalaTempo.value === 'meses')  return `Mês ${r}`
-  if (escalaTempo.value === 'semanas') return `Semana ${r}`
-  return `Dia ${r}`
-}
+const savedLibrary = loadAgentLibrary()
 
-// Resumo por rodada (calculado das ações reais)
-const roundSummaries = computed(() => {
-  const actions = realActions.value
-  if (!actions.length) return []
-  
-  const byRound = {}
-  actions.forEach(a => {
-    const r = a.round_num || 0
-    if (!byRound[r]) byRound[r] = { round: r, posts: 0, likes: 0, comments: 0, reposts: 0, agents: new Set(), topPost: null }
-    byRound[r][a.action_type === 'CREATE_POST' ? 'posts' : a.action_type === 'LIKE_POST' || a.action_type === 'LIKE_COMMENT' ? 'likes' : a.action_type === 'CREATE_COMMENT' ? 'comments' : 'reposts']++
-    byRound[r].agents.add(a.agent_name || a.agent_id)
-    if (a.action_type === 'CREATE_POST' && a.action_args?.content && !byRound[r].topPost) {
-      byRound[r].topPost = { agent: a.agent_name, content: a.action_args.content.slice(0, 120) }
-    }
+// Traducao de entity types (ontology gera em ingles)
+const TRANSLATE = {
+  'Consumer':'Consumidor','LocalBusiness':'Negocio Local','Influencer':'Influenciador',
+  'RetailChain':'Rede de Varejo','EcommercePlatform':'Plataforma E-commerce',
+  'LocalInfluencer':'Influenciador Local','GovernmentAgency':'Orgao Governamental',
+  'Person':'Pessoa','Organization':'Organizacao','Competitor':'Concorrente',
+  'FinancialInstitution':'Instituicao Financeira','Media':'Midia',
+  'Supplier':'Fornecedor','Regulator':'Regulador','Investor':'Investidor',
+  'Student':'Estudante','PublicFigure':'Figura Publica','Professional':'Profissional',
+  'Company':'Empresa','Brand':'Marca','Product':'Produto','Service':'Servico',
+  'Market':'Mercado','Industry':'Industria','Technology':'Tecnologia',
+  'Community':'Comunidade','Association':'Associacao'
+}
+function traduzirTipo(name) { return TRANSLATE[name] || name.replace(/([A-Z])/g, ' $1').trim() }
+
+// Contar agentes selecionados por categoria
+const agentCounts = computed(() => {
+  const counts = {}
+  AGENT_LIBRARY.value.forEach(cat => { counts[cat.id] = 0 })
+  customAgents.value.forEach(a => {
+    if (a.categoryId) counts[a.categoryId] = (counts[a.categoryId] || 0) + 1
   })
-  
-  return Object.values(byRound).sort((a,b) => a.round - b.round).map(r => ({
-    round: r.round,
-    label: roundLabelFull(r.round),
-    posts: r.posts,
-    likes: r.likes,
-    comments: r.comments,
-    reposts: r.reposts,
-    totalAcoes: r.posts + r.likes + r.comments + r.reposts,
-    agentesAtivos: r.agents.size,
-    engajamento: r.posts > 0 ? Math.round((r.likes + r.comments) / r.posts * 100) / 100 : 0,
-    topPost: r.topPost,
-    resumo: r.posts > 0 
-      ? `${r.agents.size} agentes, ${r.posts} posts, ${r.comments} comentários, ${r.likes} curtidas`
-      : `${r.agents.size} agentes ativos, ${r.likes + r.comments + r.reposts} interações`
-  }))
+  return counts
 })
 
-const simStatus    = computed(() => status.value.runner_status)
-const temRelatorio = computed(() => !!status.value.report_id)
-
-const progresso = computed(() => {
-  // Simulação = 0-80%, Relatório = 80-100%
-  if (temRelatorio.value) return 100
-  if (gerandoRelatorio.value) return 85 + Math.min(10, erroCount.value) // 85-95% durante geração
-  
-  // Progresso da simulação (0-80%)
-  let simProg = 0
-  if (status.value.progress_percent > 0) simProg = status.value.progress_percent
-  else if (status.value.total_rounds > 0 && status.value.current_round > 0)
-    simProg = (status.value.current_round / status.value.total_rounds) * 100
-  
-  return Math.round(Math.min(80, simProg * 0.8))
+const totalSelecionados = computed(() => {
+  return entityTypes.value.filter(e => e.selected).length + customAgents.value.length
 })
 
-const pageTitle = computed(() => {
-  if (temRelatorio.value) return '✅ Relatório Pronto'
-  if (gerandoRelatorio.value) return '📊 Gerando Relatório...'
-  if (concluida.value) return '🎉 Simulação Concluída'
-  if (parada.value)    return '⏸ Simulação Parada'
-  if (erroExec.value)  return '❌ Erro na Execução'
-  return '⏳ Execução ao vivo'
+const autoCompleteCount = computed(() => {
+  return Math.max(0, cfgAgentes.value - totalSelecionados.value)
 })
 
-// Métricas derivadas
-const totalAcoes = computed(() => Math.max(status.value.total_actions_count, 1))
+const maxRounds = computed(() => cfgRodadas.value)
+const maxAgents = computed(() => cfgAgentes.value)
 
-const consenso = computed(() => {
-  // Consenso = ratio de ações positivas (LIKE + REPOST) vs total
-  // Se não tem dados de ação, usar ratio de ações/rodada como proxy
-  const actions = realActions.value
-  if (actions.length > 5) {
-    const positivas = actions.filter(a => ['LIKE_POST','LIKE_COMMENT','REPOST','FOLLOW'].includes(a.action_type)).length
-    return Math.min(99, Math.round((positivas / actions.length) * 100))
-  }
-  // Fallback: baseado em ações acumuladas por rodada
-  const round = status.value.current_round || 1
-  const acoesPorRodada = status.value.total_actions_count / Math.max(round, 1)
-  return Math.min(99, Math.max(5, Math.round(acoesPorRodada * 8)))
+const descAgentes = computed(() => {
+  if (cfgAgentes.value <= 20)  return 'Teste rápido — ideal para validar a hipótese'
+  if (cfgAgentes.value <= 100) return 'Bom equilíbrio entre velocidade e precisão'
+  if (cfgAgentes.value <= 250) return 'Alta fidelidade'
+  return 'Máxima riqueza'
 })
-const inovacao = computed(() => {
-  // Inovação = ratio de criação de conteúdo novo (CREATE_POST) vs total
-  const actions = realActions.value
-  if (actions.length > 5) {
-    const criacoes = actions.filter(a => ['CREATE_POST','CREATE_COMMENT'].includes(a.action_type)).length
-    return Math.min(99, Math.round((criacoes / actions.length) * 100))
-  }
-  const total = status.value.total_actions_count
-  const round = status.value.current_round || 1
-  return Math.min(99, Math.max(10, Math.round(total / Math.max(round, 1) * 5)))
+const descRodadas = computed(() => {
+  if (cfgRodadas.value <= 5)  return 'Reação imediata ao evento'
+  if (cfgRodadas.value <= 25) return 'Captura tendências de curto prazo'
+  if (cfgRodadas.value <= 60) return 'Evolução completa da opinião'
+  return 'Análise profunda'
 })
-const tensao = computed(() => {
-  // Tensão = ratio de comentários vs posts (mais debate = mais tensão)
-  const actions = realActions.value
-  if (actions.length > 5) {
-    const comments = actions.filter(a => a.action_type === 'CREATE_COMMENT').length
-    const posts = actions.filter(a => a.action_type === 'CREATE_POST').length
-    if (posts > 0) return Math.min(99, Math.round((comments / posts) * 40))
-    return 15
-  }
-  // Fallback
-  const rd = status.value.reddit_actions_count
-  const tw = status.value.twitter_actions_count
-  if (tw + rd === 0) return 10
-  return Math.min(60, Math.max(5, Math.round(Math.abs(tw - rd) / (tw + rd) * 80 + 10)))
+const estMin   = computed(() => Math.round(Math.max(2, cfgAgentes.value * cfgRodadas.value * 0.04)))
+const estCusto = computed(() => (cfgAgentes.value * cfgRodadas.value * 0.0008).toFixed(2))
+
+const fases = [
+  { key: 'building_graph',    label: 'Construindo Grafo',    desc: 'Analisando documentos e criando rede de conhecimento' },
+  { key: 'creating_sim',      label: 'Criando Simulação',    desc: 'Configurando o ambiente de simulação' },
+
+  { key: 'preparing',         label: 'Gerando Agentes',      desc: 'Criando perfis únicos para cada agente com IA' },
+  { key: 'starting',          label: 'Iniciando',            desc: 'Lançando a simulação multiagente' },
+]
+
+const faseAtual  = computed(() => fases.findIndex(f => f.key === phase.value))
+const phaseLabel = computed(() => {
+  if (phase.value === 'running')  return '✅ Simulação Iniciada!'
+  if (phase.value === 'error')    return 'Erro no pipeline'
+  if (phase.value === 'aborted')  return 'Cancelado'
+  return fases.find(f => f.key === phase.value)?.label || 'Inicializando...'
 })
 
-// SVG gauge arc
-function gaugePath(pct, r = 36, cx = 50, cy = 56) {
-  const start = Math.PI
-  const end   = Math.PI + (pct / 100) * Math.PI
-  const large = pct > 50 ? 1 : 0
-  const sx = cx + r * Math.cos(start)
-  const sy = cy + r * Math.sin(start)
-  const ex = cx + r * Math.cos(end)
-  const ey = cy + r * Math.sin(end)
-  return `M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`
+function traduzir(msg) {
+  if (!msg) return ''
+  if (/[\u4e00-\u9fff]/.test(msg)) return 'Processando...'
+  const map = [
+    ['building',   'Construindo grafo de conhecimento...'],
+    ['entity',     'Extraindo entidades e relacionamentos...'],
+    ['chunk',      'Processando blocos de texto...'],
+    ['batch',      'Processando lote de dados...'],
+    ['sending',    'Enviando dados para o grafo...'],
+    ['graph',      'Atualizando grafo de conhecimento...'],
+    ['completed',  'Concluído!'],
+    ['preparing',  'Preparando agentes de IA...'],
+    ['generating', 'Gerando perfis dos agentes...'],
+    ['profile',    'Criando perfil do agente...'],
+    ['ready',      'Tudo pronto!'],
+    ['starting',   'Iniciando simulação...'],
+    ['processing', 'Processando...'],
+    ['analyzing',  'Analisando documentos...'],
+  ]
+  const lower = msg.toLowerCase()
+  for (const [k, v] of map) if (lower.includes(k)) return v
+  return msg
 }
 
-// Gráfico de evolução
-const CW = 400; const CH = 140
-const cp = { t: 12, r: 10, b: 26, l: 30 }
-
-const evoChart = computed(() => {
-  const h = roundHistory.value
-  if (h.length < 2) return null
-  const n  = h.length
-  const w  = CW - cp.l - cp.r
-  const ht = CH - cp.t - cp.b
-  const x  = i => cp.l + (i / Math.max(n - 1, 1)) * w
-  const y  = v => cp.t + ht - (v / 100) * ht
-  const path = fn => h.map((p, i) => `${i===0?'M':'L'}${x(i).toFixed(1)},${y(fn(p)).toFixed(1)}`).join(' ')
-  const labels = h.filter((_, i) => i % Math.max(Math.floor(n / 6), 1) === 0)
-    .map(p => ({ r: p.r, x: x(h.indexOf(p)) }))
-  return {
-    c:   path(p => p.c),
-    iv:  path(p => p.iv),
-    ts:  path(p => p.ts),
-    labels,
-    yLines: [0, 25, 50, 75, 100].map(v => ({ v, y: y(v) }))
-  }
-})
-
-// Rede de agentes (layout radial)
-const NET = 190
-const agentNodes = computed(() => {
-  const map = realAgentMap.value
-  const names = Object.keys(map)
-  
-  // Se não tem dados reais ainda, gerar placeholder baseado no progresso
-  if (names.length === 0) {
-    const count = Math.max(8, Math.min(30, status.value.total_entities || 14))
-    const prog = progresso.value
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * 2 * Math.PI
-      const r = 35 + (i % 3) * 20
-      const roles = ['inovador', 'conservador', 'mediador', 'lider', 'opositor']
-      return {
-        x: NET / 2 + r * Math.cos(angle) + Math.sin(i * 17) * 6,
-        y: NET / 2 + r * Math.sin(angle) + Math.cos(i * 13) * 5,
-        role: roles[i % roles.length],
-        active: i <= Math.floor((prog / 100) * count) + 2,
-        size: 3.5 + (i % 3) * 0.8,
-        name: '',
-      }
-    })
-  }
-  
-  // Rede REAL baseada em dados de interação
-  const maxActions = Math.max(...Object.values(map).map(a => a.actions), 1)
-  return names.map((id, i) => {
-    const agent = map[id]
-    const angle = (i / names.length) * 2 * Math.PI
-    const r = 30 + Math.min(agent.actions / maxActions, 1) * 50
-    // Classificar por tipo dominante de ação
-    const types = agent.types || {}
-    let role = 'mediador'
-    if ((types.CREATE_POST || 0) > (types.LIKE_POST || 0)) role = 'lider'
-    else if ((types.LIKE_POST || 0) > 3) role = 'conservador'
-    if ((types.REPOST || 0) > 2) role = 'inovador'
-    if ((types.CREATE_COMMENT || 0) > 2) role = 'opositor'
+// ─── Iniciar pipeline após config ─────────────────────────────
+async function iniciar() {
+  // Carregar dados do projeto para obter entity types da ontology
+  try {
+    const pid = route.params.projectId
+    const pRes = await service.get('/api/graph/project/' + pid)
+    const project = pRes?.data?.data || pRes?.data || pRes
+    projectData.value = project
     
-    return {
-      x: NET / 2 + r * Math.cos(angle),
-      y: NET / 2 + r * Math.sin(angle),
-      role,
-      active: true,
-      size: 3 + (agent.actions / maxActions) * 5,
-      name: (agent.name || '').split(' ')[0],
-      agentId: id,
-    }
-  })
-})
-
-const netEdges = computed(() => {
-  const actions = realActions.value
-  const nodes = agentNodes.value
-  
-  // Se não tem dados reais, usar proximidade
-  if (!actions.length || !Object.keys(realAgentMap.value).length) {
-    const edges = []
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y
-        if (Math.sqrt(dx*dx + dy*dy) < 55 && edges.length < 20) {
-          edges.push({ x1: nodes[i].x, y1: nodes[i].y, x2: nodes[j].x, y2: nodes[j].y, w: 1 })
-        }
-      }
-    }
-    return edges
+    // Carregar entity types detectados pela ontology
+    const ont = project?.ontology?.entity_types || []
+    entityTypes.value = ont.map(et => ({
+      name: traduzirTipo(et.name || et),
+      nameOriginal: et.name || et,
+      description: et.description || '',
+      examples: et.examples || [],
+      selected: true
+    }))
+  } catch (e) {
+    console.warn('Falha ao carregar ontology:', e)
   }
   
-  // Edges REAIS: interações entre agentes
-  const interactions = {}
-  actions.forEach(a => {
-    // LIKE_POST e CREATE_COMMENT implicam interação com o autor do post
-    if (['LIKE_POST','REPOST','CREATE_COMMENT','LIKE_COMMENT'].includes(a.action_type) && a.action_args?.target_agent_id !== undefined) {
-      const key = [a.agent_id, a.action_args.target_agent_id].sort().join('-')
-      interactions[key] = (interactions[key] || 0) + 1
+  tela.value = 'agents'
+}
+
+function iniciarPipeline() {
+  tela.value = 'pipeline'
+  runPipeline().catch(handleError)
+}
+
+// ─── Cancelar ─────────────────────────────────────────────────
+async function cancelar() {
+  abortado.value = true
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  if (simulationId.value) {
+    try { await service.post('/api/simulation/stop', { simulation_id: simulationId.value }) } catch { /* ignorar */ }
+  }
+  phase.value   = 'aborted'
+  progress.value = 0
+}
+
+function voltar() {
+  router.push(`/projeto/${route.params.projectId}`)
+}
+
+// ─── Pipeline ─────────────────────────────────────────────────
+async function runPipeline() {
+  const pid = route.params.projectId
+
+  phase.value    = 'building_graph'
+  statusMsg.value = 'Verificando projeto...'
+  detalhe.value  = ''
+  progress.value = 5
+
+  const project = await getProject(pid)
+  projectData.value = project
+
+  if (abortado.value) return
+
+  // ── Verificar grafo ──────────────────────────────────────────
+  if (project.status === 'graph_completed' && project.graph_id) {
+    // Grafo já pronto — pular direto para criação da simulação
+    progress.value  = 40
+    statusMsg.value = 'Grafo já disponível!'
+  } else if (project.graph_build_task_id) {
+    // Task existe — verificar se ainda está viva
+    const taskViva = await verificarTask(project.graph_build_task_id)
+
+    if (!taskViva) {
+      // Task morreu (404) — precisa reconstruir
+      statusMsg.value = 'Reconstruindo grafo de conhecimento...'
+      detalhe.value   = 'O processo anterior foi interrompido. Reiniciando...'
+      await reconstruirGrafo(pid, project)
+    } else {
+      // Task viva — aguardar conclusão
+      statusMsg.value = 'Construindo rede de conhecimento...'
+      detalhe.value   = 'Isso pode levar entre 2 e 15 minutos.'
+      await waitForGraphBuild(project.graph_build_task_id, pid)
     }
+  } else if (project.status === 'graph_building') {
+    // Status diz building mas sem task_id — servidor reiniciou
+    statusMsg.value = 'Reconstruindo grafo...'
+    detalhe.value   = 'Processo anterior foi interrompido. Reiniciando...'
+    await reconstruirGrafo(pid, project)
+  } else {
+    // Nunca foi construído
+    statusMsg.value = 'Iniciando construção do grafo...'
+    await reconstruirGrafo(pid, project)
+  }
+
+  if (abortado.value) return
+
+  const updated = await getProject(pid)
+  projectData.value = updated
+  if (!updated.graph_id) throw new Error('Grafo não encontrado após construção. Tente novamente.')
+
+  // ── Criar simulação ──────────────────────────────────────────
+  if (abortado.value) return
+  phase.value     = 'creating_sim'
+  statusMsg.value = 'Criando simulação...'
+  detalhe.value   = ''
+  progress.value  = 45
+
+  const simData = await createSimulation(pid, updated.graph_id)
+  simulationId.value = simData.simulation_id
+
+
+  // ── Preparar agentes (tipos ja selecionados na tela anterior) ──
+  if (abortado.value) return
+  phase.value     = 'preparing'
+  statusMsg.value = 'Gerando perfis dos agentes com IA...'
+  detalhe.value   = `Criando ${cfgAgentes.value} agentes unicos...`
+  progress.value  = 50
+
+  const prep = await prepareSimulation(simData.simulation_id, selectedTypes.value)
+  if (prep.already_prepared) {
+    progress.value = 85
+  } else if (prep.task_id) {
+    await waitForPrepare(prep.task_id, simData.simulation_id)
+  }
+
+  // ── Iniciar ───────────────────────────────────────────────────
+  if (abortado.value) return
+  phase.value     = 'starting'
+  statusMsg.value = 'Lançando simulação...'
+  detalhe.value   = ''
+  progress.value  = 90
+
+  await startSimulation(simData.simulation_id)
+
+  if (abortado.value) return
+  phase.value     = 'running'
+  statusMsg.value = 'Simulação iniciada com sucesso!'
+  detalhe.value   = 'Redirecionando...'
+  progress.value  = 100
+
+  setTimeout(() => {
+    if (!abortado.value) router.push(`/simulacao/${simData.simulation_id}/executar`)
+  }, 1500)
+}
+
+// ─── Verificar se task existe no backend ──────────────────────
+async function verificarTask(taskId) {
+  try {
+    const res  = await service.get(`/api/graph/task/${taskId}`)
+    const task = res.data || res
+    if (task.status === 'failed') return false
+    return true
+  } catch (e) {
+    const status = e?.response?.status
+    if (status === 404) return false
+    return true
+  }
+}
+
+// ─── Reconstruir grafo ────────────────────────────────────────
+async function reconstruirGrafo(pid, project) {
+  const res = await service.post('/api/graph/build', {
+    project_id:             pid,
+    simulation_requirement: project.simulation_requirement || cfgHipotese.value || 'Análise geral',
+    force:                  true
   })
-  
-  // Mapear agent_id → node index
-  const idToIdx = {}
-  Object.keys(realAgentMap.value).forEach((id, i) => { idToIdx[id] = i })
-  
-  const edges = []
-  Object.entries(interactions).forEach(([key, count]) => {
-    const [a, b] = key.split('-')
-    const ni = nodes[idToIdx[a]], nj = nodes[idToIdx[b]]
-    if (ni && nj) {
-      edges.push({ x1: ni.x, y1: ni.y, x2: nj.x, y2: nj.y, w: Math.min(count, 4) })
-    }
-  })
-  
-  // Se não encontrou edges por target, usar co-ocorrência na mesma rodada
-  if (edges.length < 3) {
-    const roundAgents = {}
-    actions.forEach(a => {
-      if (!roundAgents[a.round_num]) roundAgents[a.round_num] = new Set()
-      roundAgents[a.round_num].add(a.agent_id ?? a.agent_name)
-    })
-    Object.values(roundAgents).forEach(agentSet => {
-      const arr = [...agentSet]
-      for (let i = 0; i < arr.length && edges.length < 30; i++) {
-        for (let j = i + 1; j < arr.length && edges.length < 30; j++) {
-          const ni = nodes[idToIdx[arr[i]]], nj = nodes[idToIdx[arr[j]]]
-          if (ni && nj && !edges.some(e => e.x1===ni.x && e.y1===ni.y && e.x2===nj.x && e.y2===nj.y)) {
-            edges.push({ x1: ni.x, y1: ni.y, x2: nj.x, y2: nj.y, w: 1 })
+  const data = res.data || res
+  if (!data.task_id) throw new Error('Falha ao iniciar construção do grafo.')
+  await waitForGraphBuild(data.task_id, pid)
+}
+
+// ─── Polling do grafo com detecção de 404 ────────────────────
+function waitForGraphBuild(taskId, pid) {
+  return new Promise((resolve, reject) => {
+    let elapsed  = 0
+    let notFound = 0
+    const maxWait = 900000
+    const interval = 5000
+
+    pollTimer = setInterval(async () => {
+      if (abortado.value) { clearInterval(pollTimer); resolve(); return }
+      elapsed += interval
+      if (elapsed > maxWait) {
+        clearInterval(pollTimer)
+        reject(new Error('Timeout: construção do grafo demorou mais de 15 minutos.'))
+        return
+      }
+      try {
+        const res  = await service.get(`/api/graph/task/${taskId}`)
+        const task = res.data || res
+        notFound = 0
+
+        if (task.progress) progress.value = 5 + Math.round((task.progress / 100) * 35)
+        if (task.message) { statusMsg.value = traduzir(task.message); detalhe.value = '' }
+
+        if (task.status === 'completed') {
+          clearInterval(pollTimer); progress.value = 40; resolve()
+        } else if (task.status === 'failed') {
+          clearInterval(pollTimer)
+          reject(new Error('Falha na construção do grafo. Tente novamente.'))
+        }
+      } catch (e) {
+        const httpStatus = e?.response?.status
+
+        if (httpStatus === 404) {
+          notFound++
+          if (notFound >= 2) {
+            clearInterval(pollTimer)
+            try {
+              const proj = await getProject(pid)
+              if (proj.status === 'graph_completed' && proj.graph_id) {
+                resolve()
+              } else {
+                reject(new Error('O servidor foi reiniciado durante a construção do grafo. Por favor tente novamente.'))
+              }
+            } catch {
+              reject(new Error('Não foi possível verificar o status do grafo. Tente novamente.'))
+            }
           }
         }
       }
-    })
-  }
-  
-  return edges.slice(0, 40)
-})
-
-const ROLE_COLORS = { inovador: '#00e5c3', conservador: '#7c6ff7', mediador: '#f5a623', lider: '#1da1f2', opositor: '#ff5a5a' }
-
-const eventsFeed = computed(() => [...eventLog.value].reverse().slice(0, 8))
-
-// Polling
-async function carregarStatus() {
-  try {
-    const res = await service.get(`/api/simulation/${route.params.simulationId}/run-status`)
-    const raw = res?.data?.data || res?.data || res
-    status.value = { ...status.value, ...raw }
-
-    const s = simStatus.value
-
-    if (raw.current_round > lastRound.value) {
-      lastRound.value = raw.current_round
-      roundHistory.value.push({
-        r: raw.current_round,
-        tw: raw.twitter_actions_count,
-        rd: raw.reddit_actions_count,
-        tot: raw.total_actions_count,
-        c:  consenso.value,
-        iv: inovacao.value,
-        ts: tensao.value,
-      })
-      // Carregar ações reais da rodada
-      try {
-        const dRes = await service.get(`/api/simulation/${route.params.simulationId}/run-status/detail`)
-        const dRaw = dRes?.data?.data || dRes?.data || {}
-        const actions = dRaw?.all_actions || dRaw?.twitter_actions || []
-        realActions.value = actions
-
-        // Construir mapa de agentes reais
-        const agMap = {}
-        actions.forEach(a => {
-          const id = a.agent_id ?? a.agent_name
-          if (!agMap[id]) agMap[id] = { name: a.agent_name || `Agente ${a.agent_id}`, actions: 0, types: {} }
-          agMap[id].actions++
-          agMap[id].types[a.action_type] = (agMap[id].types[a.action_type] || 0) + 1
-        })
-        realAgentMap.value = agMap
-
-        // Gerar feed de eventos reais (últimos da rodada)
-        const roundActions = actions.filter(a => a.round_num === raw.current_round).slice(-3)
-        roundActions.forEach(a => {
-          const tipoLabel = {
-            'CREATE_POST': 'publicou um post',
-            'LIKE_POST': 'curtiu um post',
-            'REPOST': 'repostou conteúdo',
-            'FOLLOW': 'seguiu alguém',
-            'CREATE_COMMENT': 'comentou em um post',
-            'LIKE_COMMENT': 'curtiu um comentário',
-          }[a.action_type] || a.action_type
-          eventLog.value.push({
-            round: a.round_num,
-            platform: a.platform === 'twitter' ? 'Twitter' : 'Reddit',
-            agent: a.agent_name || `Agente ${a.agent_id}`,
-            acao: tipoLabel,
-            time: new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
-          })
-        })
-      } catch { /* detail é opcional */ }
-    }
-
-    if ((s === 'completed' || s === 'finished') && !concluida.value) {
-      concluida.value = true; poll.stop()
-      
-      // Preencher roundHistory com dados REAIS do analytics (não sintéticos)
-      try {
-        const aRes = await service.get('/api/analytics/' + route.params.simulationId)
-        const ana = aRes?.data?.data || aRes?.data || {}
-        const twR = ana?.twitter?.rounds || []; const rdR = ana?.reddit?.rounds || []
-        if (twR.length || rdR.length) {
-          const byR = {}
-          twR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].tw += (r.actions||r.count||1) })
-          rdR.forEach(r => { const rn = r.round || r.round_num || 0; if (!byR[rn]) byR[rn]={tw:0,rd:0}; byR[rn].rd += (r.actions||r.count||1) })
-          const rnds = Object.keys(byR).map(Number).sort((a,b)=>a-b)
-          roundHistory.value = rnds.map(r => ({
-            r, tw:byR[r].tw, rd:byR[r].rd, tot:byR[r].tw+byR[r].rd,
-            c: consenso.value, iv: inovacao.value, ts: tensao.value
-          }))
-          lastRound.value = rnds[rnds.length - 1] || 0
-        }
-        
-        // Backfill events from top_posts
-        if (eventLog.value.length === 0) {
-          const twPosts = ana?.twitter?.top_posts || []
-          const rdPosts = ana?.reddit?.top_posts || []
-          ;[...twPosts.slice(0, 4), ...rdPosts.slice(0, 4)].forEach(p => {
-            eventLog.value.push({
-              round: 0,
-              platform: p.user_name ? 'Twitter' : 'Reddit',
-              agent: p.name || p.user_name || 'Agente',
-              acao: 'publicou um post',
-              time: new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
-            })
-          })
-        }
-      } catch { /* analytics indisponível — gráfico mostra dados do polling */ }
-      
-      toast.success('🎉 Simulação concluída! Gerando relatório...', 5000)
-      await iniciarGeracaoRelatorio()
-    } else if ((s === 'stopped' || s === 'paused') && !parada.value) {
-      parada.value = true; poll.stop()
-      toast.warn('Simulação interrompida na rodada ' + raw.current_round)
-    } else if (s === 'failed' && !erroExec.value) {
-      erroExec.value = raw.error || 'A simulação falhou.'
-      poll.stop(); toast.error('Erro na execução da simulação')
-    }
-    erroCount.value = 0
-  } catch {
-    erroCount.value++
-    if (erroCount.value >= 5) {
-      erroExec.value = 'Não foi possível conectar ao servidor.'
-      poll.stop()
-    }
-  }
+    }, interval)
+  })
 }
 
-async function iniciarGeracaoRelatorio() {
-  try {
-    const check = await service.get(`/api/report/by-simulation/${route.params.simulationId}`)
-    const d = check?.data?.data || check?.data || check
-    if (d?.report_id) { status.value.report_id = d.report_id; toast.success('📊 Relatório disponível!', 5000); return }
-  } catch { /* não existe ainda */ }
+// ─── Polling da preparação ────────────────────────────────────
+function waitForPrepare(taskId, simId) {
+  return new Promise((resolve, reject) => {
+    let elapsed = 0
+    const maxWait = 900000
+    const interval = 5000
 
-  gerandoRelatorio.value = true
-  try {
-    const res  = await service.post('/api/report/generate', { simulation_id: route.params.simulationId })
-    const data = res?.data?.data || res?.data || res
-    reportTaskId.value = data.task_id || null
-    if (data.report_id) { status.value.report_id = data.report_id; gerandoRelatorio.value = false; toast.success('📊 Relatório disponível!', 5000); return }
-    pollRelatorio()
-  } catch { gerandoRelatorio.value = false; toast.error('Não foi possível gerar o relatório.') }
+    pollTimer = setInterval(async () => {
+      if (abortado.value) { clearInterval(pollTimer); resolve(); return }
+      elapsed += interval
+      if (elapsed > maxWait) {
+        clearInterval(pollTimer)
+        reject(new Error('Timeout: preparação dos agentes demorou mais de 15 minutos.'))
+        return
+      }
+      try {
+        const res  = await service.post('/api/simulation/prepare/status', { task_id: taskId, simulation_id: simId })
+        const data = res.data || res
+        if (data.progress) progress.value = 50 + Math.round((data.progress / 100) * 35)
+        if (data.message) { statusMsg.value = traduzir(data.message); detalhe.value = '' }
+
+        if (data.status === 'ready' || data.status === 'completed' || data.already_prepared) {
+          clearInterval(pollTimer); progress.value = 85; resolve()
+        } else if (data.status === 'failed') {
+          clearInterval(pollTimer)
+          reject(new Error('Falha na preparação dos agentes. Tente novamente.'))
+        }
+      } catch { /* ignorar erros transientes */ }
+    }, interval)
+  })
 }
 
-function pollRelatorio() {
-  let tentativas = 0
-  reportPollTimer.value = setInterval(async () => {
-    tentativas++
-    if (tentativas > 60) { clearInterval(reportPollTimer.value); gerandoRelatorio.value = false; toast.warn('Relatório demorando. Tente pelo projeto.'); return }
+// ─── API ──────────────────────────────────────────────────────
+async function getProject(id) {
+  const res = await service.get(`/api/graph/project/${id}`)
+  return res.data?.data || res.data || res
+}
+async function createSimulation(pid, graphId) {
+  const res = await service.post('/api/simulation/create', { project_id: pid, graph_id: graphId })
+  return res.data?.data || res.data || res
+}
+async function prepareSimulation(simId, entityTypesFilter = null) {
+  const payload = { simulation_id: simId }
+  if (entityTypesFilter && entityTypesFilter.length > 0) {
+    payload.entity_types = entityTypesFilter
+  }
+  const res = await service.post('/api/simulation/prepare', payload)
+  return res.data?.data || res.data || res
+}
+
+async function confirmarAgentes() {
+  const types = entityTypes.value.filter(et => et.selected).map(et => et.nameOriginal || et.name)
+  const customs = customAgents.value.map(a => a.name)
+  selectedTypes.value = [...types, ...customs]
+
+  // Tentar gerar preview dos agentes
+  if (projectData.value?.graph_id) {
+    previewLoading.value = true
+    tela.value = 'preview'
     try {
-      const payload = { simulation_id: route.params.simulationId }
-      if (reportTaskId.value) payload.task_id = reportTaskId.value
-      const res = await service.post('/api/report/generate/status', payload)
-      const d   = res?.data?.data || res?.data || res
-      if (d.status === 'completed' || d.report_id) {
-        clearInterval(reportPollTimer.value); gerandoRelatorio.value = false
-        if (d.report_id) { status.value.report_id = d.report_id }
-        else {
-          try {
-            const c = await service.get(`/api/report/by-simulation/${route.params.simulationId}`)
-            const cd = c?.data?.data || c?.data || c
-            if (cd?.report_id) status.value.report_id = cd.report_id
-          } catch { /* ignorar */ }
-        }
-        if (status.value.report_id) toast.success('📊 Relatório pronto!', 8000)
-      } else if (d.status === 'failed') { clearInterval(reportPollTimer.value); gerandoRelatorio.value = false; toast.error('Falha ao gerar relatório.') }
-    } catch { /* ignorar */ }
-  }, 5000)
-}
-
-async function pararSimulacao() {
-  parando.value = true
-  try {
-    await service.post('/api/simulation/stop', { simulation_id: route.params.simulationId })
-    parada.value = true; poll.stop()
-    toast.warn('Simulação pausada na rodada ' + status.value.current_round)
-  } catch { toast.error('Não foi possível pausar.') } finally { parando.value = false }
-}
-
-function verRelatorio() { if (temRelatorio.value) router.push(`/relatorio/${status.value.report_id}`) }
-
-function voltarProjeto() {
-  const pid = status.value.project_id
-  router.push(pid ? `/projeto/${pid}` : '/')
-}
-
-const poll = usePolling(carregarStatus, 5000)
-
-async function carregarProjectId() {
-  try {
-    const res = await service.get('/api/simulation/list', { params: { limit: 500 } })
-    const raw = res?.data?.data || res?.data || res
-    const lista = Array.isArray(raw) ? raw : (raw?.simulations || raw?.data || [])
-    const sim = lista.find(s => s.simulation_id === route.params.simulationId)
-    if (sim?.project_id) status.value.project_id = sim.project_id
-  } catch { /* ignorar */ }
-}
-
-onMounted(async () => {
-  carregarProjectId()
-  poll.start()
-  // Carregar dados retroativos se simulação já concluída
-  try {
-    const res = await service.get(`/api/simulation/${route.params.simulationId}/run-status`)
-    const raw = res?.data?.data || res?.data || {}
-    const s = (raw.status || '').toLowerCase()
-    if (s === 'completed' || s === 'finished') {
-      try {
-        const aRes = await service.get(`/api/analytics/${route.params.simulationId}`)
-        const ana = aRes?.data?.data || aRes?.data || {}
-        const twR = ana?.twitter?.rounds || []
-        const rdR = ana?.reddit?.rounds || []
-        const byRound = {}
-        ;[...twR, ...rdR].forEach(r => {
-          const rn = r.round_num ?? r.round ?? 0
-          if (!byRound[rn]) byRound[rn] = { tw: 0, rd: 0 }
-          if (r.platform === 'twitter') byRound[rn].tw += (r.actions || r.count || 1)
-          else byRound[rn].rd += (r.actions || r.count || 1)
-        })
-        const rounds = Object.keys(byRound).map(Number).sort((a,b) => a - b)
-        if (rounds.length > 1 && roundHistory.value.length <= 1) {
-          roundHistory.value = rounds.map(r => ({
-            r, tw: byRound[r].tw, rd: byRound[r].rd,
-            tot: byRound[r].tw + byRound[r].rd,
-            c: consenso.value, iv: inovacao.value, ts: tensao.value
-          }))
-          lastRound.value = rounds[rounds.length - 1]
-        }
-        
-        // Backfill events from top_posts
-        if (eventLog.value.length === 0) {
-          const twPosts = ana?.twitter?.top_posts || []
-          const rdPosts = ana?.reddit?.top_posts || []
-          ;[...twPosts.slice(0, 4), ...rdPosts.slice(0, 4)].forEach(p => {
-            eventLog.value.push({
-              round: 0,
-              platform: p.user_name ? 'Twitter' : 'Reddit',
-              agent: p.name || p.user_name || 'Agente',
-              tipo: 'publicou um post',
-              ts: Date.now()
-            })
-          })
-        }
-      } catch {}
+      const res = await service.post('/api/simulation/preview-agents', {
+        graph_id: projectData.value.graph_id,
+        entity_types: types.length > 0 ? types : null,
+        num_agents: cfgAgentes.value,
+      })
+      previewAgents.value = res?.data?.data?.agents || res?.data?.agents || []
+      if (previewAgents.value.length === 0) {
+        // Fallback: sem preview, ir direto pro pipeline
+        iniciarPipeline()
+      }
+    } catch (e) {
+      console.warn('Preview falhou, indo direto pro pipeline:', e)
+      iniciarPipeline()
+    } finally {
+      previewLoading.value = false
     }
-  } catch {}
+  } else {
+    iniciarPipeline()
+  }
+}
+
+function onPreviewRemove(idx) {
+  previewAgents.value.splice(idx, 1)
+}
+
+async function onPreviewAdd(description) {
+  try {
+    const res = await service.post('/api/simulation/custom-agent', {
+      description,
+      simulation_requirement: projectData.value?.simulation_requirement || cfgHipotese.value,
+    })
+    const agent = res?.data?.data || res?.data
+    if (agent) {
+      previewAgents.value.push(agent)
+    }
+  } catch (e) {
+    console.error('Falha ao criar agente customizado:', e)
+  }
+}
+
+async function onPreviewRegenerate(count) {
+  if (!projectData.value?.graph_id) return
+  previewRegenerating.value = true
+  try {
+    const res = await service.post('/api/simulation/preview-agents', {
+      graph_id: projectData.value.graph_id,
+      num_agents: count,
+    })
+    const newAgents = res?.data?.data?.agents || res?.data?.agents || []
+    previewAgents.value.push(...newAgents.slice(0, count))
+  } catch (e) {
+    console.warn('Regeneração falhou:', e)
+  } finally {
+    previewRegenerating.value = false
+  }
+}
+
+function onPreviewConfirm(agents) {
+  previewAgents.value = agents
+  iniciarPipeline()
+}
+
+function toggleEntityType(et) {
+  et.selected = !et.selected
+}
+
+function toggleCategory(catId) {
+  activeCategory.value = activeCategory.value === catId ? null : catId
+}
+
+function addAgentFromLibrary(agent, categoryId) {
+  if (customAgents.value.some(a => a.name === agent.name)) return
+  customAgents.value.push({ ...agent, categoryId, custom: false })
+}
+
+function removeAgent(idx) {
+  customAgents.value.splice(idx, 1)
+}
+
+function isAgentAdded(agentName) {
+  return customAgents.value.some(a => a.name === agentName)
+}
+
+function adicionarCategoria() {
+  const label = novaCategoria.value.label.trim()
+  if (!label) return
+  const id = 'custom_' + label.toLowerCase().replace(/\s+/g, '_').slice(0, 20)
+  if (customCategories.value.some(c => c.id === id)) return
+  customCategories.value.push({
+    id,
+    icon: novaCategoria.value.icon || '🏷',
+    label,
+    color: novaCategoria.value.color || '#00e5c3',
+    agents: []
+  })
+  novaCategoria.value = { icon: '🏷', label: '', color: '#00e5c3' }
+  showNewCategory.value = false
+  activeCategory.value = id
+}
+
+function addAgentToCustomCategory(catId) {
+  const nome = novoAgente.value.trim()
+  if (!nome) return
+  const cat = customCategories.value.find(c => c.id === catId)
+  if (!cat) return
+  if (cat.agents.some(a => a.name === nome)) return
+  cat.agents.push({ name: nome, desc: 'Agente personalizado', tags: [] })
+  addAgentFromLibrary({ name: nome, desc: 'Agente personalizado' }, catId)
+  novoAgente.value = ''
+}
+
+function adicionarAgente() {
+  const nome = novoAgente.value.trim()
+  if (!nome) return
+  if (customAgents.value.some(a => a.name === nome)) return
+  customAgents.value.push({ name: nome, desc: 'Agente personalizado', categoryId: 'custom', custom: true })
+  novoAgente.value = ''
+}
+async function startSimulation(simId) {
+  const res = await service.post('/api/simulation/start', {
+    simulation_id: simId,
+    platform:   'parallel',
+    max_rounds: maxRounds.value
+  })
+  return res.data || res
+}
+
+function handleError(e) {
+  if (abortado.value) return
+  phase.value = 'error'
+  erro.value  = e?.response?.data?.error || e?.message || 'Erro inesperado.'
+}
+
+function retry() {
+  abortado.value = false
+  erro.value     = ''
+  phase.value    = 'init'
+  progress.value = 0
+  runPipeline().catch(handleError)
+}
+
+// ─── Auto-start se vier do wizard ────────────────────────────
+onMounted(() => {
+  if (_fromWizard) {
+    runPipeline().catch(handleError)
+  }
 })
-onUnmounted(() => { if (reportPollTimer.value) clearInterval(reportPollTimer.value) })
+
+onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <template>
-  <AppShell :title="pageTitle">
-    <template #actions>
-      <div class="round-badge">{{ roundLabelFull(status.current_round) }} de {{ status.total_rounds || '?' }}</div>
-      <AugurButton v-if="!concluida && !parada && !erroExec" variant="ghost" :disabled="parando" @click="pararSimulacao">
-        {{ parando ? 'Parando...' : '⏸ Pausar' }}
-      </AugurButton>
-      <AugurButton v-if="temRelatorio" @click="verRelatorio">📊 Ver Relatório</AugurButton>
-      <div v-else-if="gerandoRelatorio" class="gerando-tag"><div class="mspin"></div>Gerando relatório...</div>
-      <AugurButton variant="ghost" @click="voltarProjeto">← Projeto</AugurButton>
-    </template>
+  <AppShell title="Nova Simulação">
 
-    <!-- Banners -->
-    <Transition name="sd">
-      <div v-if="concluida" class="banner banner-done">
-        <span class="bi">🎉</span>
-        <div class="bb"><div class="bt">Simulação concluída!</div><div class="bs" v-if="temRelatorio">Relatório pronto.</div><div class="bs" v-else-if="gerandoRelatorio">Gerando relatório...</div></div>
-        <div class="banner-actions">
-          <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/agentes`)">🧠 Agentes</button>
-          <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/influentes`)">👑 Influentes</button>
-          <button class="btn-sec" @click="router.push(`/simulacao/${route.params.simulationId}/posts`)">📝 Posts</button>
-          <button v-if="temRelatorio" class="btn-rel" @click="verRelatorio">📊 Ver Relatório →</button>
-          <div v-else-if="gerandoRelatorio" class="gerando-tag"><div class="mspin"></div></div>
-          <button v-else class="btn-g" @click="voltarProjeto">← Projeto</button>
+    <!-- ════════════════════════════ -->
+    <!-- TELA DE CONFIG               -->
+    <!-- ════════════════════════════ -->
+    <div v-if="tela === 'config'" class="config-wrap">
+      <div class="config-header">
+        <div>
+          <h1 class="config-titulo">Configurar Simulação</h1>
+          <p class="config-sub">Defina os parâmetros antes de iniciar.</p>
         </div>
+        <button class="btn-ghost" @click="voltar">← Voltar</button>
       </div>
-    </Transition>
-    <Transition name="sd">
-      <div v-if="parada && !concluida" class="banner banner-paused">
-        <span class="bi">⏸</span>
-        <div class="bb"><div class="bt">Simulação pausada</div><div class="bs">{{ roundLabelFull(status.current_round) }} de {{ status.total_rounds }}.</div></div>
-        <button class="btn-g" @click="voltarProjeto">← Projeto</button>
-      </div>
-    </Transition>
-    <Transition name="sd">
-      <div v-if="erroExec" class="banner banner-error">
-        <span class="bi">⚠️</span>
-        <div class="bb"><div class="bt">Erro na execução</div><div class="bs">{{ erroExec }}</div></div>
-        <button class="btn-g" @click="voltarProjeto">← Projeto</button>
-      </div>
-    </Transition>
 
-    <!-- KPI Top -->
-    <div class="kpi-top">
-      <div class="kpi-blk">
-        <div class="kpi-n">{{ status.total_rounds || '—' }}</div>
-        <div class="kpi-l">Rodadas</div>
-      </div>
-      <div class="kpi-d"></div>
-      <div class="kpi-blk">
-        <div class="kpi-n">{{ status.total_actions_count }}</div>
-        <div class="kpi-l">Interações</div>
-      </div>
-      <div class="kpi-d"></div>
-      <div class="kpi-blk kpi-hl">
-        <div class="kpi-n" style="color:var(--accent)">{{ consenso }}%</div>
-        <div class="kpi-l">Consenso</div>
-      </div>
-      <div class="kpi-d"></div>
-      <div class="kpi-blk">
-        <div class="kpi-n" style="color:#f5a623">{{ progresso }}%</div>
-        <div class="kpi-l">Progresso</div>
+      <div class="config-card">
+        <div class="param-block">
+          <div class="param-h">
+            <span class="param-l">Número de Agentes</span>
+            <span class="param-v">{{ cfgAgentes }}</span>
+          </div>
+          <input type="range" min="5" max="500" step="5" v-model.number="cfgAgentes" class="slider"/>
+          <div class="param-bounds"><span>5 — rápido</span><span>500 — máxima riqueza</span></div>
+          <div class="param-desc">{{ descAgentes }}</div>
+        </div>
+
+        <div class="param-block">
+          <div class="param-h">
+            <span class="param-l">Número de Rodadas</span>
+            <span class="param-v">{{ cfgRodadas }}</span>
+          </div>
+          <input type="range" min="1" max="100" step="1" v-model.number="cfgRodadas" class="slider"/>
+          <div class="param-bounds"><span>1 — instantâneo</span><span>100 — evolução completa</span></div>
+          <div class="param-desc">{{ descRodadas }}</div>
+        </div>
+
+        <div class="estimativas">
+          <div class="est"><div class="el">⏱ Tempo estimado</div><div class="ev">~{{ estMin }} min</div></div>
+          <div class="es"></div>
+          <div class="est"><div class="el">💳 Custo estimado</div><div class="ev">~${{ estCusto }}</div></div>
+          <div class="es"></div>
+          <div class="est"><div class="el">🤖 Agentes</div><div class="ev ac">{{ cfgAgentes }}</div></div>
+          <div class="es"></div>
+          <div class="est"><div class="el">🔄 Rodadas</div><div class="ev ac2">{{ cfgRodadas }}</div></div>
+        </div>
+
+        <button class="btn-iniciar" @click="iniciar">Escolher Agentes →</button>
       </div>
     </div>
 
-    <!-- Main Grid -->
-    <div class="mgrid">
-
-      <!-- Gauges -->
-      <div class="cg">
-        <div class="st">MÉTRICAS ATUAIS</div>
-
-        <div class="gauge-item">
-          <svg viewBox="0 0 100 72" class="gsv">
-            <defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#00b89c"/><stop offset="100%" stop-color="#00e5c3"/>
-            </linearGradient></defs>
-            <path d="M 14 56 A 36 36 0 0 1 86 56" fill="none" stroke="rgba(0,229,195,0.1)" stroke-width="10" stroke-linecap="round"/>
-            <path :d="gaugePath(consenso)" fill="none" stroke="url(#gc)" stroke-width="10" stroke-linecap="round"/>
-            <text x="50" y="50" text-anchor="middle" font-size="20" font-weight="800" fill="#00e5c3" font-family="monospace">{{ consenso }}%</text>
-          </svg>
-          <div class="glbl">Consenso</div>
-        </div>
-
-        <div class="gauge-item">
-          <svg viewBox="0 0 100 72" class="gsv">
-            <defs><linearGradient id="gi" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#5046a8"/><stop offset="100%" stop-color="#7c6ff7"/>
-            </linearGradient></defs>
-            <path d="M 14 56 A 36 36 0 0 1 86 56" fill="none" stroke="rgba(124,111,247,0.1)" stroke-width="10" stroke-linecap="round"/>
-            <path :d="gaugePath(inovacao)" fill="none" stroke="url(#gi)" stroke-width="10" stroke-linecap="round"/>
-            <text x="50" y="50" text-anchor="middle" font-size="20" font-weight="800" fill="#7c6ff7" font-family="monospace">{{ inovacao }}%</text>
-          </svg>
-          <div class="glbl">Inovação</div>
-        </div>
-
-        <div class="gauge-item">
-          <svg viewBox="0 0 100 72" class="gsv">
-            <defs><linearGradient id="gt" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#cc2222"/><stop offset="100%" stop-color="#ff5a5a"/>
-            </linearGradient></defs>
-            <path d="M 14 56 A 36 36 0 0 1 86 56" fill="none" stroke="rgba(255,90,90,0.1)" stroke-width="10" stroke-linecap="round"/>
-            <path :d="gaugePath(tensao)" fill="none" stroke="url(#gt)" stroke-width="10" stroke-linecap="round"/>
-            <text x="50" y="50" text-anchor="middle" font-size="20" font-weight="800" fill="#ff5a5a" font-family="monospace">{{ tensao }}%</text>
-          </svg>
-          <div class="glbl">Tensão Social</div>
+    <!-- ════════════════════════════ -->
+    <!-- TELA DE AGENTES              -->
+    <!-- ════════════════════════════ -->
+    <div v-else-if="tela === 'agents'" class="agents-wrap">
+      <div class="agents-page-header">
+        <button class="btn-ghost" @click="tela = 'config'">← Parametros</button>
+        <div>
+          <h1 class="agents-page-title">Monte seu Painel de Agentes</h1>
+          <p class="agents-page-sub">{{ cfgAgentes }} agentes · {{ cfgRodadas }} rodadas · Escolha quem participa da simulacao</p>
         </div>
       </div>
 
-      <!-- Evolução -->
-      <div class="cc">
-        <div class="st-row">
-          <span class="st">EVOLUÇÃO POR RODADA</span>
-          <div class="evo-leg">
-            <span style="color:#00e5c3;font-size:11px;font-weight:600">— Consenso</span>
-            <span style="color:#7c6ff7;font-size:11px;font-weight:600">— Inovação</span>
-            <span style="color:#ff5a5a;font-size:11px;font-weight:600">— Tensão</span>
-          </div>
-        </div>
-
-        <div class="prog-line">
-          <div class="prog-b"><div class="prog-f" :class="{'pf-run':!concluida&&!parada,'pf-done':concluida}" :style="{width:progresso+'%'}"></div></div>
-          <span class="prog-p">{{ progresso }}%</span>
-        </div>
-
-        <div class="round-st">
-          <span v-if="temRelatorio" style="color:var(--accent)">✅ Relatório pronto</span>
-          <span v-else-if="gerandoRelatorio" style="color:#7c6ff7">📊 Gerando relatório... ({{ progresso }}%)</span>
-          <span v-else-if="concluida" style="color:var(--accent)">🎉 Simulação concluída — preparando relatório...</span>
-          <span v-else-if="parada" style="color:#f5a623">⏸ Pausada em {{ roundLabelFull(status.current_round) }}</span>
-          <span v-else style="color:var(--text-secondary)">▶ {{ roundLabel(status.current_round) }}/{{ roundLabel(status.total_rounds||'?') }} · Simulação {{ progresso }}%</span>
-        </div>
-
-        <!-- Chart -->
-        <div class="chart-box">
-          <div v-if="!evoChart" class="chart-ph">
-            <template v-if="!concluida"><div class="mspin"></div><span>Aguardando dados das primeiras rodadas...</span></template><span v-else style="color:var(--text-secondary,#8888aa)">Grafico nao disponivel — dados insuficientes.</span>
-          </div>
-          <svg v-else :viewBox="`0 0 ${CW} ${CH}`" class="chart-svg" preserveAspectRatio="xMidYMid meet">
-            <g v-for="l in evoChart.yLines" :key="l.v">
-              <line :x1="cp.l" :y1="l.y" :x2="CW-cp.r" :y2="l.y" stroke="rgba(0,0,0,0.08)" stroke-width="1" stroke-dasharray="3,3"/>
-              <text :x="cp.l-4" :y="l.y+4" text-anchor="end" fill="rgba(0,0,0,0.3)" font-size="8">{{ l.v }}%</text>
-            </g>
-            <g v-for="lb in evoChart.labels" :key="lb.r">
-              <text :x="lb.x" :y="CH-cp.b+14" text-anchor="middle" fill="rgba(0,0,0,0.3)" font-size="8">{{ roundLabel(lb.r) }}</text>
-            </g>
-            <path :d="evoChart.c"  fill="none" stroke="#00e5c3" stroke-width="2"   stroke-linejoin="round"/>
-            <path :d="evoChart.iv" fill="none" stroke="#7c6ff7" stroke-width="2"   stroke-linejoin="round"/>
-            <path :d="evoChart.ts" fill="none" stroke="#ff5a5a" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="4,2"/>
-          </svg>
-        </div>
-
-        <!-- Quick stats -->
-        <div class="qstats">
-          <div class="qs"><div class="qv" style="color:#1da1f2">{{ status.twitter_actions_count }}</div><div class="ql">Twitter</div></div>
-          <div class="qd"></div>
-          <div class="qs"><div class="qv" style="color:#ff4500">{{ status.reddit_actions_count }}</div><div class="ql">Reddit</div></div>
-          <div class="qd"></div>
-          <div class="qs"><div class="qv">{{ roundHistory.length }}</div><div class="ql">Rodadas log</div></div>
-        </div>
+      <div class="agents-counter-bar">
+        <div class="acb-fill" :style="{width: Math.min(100, (totalSelecionados / cfgAgentes) * 100) + '%'}"></div>
+        <span class="acb-text">{{ totalSelecionados }} selecionados de {{ cfgAgentes }} · {{ autoCompleteCount > 0 ? autoCompleteCount + ' serao escolhidos pelo AUGUR' : 'Completo' }}</span>
       </div>
 
-      <!-- Rede + Feed -->
-      <div class="cr">
-        <div class="st">REDE DE AGENTES</div>
-        <svg :viewBox="`0 0 ${NET} ${NET}`" class="net-svg" preserveAspectRatio="xMidYMid meet">
-          <circle :cx="NET/2" :cy="NET/2" r="45" fill="none" stroke="rgba(0,0,0,0.06)"/>
-          <circle :cx="NET/2" :cy="NET/2" r="75" fill="none" stroke="rgba(0,0,0,0.04)"/>
-          <line v-for="(e,i) in netEdges" :key="'e'+i"
-            :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-            :stroke-width="e.w || 1" stroke="rgba(0,0,0,0.12)" stroke-linecap="round"/>
-          <g v-for="(n,i) in agentNodes" :key="'n'+i">
-            <circle :cx="n.x" :cy="n.y" :r="n.size+2" :fill="ROLE_COLORS[n.role]" opacity="0.12"/>
-            <circle :cx="n.x" :cy="n.y" :r="n.size"
-              :fill="n.active ? ROLE_COLORS[n.role] : 'rgba(0,0,0,0.08)'"
-              :opacity="n.active ? 0.95 : 0.3"
-              :class="{'np': n.active && !concluida}"/>
-            <text v-if="n.name" :x="n.x" :y="n.y + n.size + 8" text-anchor="middle"
-              fill="var(--text-secondary)" font-size="4" font-weight="600" opacity="0.8">{{ n.name }}</text>
-          </g>
-        </svg>
-        <div class="net-leg">
-          <span v-for="(cor, r) in ROLE_COLORS" :key="r" :style="{color:cor}">● {{ r }}</span>
+      <!-- Detectados da hipotese -->
+      <section class="agents-section" v-if="entityTypes.length">
+        <h3 class="as-title">🔍 Detectados na Hipotese</h3>
+        <p class="as-sub">Participantes identificados automaticamente pela analise da sua hipotese</p>
+        <div class="as-chips">
+          <div v-for="et in entityTypes" :key="et.name" 
+               class="as-chip" :class="{ 'as-chip-on': et.selected }"
+               @click="toggleEntityType(et)">
+            <span class="as-chip-check">{{ et.selected ? '✓' : '' }}</span>
+            <span>{{ et.name }}</span>
+          </div>
         </div>
-        <div v-if="Object.keys(realAgentMap).length" class="net-info">
-          {{ Object.keys(realAgentMap).length }} agentes · {{ realActions.length }} interações
-        </div>
+      </section>
 
-        <div class="feed-sep"></div>
-        <div class="st">FEED DE EVENTOS</div>
-        <div v-if="!eventsFeed.length" class="feed-ph"><template v-if="!concluida"><div class="mspin"></div><span>Aguardando rodadas...</span></template><span v-else style="color:var(--text-secondary,#8888aa)">Sem eventos registrados.</span></div>
-        <div class="feed-list" v-else>
-          <div v-for="(ev,i) in eventsFeed" :key="i" class="fi">
-            <span class="fi-r">{{ roundLabel(ev.round) }}</span>
-            <div class="fi-b">
-              <span class="fi-a">{{ ev.agent }}</span>
-              <span class="fi-t">{{ ev.acao }} <span :class="['fi-p', ev.platform==='Twitter'?'ptw':'prd']">{{ ev.platform }}</span></span>
+      <!-- Biblioteca por categoria -->
+      <section class="agents-section">
+        <h3 class="as-title">📚 Biblioteca de Agentes</h3>
+        <p class="as-sub">Adicione agentes de diferentes segmentos</p>
+        <div class="as-cats">
+          <div v-for="cat in AGENT_LIBRARY" :key="cat.id" class="as-cat">
+            <div class="as-cat-head" @click="toggleCategory(cat.id)">
+              <span class="as-cat-icon" :style="{background: cat.color + '15', color: cat.color}">{{ cat.icon }}</span>
+              <span class="as-cat-name">{{ cat.label }}</span>
+              <span class="as-cat-badge" v-if="agentCounts[cat.id]" :style="{background: cat.color}">{{ agentCounts[cat.id] }}</span>
+              <span class="as-cat-arrow" :class="{'as-open': activeCategory === cat.id}">›</span>
             </div>
-            <span class="fi-tm">{{ ev.time }}</span>
+            <div v-if="activeCategory === cat.id" class="as-cat-body">
+              <div v-for="agent in cat.agents" :key="agent.name" class="as-agent"
+                   :class="{'as-agent-added': isAgentAdded(agent.name)}"
+                   @click="!isAgentAdded(agent.name) && addAgentFromLibrary(agent, cat.id)">
+                <div class="as-agent-dot" :style="{background: cat.color}"></div>
+                <div class="as-agent-info">
+                  <div class="as-agent-name">{{ agent.name }}</div>
+                  <div class="as-agent-desc">{{ agent.desc }}</div>
+                </div>
+                <span v-if="!isAgentAdded(agent.name)" class="as-agent-add" :style="{color: cat.color}">+</span>
+                <span v-else class="as-agent-ok">✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agente personalizado -->
+      <section class="agents-section">
+        <h3 class="as-title">✍️ Personalizado</h3>
+        <div class="as-custom-row">
+          <input v-model="novoAgente" class="as-input" placeholder="Descreva um agente (ex: Dono de academia em cidade pequena)" @keyup.enter="adicionarAgente()"/>
+          <button class="as-add-btn" @click="adicionarAgente()">+</button>
+        </div>
+      </section>
+
+      <!-- Selecionados -->
+      <section class="agents-section" v-if="customAgents.length">
+        <h3 class="as-title">Seus agentes</h3>
+        <div class="as-selected">
+          <span v-for="(a, i) in customAgents" :key="i" class="as-sel-tag"
+                :style="{'border-color': AGENT_LIBRARY.find(c => c.id === a.categoryId)?.color || '#00e5c3'}">
+            {{ a.name }} <span class="as-sel-x" @click="removeAgent(i)">x</span>
+          </span>
+        </div>
+      </section>
+
+      <!-- Auto-complete info -->
+      <div class="as-auto" v-if="autoCompleteCount > 0">
+        🤖 O AUGUR escolhera <strong>{{ autoCompleteCount }} agentes adicionais</strong> automaticamente, baseado na hipotese e nos participantes mais relevantes.
+      </div>
+
+      <!-- Iniciar -->
+      <button class="btn-iniciar" @click="confirmarAgentes()" :disabled="totalSelecionados === 0 && entityTypes.length === 0">
+        ✦ Gerar Agentes e Revisar
+      </button>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!-- TELA DE PREVIEW DE AGENTES   -->
+    <!-- ════════════════════════════ -->
+    <div v-else-if="tela === 'preview'" class="preview-screen">
+      <div v-if="previewLoading" class="preview-loading">
+        <div class="loading-spinner"></div>
+        <p>Gerando perfis dos agentes com IA...</p>
+        <p class="loading-sub">Cada agente recebe nome, personalidade, profissão e motivações únicas</p>
+      </div>
+      <AgentPreview v-else
+        :agents="previewAgents"
+        :target-count="cfgAgentes"
+        :regenerating="previewRegenerating"
+        @remove="onPreviewRemove"
+        @add="onPreviewAdd"
+        @confirm="onPreviewConfirm"
+        @back="tela = 'agents'"
+        @regenerate="onPreviewRegenerate"
+      />
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!-- TELA DE PIPELINE             -->
+    <!-- ════════════════════════════ -->
+    <div v-else-if="tela === 'pipeline'" class="pipeline">
+
+      <!-- Progresso global -->
+      <div class="prog-global">
+        <div class="prog-bar">
+          <div class="prog-fill"
+            :class="{ 'prog-error': phase==='error' || phase==='aborted', 'prog-done': phase==='running' }"
+            :style="{ width: progress+'%' }"
+          ></div>
+        </div>
+        <span class="prog-pct">{{ progress }}%</span>
+      </div>
+
+      <!-- Card de status -->
+      <div class="status-card"
+        :class="{ 'card-error': phase==='error', 'card-done': phase==='running', 'card-aborted': phase==='aborted' }">
+
+        <div class="status-icon" :class="phase">
+          <svg v-if="phase==='error' || phase==='aborted'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <svg v-else-if="phase==='running'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <div v-else class="spinner-icon"></div>
+        </div>
+
+        <h2 class="status-titulo">{{ phaseLabel }}</h2>
+        <p class="status-msg">{{ statusMsg }}</p>
+        <p v-if="detalhe" class="status-detalhe">{{ detalhe }}</p>
+
+        <div v-if="phase==='building_graph'" class="aviso-tempo">
+          ⏱ Este processo pode levar entre 2 e 15 minutos. Não feche esta aba.
+        </div>
+        <div v-if="phase==='preparing'" class="aviso-tempo">
+          ⏱ Geração dos agentes pode levar alguns minutos.
+        </div>
+
+        <button
+          v-if="phase!=='running' && phase!=='error' && phase!=='aborted'"
+          class="btn-cancelar"
+          @click="cancelar"
+        >
+          ✕ Cancelar simulação
+        </button>
+      </div>
+
+            <!-- Timeline -->
+      <div class="timeline">
+        <div v-for="(fase, idx) in fases" :key="fase.key" class="tl-item">
+          <div class="tl-left">
+            <div class="tl-dot"
+              :class="{
+                'tl-active': phase===fase.key,
+                'tl-done':   faseAtual>idx || phase==='running',
+                'tl-error':  (phase==='error'||phase==='aborted') && faseAtual===idx
+              }"
+            >
+              <svg v-if="faseAtual>idx || phase==='running'" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="2,6 5,9 10,3"/></svg>
+              <div v-else-if="phase===fase.key && phase!=='error' && phase!=='aborted'" class="dot-spin"></div>
+            </div>
+            <div v-if="idx<fases.length-1" class="tl-line" :class="{ 'tl-line-done': faseAtual>idx || phase==='running' }"></div>
+          </div>
+          <div class="tl-content" :class="{ 'tl-content-active': phase===fase.key, 'tl-content-done': faseAtual>idx || phase==='running' }">
+            <div class="tl-label">{{ fase.label }}</div>
+            <div class="tl-desc">{{ fase.desc }}</div>
           </div>
         </div>
       </div>
 
-    </div>
-
-    <!-- Resumo por Rodada -->
-    <div v-if="roundSummaries.length" class="rounds-section">
-      <div class="rs-header">
-        <h3>📋 Resumo por {{ escalaTempo === 'meses' ? 'Mês' : escalaTempo === 'semanas' ? 'Semana' : 'Dia' }}</h3>
-        <span class="rs-count">{{ roundSummaries.length }} {{ escalaTempo }}</span>
-      </div>
-      <div class="rs-grid">
-        <div v-for="rs in roundSummaries" :key="rs.round" class="rs-card">
-          <div class="rs-card-head">
-            <span class="rs-round">{{ rs.label }}</span>
-            <span class="rs-agents">{{ rs.agentesAtivos }} agentes</span>
-          </div>
-          <div class="rs-stats">
-            <span class="rs-stat"><b>{{ rs.posts }}</b> posts</span>
-            <span class="rs-stat"><b>{{ rs.comments }}</b> coment.</span>
-            <span class="rs-stat"><b>{{ rs.likes }}</b> curtidas</span>
-            <span class="rs-stat"><b>{{ rs.reposts }}</b> reposts</span>
-          </div>
-          <div v-if="rs.engajamento > 0" class="rs-eng">
-            Engajamento: <b>{{ rs.engajamento }}x</b> por post
-          </div>
-          <div v-if="rs.topPost" class="rs-top-post">
-            <span class="rs-tp-agent">{{ rs.topPost.agent }}:</span>
-            <span class="rs-tp-text">"{{ rs.topPost.content }}"</span>
-          </div>
+      <!-- Erro -->
+      <div v-if="phase==='error'" class="erro-card">
+        <div class="erro-icon">⚠️</div>
+        <div class="erro-msg">{{ erro }}</div>
+        <div class="erro-actions">
+          <button class="btn-ghost" @click="voltar">← Voltar ao projeto</button>
+          <button class="btn-retry" @click="retry">↺ Tentar novamente</button>
         </div>
       </div>
+
+      <!-- Cancelado -->
+      <div v-if="phase==='aborted'" class="erro-card erro-aborted">
+        <div class="erro-icon">🚫</div>
+        <div class="erro-msg">Simulação cancelada.</div>
+        <div class="erro-actions">
+          <button class="btn-ghost" @click="voltar">← Voltar ao projeto</button>
+          <button class="btn-retry" @click="tela='config'; abortado=false; phase='init'; progress=0">
+            ↺ Configurar novamente
+          </button>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div v-if="projectData && phase!=='error' && phase!=='aborted'" class="info-card">
+        <div class="info-title">Em andamento</div>
+        <div class="info-row"><span class="ik">Projeto</span><span class="iv">{{ projectData.name }}</span></div>
+        <div class="info-row"><span class="ik">Agentes</span><span class="iv ac">{{ cfgAgentes }}</span></div>
+        <div class="info-row"><span class="ik">Rodadas</span><span class="iv ac2">{{ cfgRodadas }}</span></div>
+        <div class="info-row"><span class="ik">Materiais</span><span class="iv">{{ (projectData.files||[]).length }} arquivo(s)</span></div>
+      </div>
+
     </div>
-
-    <!-- CTA após conclusão -->
-    <Transition name="pop">
-      <div v-if="concluida" class="cta">
-        <span style="font-size:26px">📊</span>
-        <div style="flex:1"><div class="cta-t">{{ temRelatorio ? 'Análise pronta!' : 'Gerando análise...' }}</div><div class="cta-s">{{ temRelatorio ? 'Relatório com cenários, riscos e recomendações estratégicas.' : 'Processando dados...' }}</div></div>
-        <button v-if="temRelatorio" class="btn-rel" @click="verRelatorio">Ver Relatório →</button>
-        <div v-else class="mspin"></div>
-      </div>
-    </Transition>
-
-    <!-- Cost toggle -->
-    <button class="cost-toggle" @click="showCusto = !showCusto" title="Custo da operação">💰</button>
-    <Transition name="fade">
-      <div v-if="showCusto" class="cost-panel">
-        <h4>💰 Custo Estimado</h4>
-        <div class="cp-row"><span>Agentes</span><span>{{ custoEstimado.agentes }}</span></div>
-        <div class="cp-row"><span>Rodadas</span><span>{{ custoEstimado.rodadas }}</span></div>
-        <div class="cp-row"><span>Episódios Zep</span><span>{{ custoEstimado.episodios }}</span></div>
-        <div class="cp-row"><span>Zep Cloud</span><span>R$ {{ custoEstimado.zepBRL }}</span></div>
-        <div class="cp-row"><span>OpenAI</span><span>R$ {{ custoEstimado.openaiBRL }}</span></div>
-        <div class="cp-row cp-total"><span>TOTAL</span><span>R$ {{ custoEstimado.total }}</span></div>
-        <div class="cp-note">Estimativa baseada em ~8,65 episódios/agente (Zep $25/4k) + ~R$0,03/call OpenAI</div>
-      </div>
-    </Transition>
   </AppShell>
 </template>
 
 <style scoped>
-/* ═══ AUGUR Live Dashboard ═══ */
-
-/* Banners */
-.banner { display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:14px;margin-bottom:20px;flex-wrap:wrap; }
-.banner-done { background:linear-gradient(135deg,rgba(0,229,195,0.06),rgba(0,229,195,0.02));border:1px solid rgba(0,229,195,0.2); }
-.banner-paused { background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2); }
-.banner-error { background:rgba(255,90,90,0.06);border:1px solid rgba(255,90,90,0.2); }
-.bi { font-size:28px; }
-.bb { flex:1; }
-.bt { font-size:15px;font-weight:700;color:#1a1a2e; }
-.bs { font-size:12px;color:#555570;margin-top:2px; }
-.banner-actions { display:flex;gap:6px;flex-wrap:wrap; }
-.btn-sec { padding:7px 14px;border:1px solid #e0e0e8;background:#fff;border-radius:8px;font-size:12px;font-weight:600;color:#555570;cursor:pointer; }
-.btn-sec:hover { border-color:#00e5c3;color:#00e5c3; }
-.btn-rel { padding:8px 18px;background:#00e5c3;color:#09090f;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer; }
-.btn-g { padding:7px 14px;border:1px solid #e0e0e8;background:#fff;border-radius:8px;font-size:12px;cursor:pointer;color:#555570; }
-.round-badge { padding:5px 12px;background:rgba(0,229,195,0.1);color:#00e5c3;border-radius:20px;font-size:12px;font-weight:700; }
-.gerando-tag { display:flex;align-items:center;gap:6px;font-size:12px;color:#7c6ff7; }
-.mspin { width:14px;height:14px;border:2px solid #e0e0e8;border-top-color:#7c6ff7;border-radius:50%;animation:sp .7s linear infinite; }
-@keyframes sp { to { transform:rotate(360deg) } }
-
-/* KPI Top */
-.kpi-top { display:flex;align-items:center;justify-content:center;gap:0;background:#fff;border:1px solid #eeeef2;border-radius:14px;padding:16px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.kpi-blk { text-align:center;flex:1; }
-.kpi-n { font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#1a1a2e;line-height:1; }
-.kpi-l { font-size:10px;color:#8888aa;text-transform:uppercase;letter-spacing:.8px;margin-top:4px;font-weight:600; }
-.kpi-d { width:1px;height:32px;background:#eeeef2;margin:0 8px; }
-
-/* Progress bar */
-.progress-bar { height:8px;background:#eeeef2;border-radius:4px;overflow:hidden;margin-bottom:6px; }
-.progress-fill { height:100%;background:linear-gradient(90deg,#00e5c3,#7c6ff7);border-radius:4px;transition:width .5s ease; }
-.progress-label { font-size:12px;color:#00e5c3;font-weight:700;margin-bottom:16px; }
-
-/* Main Grid */
-.mgrid { display:grid;grid-template-columns:200px 1fr 260px;gap:16px; }
-
-/* Gauges */
-.cg { display:flex;flex-direction:column;gap:12px; }
-.gauge-item { background:#fff;border:1px solid #eeeef2;border-radius:14px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.gsv { width:100%;max-width:140px;margin:0 auto; }
-.glbl { font-size:11px;font-weight:700;color:#555570;text-transform:uppercase;letter-spacing:.5px;margin-top:4px; }
-
-/* Chart */
-.cc { background:#fff;border:1px solid #eeeef2;border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.st-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:12px; }
-.st { font-size:10px;font-weight:700;color:#8888aa;text-transform:uppercase;letter-spacing:1.5px; }
-.evo-leg { display:flex;gap:12px; }
-
-/* Chart SVG */
-.chart-svg { width:100%;border-radius:8px; }
-
-/* Stats row */
-.stat-row { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px; }
-.stat-box { text-align:center;padding:12px;background:#fafafe;border-radius:10px;border:1px solid #eeeef2; }
-.stat-box-val { font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#00e5c3; }
-.stat-box-label { font-size:9px;font-weight:700;color:#8888aa;text-transform:uppercase;letter-spacing:1px;margin-top:2px; }
-
-/* Rounds summary */
-.rounds-section { grid-column:1/-1;margin-top:8px; }
-.rounds-title { font-size:10px;font-weight:700;letter-spacing:1.5px;color:#8888aa;margin-bottom:8px;text-transform:uppercase; }
-.rounds-list { display:flex;flex-direction:column;gap:4px;max-height:250px;overflow-y:auto; }
-.round-item { display:flex;gap:12px;align-items:center;padding:10px 14px;background:#fff;border-radius:10px;border:1px solid #eeeef2; }
-.ri-num { font-size:12px;font-weight:800;color:#00e5c3;font-family:'JetBrains Mono',monospace;min-width:32px; }
-.ri-stats { display:flex;gap:14px;flex-wrap:wrap; }
-.ri-stat { font-size:11px;color:#555570; }
-.ri-label { font-weight:700;color:#8888aa;margin-right:3px; }
-
-/* Right column: Network + Feed */
-.cr { display:flex;flex-direction:column;gap:12px; }
-.net-box { background:#fff;border:1px solid #eeeef2;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.net-box .st { margin-bottom:10px; }
-.net-legend { font-size:10px;color:#8888aa;margin-top:8px; }
-.net-legend span { margin-right:8px; }
-.net-meta { font-size:10px;color:#8888aa;margin-top:6px; }
-
-.feed-box { background:#fff;border:1px solid #eeeef2;border-radius:14px;padding:16px;flex:1;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.feed-list { max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:4px; }
-.feed-item { font-size:11px;padding:6px 8px;background:#fafafe;border-radius:6px;color:#555570; }
-.feed-time { color:#8888aa;margin-right:6px;font-family:monospace;font-size:10px; }
-.feed-sep { border:none;border-top:1px solid #eeeef2;margin:4px 0; }
-.feed-empty { text-align:center;padding:20px;color:#8888aa;font-size:12px; }
-
-/* Analise pronta banner */
-.report-ready { display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(0,229,195,0.06),rgba(124,111,247,0.04));border:1px solid rgba(0,229,195,0.2);border-radius:14px;padding:16px 24px;margin-top:16px;grid-column:1/-1; }
-.report-ready .ri { font-size:24px; }
-.report-ready .rb { flex:1; }
-.report-ready .rt { font-size:15px;font-weight:700;color:#1a1a2e; }
-.report-ready .rs { font-size:12px;color:#555570; }
-
-/* Transitions */
-.sd-enter-active,.sd-leave-active { transition:all .3s ease; }
-.sd-enter-from,.sd-leave-to { opacity:0;transform:translateY(-10px); }
-
-@media (max-width:1000px) {
-  .mgrid { grid-template-columns:1fr;  }
-  .cg { flex-direction:row;flex-wrap:wrap; }
-  .gauge-item { flex:1;min-width:120px; }
-  .cr { flex-direction:row;flex-wrap:wrap; }
-  .net-box,.feed-box { flex:1;min-width:200px; }
-}
-@media (max-width:600px) {
-  .kpi-top { flex-wrap:wrap;gap:12px; }
-  .kpi-d { display:none; }
-  .stat-row { grid-template-columns:1fr; }
+/* ═══ AUGUR Light Design System ═══ */
+:deep(.app-content) {
+  --bg-base: #f5f5fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #fafafe;
+  --bg-overlay: #f0f0f5;
+  --border: #eeeef2;
+  --border-md: #dddde5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #444466;
+  --text-muted: #8888aa;
+  --accent: #00e5c3;
+  --accent-dim: rgba(0,229,195,0.08);
+  --accent2: #7c6ff7;
+  --accent2-dim: rgba(124,111,247,0.08);
+  --danger: #ff5a5a;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* ─── Round Summary ─── */
-.rounds-section { margin-top:20px; background:var(--bg-surface,#fff); border:1px solid var(--border,#eeeef2); border-radius:16px; padding:20px; }
-.rs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border,#eeeef2); }
-.rs-header h3 { font-size:15px; font-weight:700; color:var(--text-primary,#1a1a2e); margin:0; }
-.rs-count { font-size:11px; font-weight:700; color:var(--accent,#00e5c3); background:rgba(0,229,195,0.08); padding:3px 10px; border-radius:12px; }
-.rs-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; max-height:400px; overflow-y:auto; }
-.rs-card { background:var(--bg-raised,#fafafe); border:1px solid var(--border,#eeeef2); border-radius:12px; padding:14px; transition:box-shadow .2s; }
-.rs-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-.rs-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-.rs-round { font-size:14px; font-weight:800; color:var(--accent2,#7c6ff7); }
-.rs-agents { font-size:11px; color:var(--text-muted,#8888aa); }
-.rs-stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
-.rs-stat { font-size:11px; color:var(--text-secondary,#444466); background:var(--bg-surface,#fff); padding:2px 8px; border-radius:6px; border:1px solid var(--border,#eeeef2); }
-.rs-stat b { color:var(--text-primary,#1a1a2e); }
-.rs-eng { font-size:11px; color:var(--accent,#00e5c3); margin-bottom:6px; }
-.rs-top-post { font-size:11px; color:var(--text-secondary,#444466); background:rgba(124,111,247,0.04); border-left:3px solid var(--accent2,#7c6ff7); padding:6px 10px; border-radius:0 8px 8px 0; line-height:1.5; }
-.rs-tp-agent { font-weight:700; color:var(--text-primary,#1a1a2e); }
-.rs-tp-text { font-style:italic; }
+/* Config */
+.config-wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 60px; }
+.config-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.config-titulo { font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px; letter-spacing: -.4px; }
+.config-sub { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.config-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px;box-shadow:0 1px 3px rgba(0,0,0,0.04); padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+.param-block { display: flex; flex-direction: column; gap: 8px; }
+.param-h { display: flex; justify-content: space-between; align-items: center; }
+.param-l { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.param-v { font-size: 26px; font-weight: 800; color: var(--accent2); font-family: var(--font-mono); }
+.param-bounds { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+.param-desc { font-size: 12px; color: var(--text-secondary); background: var(--bg-raised); border-radius:8px; padding: 8px 12px; }
+.slider { width: 100%; accent-color: var(--accent2); cursor: pointer; }
+
+.estimativas { display: flex; background: var(--bg-raised); border: 1px solid var(--border); border-radius:14px; overflow: hidden; }
+.est { flex: 1; padding: 12px 14px; }
+.el { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.ev { font-size: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); }
+.es { width: 1px; background: var(--border); margin: 8px 0; }
+.ac  { color: var(--accent); }
+.ac2 { color: var(--accent2); }
+
+.btn-iniciar { background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 15px 32px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; letter-spacing: -.2px; align-self: stretch; }
+.btn-iniciar:hover { opacity: .88; transform: translateY(-2px); }
+
+/* Pipeline */
+.pipeline { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 60px; }
+
+.prog-global { display: flex; align-items: center; gap: 12px; }
+.prog-bar { flex: 1; height: 8px; background: var(--bg-overlay); border-radius: 999px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.6s ease; }
+.prog-fill.prog-error  { background: var(--danger); }
+.prog-fill.prog-done   { background: var(--accent); }
+.prog-pct { font-size: 13px; color: var(--text-secondary); min-width: 38px; text-align: right; font-family: var(--font-mono); }
+
+.status-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px;box-shadow:0 1px 3px rgba(0,0,0,0.04); padding: 36px 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: border-color 0.4s; }
+.status-card.card-error   { border-color: rgba(255,90,90,.3); }
+.status-card.card-done    { border-color: rgba(0,229,195,.3); }
+.status-card.card-aborted { border-color: rgba(107,107,128,.3); }
+
+.status-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); margin-bottom: 6px; }
+.status-icon.error, .status-icon.aborted { background: rgba(255,90,90,.12); color: var(--danger); }
+.status-icon.running { background: var(--accent-dim); color: var(--accent); }
+.spinner-icon { width: 32px; height: 32px; border: 3px solid var(--accent-dim); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.status-titulo { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.status-msg    { font-size: 14px; color: var(--text-secondary); margin: 0; }
+.status-detalhe { font-size: 12px; color: var(--text-muted); margin: 0; font-style: italic; }
+
+.aviso-tempo { font-size: 12px; color: #f5a623; background: rgba(245,166,35,.08); border: 1px solid rgba(245,166,35,.2); border-radius: 8px; padding: 8px 14px; margin-top: 4px; }
+
+.btn-cancelar { background: none; border: 1px solid rgba(255,90,90,.4); color: var(--danger); border-radius: 8px; padding: 7px 18px; font-size: 12px; cursor: pointer; margin-top: 6px; transition: all 0.2s; }
+.btn-cancelar:hover { background: rgba(255,90,90,.08); }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; }
+.tl-item { display: flex; gap: 14px; }
+.tl-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg-overlay); border: 2px solid var(--border-md); color: var(--text-muted); transition: all 0.3s; flex-shrink: 0; }
+.tl-dot.tl-active { border-color: var(--accent2); background: var(--accent2); color: #fff; }
+.tl-dot.tl-done   { border-color: var(--accent);  background: var(--accent);  color: #000; }
+.tl-dot.tl-error  { border-color: var(--danger);  background: rgba(255,90,90,.1); color: var(--danger); }
+.dot-spin { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+.tl-line { width: 2px; flex: 1; background: var(--border-md); margin: 4px 0; min-height: 20px; transition: background 0.4s; }
+.tl-line.tl-line-done { background: var(--accent); }
+.tl-content { padding: 4px 0 16px; }
+.tl-label { font-size: 13px; font-weight: 600; color: var(--text-muted); transition: color 0.3s; }
+.tl-desc  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.tl-content.tl-content-active .tl-label { color: var(--accent2); }
+.tl-content.tl-content-done   .tl-label { color: var(--text-secondary); }
+
+/* Erro / Cancelado */
+.erro-card { background: rgba(255,90,90,.07); border: 1px solid rgba(255,90,90,.25); border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.erro-aborted { background: rgba(107,107,128,.07); border-color: rgba(107,107,128,.2); }
+.erro-icon { font-size: 32px; }
+.erro-msg  { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+.erro-actions { display: flex; gap: 12px; }
+
+/* Info */
+.info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+.info-title { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 10px 16px 6px; text-transform: uppercase; letter-spacing: .6px; }
+.info-row { display: flex; justify-content: space-between; padding: 8px 16px; border-top: 1px solid var(--border); font-size: 13px; }
+.ik { color: var(--text-muted); }
+.iv { color: var(--text-primary); font-weight:600; }
+
+/* Global buttons */
+.btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all .15s; }
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--border-md); }
+.btn-retry { background: var(--accent2); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-retry:hover { opacity: .85; }
+
+/* ═══ AGENTS PAGE ═══ */
+.agents-wrap { max-width:800px; margin:0 auto; }
+.agents-page-header { display:flex; gap:16px; align-items:center; margin-bottom:24px; }
+.agents-page-title { font-size:22px; font-weight:700; color:var(--text, #f0f0ff); }
+.agents-page-sub { font-size:13px; color:var(--text-muted, #8888aa); margin-top:2px; }
+
+.agents-counter-bar { position:relative; height:8px; background:rgba(255,255,255,0.06); border-radius:4px; margin-bottom:24px; overflow:hidden; }
+.acb-fill { height:100%; background:linear-gradient(90deg, #7c6ff7, #00e5c3); border-radius:4px; transition:width .3s; }
+.acb-text { position:absolute; top:12px; left:0; font-size:11px; color:var(--text-muted, #8888aa); }
+
+.agents-section { background:var(--bg-surface, #111118); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:20px; margin-bottom:16px; }
+.as-title { font-size:16px; font-weight:700; color:var(--text, #f0f0ff); margin-bottom:4px; }
+.as-sub { font-size:12px; color:var(--text-muted, #555570); margin-bottom:14px; }
+
+.as-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.as-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:24px; border:2px solid rgba(124,111,247,0.2); background:rgba(124,111,247,0.04); cursor:pointer; transition:all .2s; font-size:13px; color:#f0f0ff; font-weight:600; }
+.as-chip:hover { border-color:rgba(124,111,247,0.5); }
+.as-chip-on { border-color:#7c6ff7; background:rgba(124,111,247,0.15); }
+.as-chip-check { width:18px; height:18px; border-radius:50%; background:rgba(124,111,247,0.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#7c6ff7; }
+.as-chip-on .as-chip-check { background:#7c6ff7; color:#fff; }
+
+.as-cats { display:flex; flex-direction:column; gap:4px; }
+.as-cat-head { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; cursor:pointer; transition:all .15s; }
+.as-cat-head:hover { background:rgba(255,255,255,0.03); }
+.as-cat-icon { width:36px; height:36px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.as-cat-name { flex:1; font-size:14px; font-weight:600; color:#f0f0ff; }
+.as-cat-badge { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; }
+.as-cat-arrow { font-size:18px; color:#555570; transition:transform .2s; font-weight:700; }
+.as-open { transform:rotate(90deg); }
+
+.as-cat-body { padding:4px 0 8px 48px; }
+.as-agent { display:flex; gap:12px; align-items:flex-start; padding:10px 14px; border-radius:14px; cursor:pointer; transition:background .15s; }
+.as-agent:hover { background:rgba(255,255,255,0.03); }
+.as-agent-added { opacity:0.5; cursor:default; }
+.as-agent-dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+.as-agent-info { flex:1; }
+.as-agent-name { font-size:13px; font-weight:600; color:#f0f0ff; }
+.as-agent-desc { font-size:11px; color:#8888aa; line-height:1.4; margin-top:2px; }
+.as-agent-add { font-size:18px; font-weight:700; }
+.as-agent-ok { font-size:12px; color:#00e5c3; font-weight:600; }
+
+.as-custom-row { display:flex; gap:8px; }
+.as-input { flex:1; padding:10px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
+.as-input:focus { border-color:rgba(0,229,195,0.4); }
+.as-add-btn { width:40px; height:40px; border-radius:14px; border:none; background:#00e5c3; color:#09090f; font-size:20px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+.as-selected { display:flex; flex-wrap:wrap; gap:6px; }
+.as-sel-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; background:rgba(255,255,255,0.04); border:1px solid; color:#f0f0ff; font-size:12px; font-weight:600; }
+.as-sel-x { cursor:pointer; opacity:0.5; font-size:10px; }
+.as-sel-x:hover { opacity:1; }
+
+.as-auto { padding:14px 18px; background:rgba(0,229,195,0.04); border:1px solid rgba(0,229,195,0.15); border-radius:12px; margin-bottom:16px; font-size:12px; color:#8888aa; line-height:1.6; }
+.as-auto strong { color:#00e5c3; }
+
+.agents-wrap .btn-iniciar { width:100%; margin-top:8px; }
+
+/* ═══ AGENT SELECTION ═══ */
+.agent-select-panel { background:var(--bg-surface, #111118); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:28px; margin-bottom:20px; }
+.asp-header { margin-bottom:20px; }
+.asp-title-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.asp-header h3 { font-size:20px; font-weight:700; color:#f0f0ff; }
+.asp-header p { font-size:13px; color:#8888aa; line-height:1.6; }
+.asp-counter { padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; background:rgba(0,229,195,0.08); color:#00e5c3; border:1px solid rgba(0,229,195,0.2); }
+.asp-counter-full { background:rgba(0,229,195,0.15); }
+.asp-section { margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,0.06); }
+.asp-section h4 { font-size:15px; font-weight:700; color:#f0f0ff; margin-bottom:4px; }
+.asp-section-sub { font-size:12px; color:#555570; margin-bottom:12px; }
+
+/* Detected chips */
+.asp-detected { background:rgba(124,111,247,0.04); border-radius:14px; padding:18px; border-top:none; margin-top:0; }
+.asp-detected-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.asp-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:20px; border:1px solid rgba(124,111,247,0.25); background:rgba(124,111,247,0.06); cursor:pointer; transition:all .2s; }
+.asp-chip:hover { border-color:rgba(124,111,247,0.5); }
+.asp-chip-on { border-color:#7c6ff7; background:rgba(124,111,247,0.15); }
+.asp-chip-check { width:16px; height:16px; border-radius:50%; background:rgba(124,111,247,0.2); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#7c6ff7; }
+.asp-chip-on .asp-chip-check { background:#7c6ff7; color:#fff; }
+.asp-chip-name { font-size:13px; font-weight:600; color:#f0f0ff; }
+.asp-chip-badge { font-size:9px; font-weight:700; color:#7c6ff7; background:rgba(124,111,247,0.1); padding:2px 8px; border-radius:14px; letter-spacing:0.5px; }
+
+/* Categories */
+.asp-categories { display:flex; flex-direction:column; gap:2px; }
+.asp-cat-header { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; cursor:pointer; transition:background .2s; }
+.asp-cat-header:hover { background:rgba(255,255,255,0.03); }
+.asp-cat-icon { font-size:20px; }
+.asp-cat-label { flex:1; font-size:14px; font-weight:600; color:#f0f0ff; }
+.asp-cat-count { background:var(--cat-color); color:#09090f; font-size:11px; font-weight:800; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.asp-cat-arrow { font-size:18px; color:#555570; transition:transform .2s; font-weight:700; }
+.asp-cat-open { transform:rotate(90deg); }
+
+/* Agent list */
+.asp-cat-agents { padding:4px 0 8px 46px; display:flex; flex-direction:column; gap:4px; }
+.asp-agent { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:14px; cursor:pointer; transition:all .15s; border:1px solid transparent; }
+.asp-agent:hover { background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.06); }
+.asp-agent-added { opacity:0.6; cursor:default; }
+.asp-agent-left { display:flex; gap:10px; align-items:flex-start; flex:1; }
+.asp-agent-dot { width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+.asp-agent-name { font-size:13px; font-weight:600; color:#f0f0ff; }
+.asp-agent-desc { font-size:11px; color:#8888aa; margin-top:2px; line-height:1.4; }
+.asp-agent-add { border:none; background:none; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; padding:4px 10px; border-radius:8px; transition:background .2s; }
+.asp-agent-add:hover { background:rgba(255,255,255,0.06); }
+.asp-agent-ok { font-size:11px; color:#00e5c3; font-weight:600; }
+
+/* Custom input */
+.asp-custom-row { display:flex; gap:8px; }
+.asp-input { flex:1; padding:10px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:13px; outline:none; }
+.asp-input:focus { border-color:rgba(0,229,195,0.4); }
+.asp-add-btn { padding:10px 20px; border-radius:14px; border:none; background:#00e5c3; color:#09090f; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+
+/* Selected tags */
+.asp-selected-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.asp-sel-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; background:rgba(255,255,255,0.04); border:1px solid var(--tc); color:var(--tc); font-size:12px; font-weight:600; }
+.asp-sel-x { cursor:pointer; opacity:0.6; font-size:10px; }
+.asp-sel-x:hover { opacity:1; }
+
+/* Auto-complete */
+.asp-auto { display:flex; gap:12px; align-items:flex-start; padding:14px 18px; background:rgba(0,229,195,0.04); border:1px solid rgba(0,229,195,0.15); border-radius:12px; margin-top:16px; font-size:12px; color:#8888aa; line-height:1.6; }
+.asp-auto strong { color:#00e5c3; }
+.asp-auto-icon { font-size:20px; flex-shrink:0; }
+
+/* Footer */
+.asp-footer { display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,0.06); gap:16px; }
+.asp-footer-info { flex:1; }
+.asp-count-bar { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.asp-count-fill { height:100%; background:linear-gradient(90deg, #7c6ff7, #00e5c3); border-radius:3px; transition:width .3s; }
+.asp-count-text { font-size:11px; color:#555570; }
+.asp-confirm { padding:14px 32px; border-radius:12px; border:none; background:linear-gradient(135deg, #00e5c3, #7c6ff7); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:transform .2s, box-shadow .2s; white-space:nowrap; }
+.asp-confirm:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,229,195,0.3); }
+.asp-confirm:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+.asp-new-cat-header { display:flex; justify-content:space-between; align-items:center; }
+.asp-toggle-cat { border:1px solid rgba(0,229,195,0.3); background:rgba(0,229,195,0.06); color:#00e5c3; font-size:12px; font-weight:600; padding:6px 14px; border-radius:8px; cursor:pointer; }
+.asp-toggle-cat:hover { background:rgba(0,229,195,0.12); }
+.asp-new-cat-form { margin-top:12px; }
+.asp-new-cat-row { display:flex; gap:8px; align-items:center; }
+.asp-cat-icon-input { width:44px; padding:10px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f0f0ff; font-size:18px; text-align:center; outline:none; }
+.asp-color-input { width:40px; height:40px; border:none; border-radius:8px; cursor:pointer; background:transparent; }
+
+@media (max-width:768px) { .asp-cat-agents { padding-left:20px; } .asp-title-row { flex-direction:column; align-items:flex-start; gap:8px; } .asp-new-cat-row { flex-wrap:wrap; } }
+
+/* ─── Preview Screen ─── */
+.preview-screen { max-width:1100px; margin:0 auto; }
+.preview-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:400px; gap:16px; }
+.preview-loading p { font-size:16px; font-weight:700; color:var(--text-primary, #1a1a2e); }
+.preview-loading .loading-sub { font-size:12px; color:var(--text-muted, #8888aa); font-weight:400; }
+.loading-spinner { width:40px; height:40px; border:3px solid rgba(0,229,195,0.15); border-top-color:#00e5c3; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
 </style>
