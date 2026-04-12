@@ -696,12 +696,26 @@ class PDFGeneratorV2:
     @classmethod
     def _page_forces(cls, pdf, forcas):
         cls._header(pdf, 8, title='Mapa de Forcas')
-        # Use chart if matplotlib available, otherwise text
-        if HAS_MPL:
-            from matplotlib.patches import Arc
-            # Generate force map from structured data - simplified
-            pass  # TODO: generate from forcas.blocos dynamically
-        for b in forcas.get('blocos',[]):
+        blocos = forcas.get('blocos', [])
+        if HAS_MPL and len(blocos) >= 2:
+            fig, ax = plt.subplots(figsize=(5.5, 3.5))
+            n = len(blocos)
+            for i, b in enumerate(blocos):
+                poder = b.get('poder_relativo', 5)
+                angle = (i / n) * 2 * np.pi - np.pi/2
+                x = 0.6 * np.cos(angle)
+                y = 0.6 * np.sin(angle)
+                size = max(poder, 1) * 60
+                color = _rgb(TEAL) if i == 0 else (_rgb(RED) if i == n-1 else _rgb(AMBER))
+                ax.scatter(x, y, s=size, color=color, alpha=0.3, zorder=2)
+                ax.scatter(x, y, s=size*0.3, color=color, alpha=0.8, zorder=3)
+                nome = _c(b.get('nome', '')[:25])
+                ax.text(x, y + 0.15, nome, ha='center', fontsize=6.5, fontweight='bold', color=_rgb(DARK))
+                ax.text(x, y - 0.1, f"Poder: {poder}/10", ha='center', fontsize=5.5, color=_rgb(GRAY))
+            ax.set_xlim(-1.2, 1.2); ax.set_ylim(-1.0, 1.0); ax.axis('off')
+            path = _mpl_save(fig)
+            cls._chart(pdf, path, w=130)
+        for b in blocos:
             cls._bold(pdf, b.get('nome',''), 9.5)
             cls._body(pdf, f'{b.get("base_clientes","")}. {b.get("descricao","")}', 8.5)
             if b.get('citacao'): cls._quote(pdf, b['citacao'])
@@ -870,9 +884,10 @@ class PDFGenerator:
     @staticmethod
     def _convert_v1_to_v2(report_data: dict) -> dict:
         """Converte report_data v1 (texto livre) para schema v2 (mínimo)."""
-        title = report_data.get("title", "Relatorio AUGUR")
-        summary = report_data.get("summary", "")
-        sections = report_data.get("sections", [])
+        outline = report_data.get("outline", {})
+        title = outline.get("title", report_data.get("title", "Relatorio AUGUR"))
+        summary = outline.get("summary", report_data.get("summary", ""))
+        sections = outline.get("sections", report_data.get("sections", []))
 
         # Extrair veredicto do summary
         tipo = "AJUSTAR"
