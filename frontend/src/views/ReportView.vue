@@ -284,6 +284,16 @@ const briefingCEO = computed(() => {
 
 // Veredicto GO/NO-GO extraído do resumo
 const veredicto = computed(() => {
+  // Preferir structured se disponível
+  const s = report.value?.structured?.veredicto
+  if (s) {
+    const tipo = (s.tipo || '').toUpperCase()
+    if (tipo.includes('NO-GO') || tipo.includes('NOGO') || tipo.includes('NÃO')) return { label: 'NÃO LANÇAR', color: '#ff5a5a', icon: '🔴', score: s.score_viabilidade, frase: s.frase_chave, resumo: s.resumo_executivo, acao: s.leitura_para_decisao, fatos: s.top5_fatos || [] }
+    if (tipo.includes('AJUSTAR')) return { label: 'AJUSTAR ANTES', color: '#f5a623', icon: '🟡', score: s.score_viabilidade, frase: s.frase_chave, resumo: s.resumo_executivo, acao: s.leitura_para_decisao, fatos: s.top5_fatos || [] }
+    if (tipo.includes('GO') || tipo.includes('LANÇAR')) return { label: 'LANÇAR', color: '#00e5c3', icon: '🟢', score: s.score_viabilidade, frase: s.frase_chave, resumo: s.resumo_executivo, acao: s.leitura_para_decisao, fatos: s.top5_fatos || [] }
+    return { label: tipo || 'EM ANÁLISE', color: '#8888aa', icon: '⚪', score: s.score_viabilidade, frase: s.frase_chave, resumo: s.resumo_executivo, acao: s.leitura_para_decisao, fatos: s.top5_fatos || [] }
+  }
+  // Fallback texto
   const sum = (report.value?.outline?.summary || '').toUpperCase()
   const content = (secResumo.value?.content || '').toUpperCase()
   const all = sum + ' ' + content
@@ -292,6 +302,59 @@ const veredicto = computed(() => {
   if (all.includes('LANÇAR') || all.includes('GO')) return { label: 'LANÇAR', color: '#00e5c3', icon: '🟢' }
   return { label: 'EM ANÁLISE', color: '#8888aa', icon: '⚪' }
 })
+
+// ─── STRUCTURED DATA (Pipeline v2) ──────────────────────────
+const hasStructured = computed(() => !!report.value?.structured)
+const str = computed(() => report.value?.structured || {})
+
+const strDashboard = computed(() => {
+  const d = str.value?.dashboard || {}
+  if (!d || Object.keys(d).length < 3) return null
+  const kpis = [
+    { k: 'ticket_medio', label: 'Ticket Médio', icon: '💰' },
+    { k: 'volume_breakeven', label: 'Break-even', icon: '📊' },
+    { k: 'margem_bruta_alvo', label: 'Margem Bruta', icon: '📈' },
+    { k: 'capital_giro_necessario', label: 'Capital de Giro', icon: '🏦' },
+    { k: 'recompra_alvo', label: 'Recompra', icon: '🔄' },
+    { k: 'prob_sobrevivencia_24m', label: 'Sobrevivência 24m', icon: '🎯' },
+    { k: 'faturamento_maduro', label: 'Faturamento Maduro', icon: '💎' },
+    { k: 'investimento_total_estimado', label: 'Investimento Total', icon: '💼' },
+    { k: 'conversao_inicial', label: 'Conversão Inicial', icon: '🎪' },
+    { k: 'contatos_mes_inicial', label: 'Contatos/Mês', icon: '📞' },
+    { k: 'breakeven_cenario1', label: 'Break-even Período', icon: '📅' },
+    { k: 'vendas_por_indicacao', label: 'Vendas Indicação', icon: '🤝' },
+    { k: 'erosao_margem_sazonal', label: 'Erosão Sazonal', icon: '📉' },
+  ].filter(kpi => d[kpi.k])
+  return kpis.map(kpi => ({ ...kpi, valor: d[kpi.k] }))
+})
+
+const strCenarios = computed(() => {
+  const c = str.value?.cenarios?.cenarios || []
+  if (!c.length) return null
+  const colors = ['#00e5c3', '#f5a623', '#ff5a5a']
+  return c.map((cen, i) => ({ ...cen, color: colors[i] || '#8888aa' }))
+})
+
+const strRiscos = computed(() => {
+  const r = str.value?.riscos?.riscos || []
+  if (!r.length) return null
+  return r.map(risco => ({
+    ...risco,
+    impactoColor: risco.impacto === 'CRITICO' ? '#ff5a5a' : risco.impacto === 'ALTO' ? '#f5a623' : risco.impacto === 'MODERADO' ? '#7c6ff7' : '#00e5c3',
+    probWidth: risco.probabilidade || 50,
+  }))
+})
+
+const strRecomendacoes = computed(() => str.value?.recomendacoes || null)
+const strPrevisoes = computed(() => str.value?.previsoes || null)
+const strCronologia = computed(() => str.value?.cronologia?.fases || null)
+const strRoi = computed(() => str.value?.roi || null)
+const strSintese = computed(() => str.value?.sintese || null)
+const strChecklist = computed(() => str.value?.checklist || null)
+const strPosicionamento = computed(() => str.value?.posicionamento || null)
+const strEmocional = computed(() => str.value?.emocional || null)
+const strAgentes = computed(() => str.value?.agentes || null)
+const strForcas = computed(() => str.value?.forcas || null)
 
 const resumoRodadas = computed(() => {
   return (rounds.value || []).slice(-5).map(r => ({
@@ -988,22 +1051,64 @@ function abrirChat() {
               <div class="aug-veredicto" :style="{background: veredicto.color + '12', color: veredicto.color, borderColor: veredicto.color + '33'}">
                 {{ veredicto.icon }} {{ veredicto.label }}
               </div>
-              <div class="aug-gauge">
+              <div class="aug-gauge" v-if="veredicto.score">
                 <svg viewBox="0 0 80 50" class="aug-gauge-svg">
                   <path d="M 8 42 A 32 32 0 0 1 72 42" fill="none" stroke="#e8e8ef" stroke-width="7" stroke-linecap="round"/>
-                  <path :d="gaugePath(confianca)" fill="none" stroke="url(#gGrad)" stroke-width="7" stroke-linecap="round"/>
+                  <path :d="gaugePath(veredicto.score)" fill="none" stroke="url(#gGrad)" stroke-width="7" stroke-linecap="round"/>
                   <defs><linearGradient id="gGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c6ff7"/><stop offset="100%" stop-color="#00e5c3"/></linearGradient></defs>
+                  <text x="40" y="38" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="800">{{ veredicto.score }}%</text>
+                </svg>
+              </div>
+              <div class="aug-gauge" v-else>
+                <svg viewBox="0 0 80 50" class="aug-gauge-svg">
+                  <path d="M 8 42 A 32 32 0 0 1 72 42" fill="none" stroke="#e8e8ef" stroke-width="7" stroke-linecap="round"/>
+                  <path :d="gaugePath(confianca)" fill="none" stroke="url(#gGrad2)" stroke-width="7" stroke-linecap="round"/>
+                  <defs><linearGradient id="gGrad2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c6ff7"/><stop offset="100%" stop-color="#00e5c3"/></linearGradient></defs>
                   <text x="40" y="38" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="800">{{ confianca }}%</text>
                 </svg>
               </div>
             </div>
-            <h2 class="aug-section-title">Resumo Executivo</h2>
-            <div v-if="secResumo?.content" class="aug-prose" 
-                 :class="{'aug-collapsed': !isExpanded('resumo')}"
-                 v-html="md(secResumo.content)"></div>
-            <button v-if="secResumo?.content?.length > 500" class="aug-expand" @click="toggleSection('resumo')">
-              {{ isExpanded('resumo') ? '▲ Recolher' : '▼ Ver resumo completo' }}
-            </button>
+
+            <!-- Structured: frase-chave + fatos -->
+            <template v-if="veredicto.frase">
+              <h2 class="aug-section-title">Resumo Executivo</h2>
+              <p class="aug-frase-chave" :style="{color: veredicto.color}">{{ veredicto.frase }}</p>
+              <div v-if="veredicto.resumo" class="aug-prose" v-html="md(veredicto.resumo)"></div>
+              <div v-if="veredicto.acao" class="aug-acao-box">
+                <div class="aug-acao-label">📌 O que fazer segunda-feira:</div>
+                <div class="aug-acao-text">{{ veredicto.acao }}</div>
+              </div>
+              <div v-if="veredicto.fatos?.length" class="aug-fatos">
+                <div class="aug-fatos-title">Top {{ veredicto.fatos.length }} fatos decisivos</div>
+                <div v-for="(f, i) in veredicto.fatos" :key="i" class="aug-fato">
+                  <span class="aug-fato-num">{{ i+1 }}</span>
+                  <div><strong>{{ f.titulo }}</strong><br><span class="aug-fato-desc">{{ f.descricao }}</span></div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Fallback: texto livre -->
+            <template v-else>
+              <h2 class="aug-section-title">Resumo Executivo</h2>
+              <div v-if="secResumo?.content" class="aug-prose" 
+                   :class="{'aug-collapsed': !isExpanded('resumo')}"
+                   v-html="md(secResumo.content)"></div>
+              <button v-if="secResumo?.content?.length > 500" class="aug-expand" @click="toggleSection('resumo')">
+                {{ isExpanded('resumo') ? '▲ Recolher' : '▼ Ver resumo completo' }}
+              </button>
+            </template>
+          </section>
+
+          <!-- DASHBOARD KPIs (structured only) -->
+          <section v-if="strDashboard" id="dashboard" class="aug-card">
+            <h2 class="aug-section-title">📊 Dashboard de Indicadores</h2>
+            <div class="aug-kpi-grid">
+              <div v-for="kpi in strDashboard" :key="kpi.k" class="aug-kpi">
+                <span class="aug-kpi-icon">{{ kpi.icon }}</span>
+                <div class="aug-kpi-val">{{ kpi.valor }}</div>
+                <div class="aug-kpi-label">{{ kpi.label }}</div>
+              </div>
+            </div>
           </section>
 
           <!-- BRIEFING CEO -->
@@ -1469,4 +1574,28 @@ function abrirChat() {
   .aug-card-closing { break-before:page; }
   * { print-color-adjust:exact !important; -webkit-print-color-adjust:exact !important; }
 }
+
+/* ─── Structured: Frase-chave ─── */
+.aug-frase-chave { font-size:20px; font-weight:800; line-height:1.4; margin:12px 0 16px; padding:0; }
+
+/* ─── Structured: Ação do CEO ─── */
+.aug-acao-box { background:linear-gradient(135deg, rgba(0,229,195,0.06), rgba(124,111,247,0.04)); border:1px solid rgba(0,229,195,0.2); border-radius:12px; padding:16px 20px; margin:16px 0; }
+.aug-acao-label { font-size:11px; font-weight:800; color:var(--accent, #00e5c3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+.aug-acao-text { font-size:14px; color:var(--text-primary, #1a1a2e); font-weight:600; line-height:1.6; }
+
+/* ─── Structured: Top 5 Fatos ─── */
+.aug-fatos { margin-top:20px; }
+.aug-fatos-title { font-size:13px; font-weight:700; color:var(--text-secondary, #555570); margin-bottom:10px; }
+.aug-fato { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border, #eeeef2); }
+.aug-fato:last-child { border-bottom:none; }
+.aug-fato-num { width:24px; height:24px; border-radius:8px; background:var(--accent2, #7c6ff7); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.aug-fato-desc { font-size:12px; color:var(--text-secondary, #555570); margin-top:2px; }
+
+/* ─── Structured: Dashboard KPIs ─── */
+.aug-kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+.aug-kpi { background:var(--bg-raised, #fafafe); border:1px solid var(--border, #eeeef2); border-radius:12px; padding:14px; text-align:center; transition:box-shadow .2s; }
+.aug-kpi:hover { box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+.aug-kpi-icon { font-size:20px; display:block; margin-bottom:4px; }
+.aug-kpi-val { font-size:16px; font-weight:800; color:var(--text-primary, #1a1a2e); font-family:var(--font-mono, 'JetBrains Mono', monospace); }
+.aug-kpi-label { font-size:10px; font-weight:600; color:var(--text-muted, #8888aa); text-transform:uppercase; letter-spacing:0.3px; margin-top:4px; }
 </style>
