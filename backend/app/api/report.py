@@ -302,7 +302,7 @@ def get_report(report_id: str):
         
         report_dict = report.to_dict()
         
-        # Adicionar project_id via simulation (não está no Report model)
+        # Adicionar project_id e project_name via simulation
         if report_dict.get('simulation_id') and not report_dict.get('project_id'):
             try:
                 from ..services.simulation_manager import SimulationManager
@@ -311,6 +311,15 @@ def get_report(report_id: str):
                 sim = next((s for s in sims if s.simulation_id == report_dict['simulation_id']), None)
                 if sim:
                     report_dict['project_id'] = sim.project_id
+            except Exception:
+                pass
+        
+        # Enriquecer com nome do projeto e cliente
+        if report_dict.get('project_id'):
+            try:
+                proj = ProjectManager.get_project(report_dict['project_id'])
+                if proj:
+                    report_dict['project_name'] = proj.name
             except Exception:
                 pass
         
@@ -440,6 +449,21 @@ def download_report(report_id: str):
             "created_at": getattr(report, 'created_at', None),
             "structured": getattr(report, 'structured', None),
         }
+        
+        # Enriquecer structured.meta com nome do projeto
+        if report_data.get("structured") and report.simulation_id:
+            try:
+                from ..services.simulation_manager import SimulationManager
+                manager = SimulationManager()
+                sims = manager.list_simulations()
+                sim = next((s for s in sims if s.simulation_id == report.simulation_id), None)
+                if sim and sim.project_id:
+                    proj = ProjectManager.get_project(sim.project_id)
+                    if proj and report_data["structured"].get("meta"):
+                        report_data["structured"]["meta"]["projeto"] = proj.name
+                        report_data["project_name"] = proj.name
+            except Exception:
+                pass
         
         # ═══ PDF ═══
         if fmt == 'pdf' and HAS_FPDF:
