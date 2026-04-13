@@ -1064,6 +1064,19 @@ class ReportAgent:
     # 合法的工具名称集合，用于裸 JSON 兜底解析时校验
     VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
 
+    @staticmethod
+    def _strip_fake_tool_results(response: str) -> str:
+        """Strip any <tool_result> blocks the LLM fabricated in its own response.
+
+        LLMs sometimes hallucinate <tool_result> blocks inside their replies,
+        effectively answering themselves with invented data. Appending such blocks
+        to message history causes subsequent iterations to treat fabricated data as
+        authoritative. This method removes them before the response is recorded.
+        """
+        cleaned = re.sub(r'<tool_result>.*?</tool_result>', '', response, flags=re.DOTALL)
+        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+        return cleaned.strip()
+
     def _parse_tool_calls(self, response: str) -> List[Dict[str, Any]]:
         """
         从LLM响应中解析工具调用
@@ -1453,7 +1466,7 @@ class ReportAgent:
                 if unused_tools and tool_calls_count < self.MAX_TOOL_CALLS_PER_SECTION:
                     unused_hint = REACT_UNUSED_TOOLS_HINT.format(unused_list="、".join(unused_tools))
 
-                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
                 messages.append({
                     "role": "user",
                     "content": REACT_OBSERVATION_TEMPLATE.format(
