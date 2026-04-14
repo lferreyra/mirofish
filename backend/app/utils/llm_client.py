@@ -54,9 +54,9 @@ class LLMClient:
         kwargs = {
             "model": self.model,
             "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_completion_tokens": max_tokens,
         }
+        kwargs["temperature"] = temperature
         
         if response_format:
             kwargs["response_format"] = response_format
@@ -71,7 +71,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 16384
     ) -> Dict[str, Any]:
         """
         发送聊天请求并返回JSON
@@ -88,7 +88,6 @@ class LLMClient:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format={"type": "json_object"}
         )
         # 清理markdown代码块标记
         cleaned_response = response.strip()
@@ -99,5 +98,27 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            # Aggressive JSON repair for truncated responses
+            repaired = cleaned_response
+            # Try progressively trimming from the end until valid JSON
+            for trim in range(min(len(repaired), 2000)):
+                candidate = repaired[:len(repaired) - trim].rstrip(', \n\t\r')
+                # Remove incomplete string at end
+                if candidate and candidate[-1] not in ']}}"':
+                    continue
+                open_braces = candidate.count('{') - candidate.count('}')
+                open_brackets = candidate.count('[') - candidate.count(']')
+                fixed = candidate
+                for _ in range(open_brackets):
+                    fixed += ']'
+                for _ in range(open_braces):
+                    fixed += '}'
+                try:
+                    result = json.loads(fixed)
+                    import logging
+                    logging.getLogger(__name__).warning(f"JSON repaired by trimming {trim} chars")
+                    return result
+                except json.JSONDecodeError:
+                    continue
+            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response[:500]}")
 
