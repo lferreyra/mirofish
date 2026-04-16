@@ -125,6 +125,9 @@
 
         <!-- 右栏：交互控制台 -->
         <div class="right-panel">
+          <div class="mode-selector-wrapper">
+            <ModeSelector @mode-selected="handleModeSelected" />
+          </div>
           <div class="console-box">
             <!-- 上传区域 -->
             <div class="console-section">
@@ -216,8 +219,21 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import ModeSelector from '../components/ModeSelector.vue'
 
 const router = useRouter()
+
+// Mode sélectionné (public | private)
+const selectedMode = ref(null)
+
+const handleModeSelected = (mode) => {
+  selectedMode.value = mode
+  if (mode === 'private') {
+    sessionStorage.setItem('pendingSimMode', 'private')
+  } else {
+    sessionStorage.removeItem('pendingSimMode')
+  }
+}
 
 // 表单数据
 const formData = ref({
@@ -670,6 +686,10 @@ const startSimulation = () => {
 /* 右侧交互控制台 */
 .right-panel {
   flex: 1.2;
+}
+
+.mode-selector-wrapper {
+  margin-bottom: 20px;
 }
 
 .console-box {

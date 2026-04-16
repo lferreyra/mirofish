@@ -125,7 +125,14 @@ class SimulationRunState:
     # 平台完成状态（通过检测 actions.jsonl 中的 simulation_end 事件）
     twitter_completed: bool = False
     reddit_completed: bool = False
-    
+
+    # Private Impact platform state
+    private_current_round: int = 0
+    private_simulated_days: int = 0
+    private_running: bool = False
+    private_actions_count: int = 0
+    private_completed: bool = False
+
     # 每轮摘要
     rounds: List[RoundSummary] = field(default_factory=list)
     
@@ -152,6 +159,8 @@ class SimulationRunState:
         
         if action.platform == "twitter":
             self.twitter_actions_count += 1
+        elif action.platform == "private":
+            self.private_actions_count += 1
         else:
             self.reddit_actions_count += 1
         
@@ -177,7 +186,12 @@ class SimulationRunState:
             "reddit_completed": self.reddit_completed,
             "twitter_actions_count": self.twitter_actions_count,
             "reddit_actions_count": self.reddit_actions_count,
-            "total_actions_count": self.twitter_actions_count + self.reddit_actions_count,
+            "private_current_round": self.private_current_round,
+            "private_simulated_days": self.private_simulated_days,
+            "private_running": self.private_running,
+            "private_completed": self.private_completed,
+            "private_actions_count": self.private_actions_count,
+            "total_actions_count": self.twitter_actions_count + self.reddit_actions_count + self.private_actions_count,
             "started_at": self.started_at,
             "updated_at": self.updated_at,
             "completed_at": self.completed_at,
@@ -268,6 +282,11 @@ class SimulationRunner:
                 reddit_completed=data.get("reddit_completed", False),
                 twitter_actions_count=data.get("twitter_actions_count", 0),
                 reddit_actions_count=data.get("reddit_actions_count", 0),
+                private_current_round=data.get("private_current_round", 0),
+                private_simulated_days=data.get("private_simulated_days", 0),
+                private_running=data.get("private_running", False),
+                private_completed=data.get("private_completed", False),
+                private_actions_count=data.get("private_actions_count", 0),
                 started_at=data.get("started_at"),
                 updated_at=data.get("updated_at", datetime.now().isoformat()),
                 completed_at=data.get("completed_at"),
@@ -391,6 +410,9 @@ class SimulationRunner:
         elif platform == "reddit":
             script_name = "run_reddit_simulation.py"
             state.reddit_running = True
+        elif platform == "private":
+            script_name = "run_private_simulation.py"
+            state.private_running = True
         else:
             script_name = "run_parallel_simulation.py"
             state.twitter_running = True
@@ -487,15 +509,17 @@ class SimulationRunner:
         # 新的日志结构：分平台的动作日志
         twitter_actions_log = os.path.join(sim_dir, "twitter", "actions.jsonl")
         reddit_actions_log = os.path.join(sim_dir, "reddit", "actions.jsonl")
-        
+        private_actions_log = os.path.join(sim_dir, "private", "actions.jsonl")
+
         process = cls._processes.get(simulation_id)
         state = cls.get_run_state(simulation_id)
-        
+
         if not process or not state:
             return
-        
+
         twitter_position = 0
         reddit_position = 0
+        private_position = 0
         
         try:
             while process.poll() is None:  # 进程仍在运行
@@ -510,7 +534,13 @@ class SimulationRunner:
                     reddit_position = cls._read_action_log(
                         reddit_actions_log, reddit_position, state, "reddit"
                     )
-                
+
+                # 读取 Private 动作日志
+                if os.path.exists(private_actions_log):
+                    private_position = cls._read_action_log(
+                        private_actions_log, private_position, state, "private"
+                    )
+
                 # 更新状态
                 cls._save_run_state(state)
                 time.sleep(2)
@@ -520,6 +550,8 @@ class SimulationRunner:
                 cls._read_action_log(twitter_actions_log, twitter_position, state, "twitter")
             if os.path.exists(reddit_actions_log):
                 cls._read_action_log(reddit_actions_log, reddit_position, state, "reddit")
+            if os.path.exists(private_actions_log):
+                cls._read_action_log(private_actions_log, private_position, state, "private")
             
             # 进程结束
             exit_code = process.returncode
@@ -544,8 +576,9 @@ class SimulationRunner:
             
             state.twitter_running = False
             state.reddit_running = False
+            state.private_running = False
             cls._save_run_state(state)
-            
+
         except Exception as e:
             logger.error(f"监控线程异常: {simulation_id}, error={str(e)}")
             state.runner_status = RunnerStatus.FAILED
@@ -629,6 +662,10 @@ class SimulationRunner:
                                         state.reddit_completed = True
                                         state.reddit_running = False
                                         logger.info(f"Reddit 模拟已完成: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
+                                    elif platform == "private":
+                                        state.private_completed = True
+                                        state.private_running = False
+                                        logger.info(f"Private 模拟已完成: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
                                     
                                     # 检查是否所有启用的平台都已完成
                                     # 如果只运行了一个平台，只检查那个平台
@@ -653,7 +690,13 @@ class SimulationRunner:
                                         if round_num > state.reddit_current_round:
                                             state.reddit_current_round = round_num
                                         state.reddit_simulated_hours = simulated_hours
-                                    
+                                    elif platform == "private":
+                                        if round_num > state.private_current_round:
+                                            state.private_current_round = round_num
+                                        simulated_day = action_data.get("simulated_day", 0)
+                                        if simulated_day > state.private_simulated_days:
+                                            state.private_simulated_days = simulated_day
+
                                     # 总体轮次取两个平台的最大值
                                     if round_num > state.current_round:
                                         state.current_round = round_num
@@ -703,19 +746,23 @@ class SimulationRunner:
         sim_dir = os.path.join(cls.RUN_STATE_DIR, state.simulation_id)
         twitter_log = os.path.join(sim_dir, "twitter", "actions.jsonl")
         reddit_log = os.path.join(sim_dir, "reddit", "actions.jsonl")
-        
+        private_log = os.path.join(sim_dir, "private", "actions.jsonl")
+
         # 检查哪些平台被启用（通过文件是否存在判断）
         twitter_enabled = os.path.exists(twitter_log)
         reddit_enabled = os.path.exists(reddit_log)
-        
+        private_enabled = os.path.exists(private_log)
+
         # 如果平台被启用但未完成，则返回 False
         if twitter_enabled and not state.twitter_completed:
             return False
         if reddit_enabled and not state.reddit_completed:
             return False
-        
+        if private_enabled and not state.private_completed:
+            return False
+
         # 至少有一个平台被启用且已完成
-        return twitter_enabled or reddit_enabled
+        return twitter_enabled or reddit_enabled or private_enabled
     
     @classmethod
     def _terminate_process(cls, process: subprocess.Popen, simulation_id: str, timeout: int = 10):
@@ -806,9 +853,10 @@ class SimulationRunner:
         state.runner_status = RunnerStatus.STOPPED
         state.twitter_running = False
         state.reddit_running = False
+        state.private_running = False
         state.completed_at = datetime.now().isoformat()
         cls._save_run_state(state)
-        
+
         # 停止图谱记忆更新器
         if cls._graph_memory_enabled.get(simulation_id, False):
             try:
@@ -934,7 +982,18 @@ class SimulationRunner:
                 agent_id=agent_id,
                 round_num=round_num
             ))
-        
+
+        # 读取 Private 动作文件
+        private_actions_log = os.path.join(sim_dir, "private", "actions.jsonl")
+        if not platform or platform == "private":
+            actions.extend(cls._read_actions_from_file(
+                private_actions_log,
+                default_platform="private",
+                platform_filter=platform,
+                agent_id=agent_id,
+                round_num=round_num
+            ))
+
         # 如果分平台文件不存在，尝试读取旧的单一文件格式
         if not actions:
             actions_log = os.path.join(sim_dir, "actions.jsonl")
@@ -1140,11 +1199,12 @@ class SimulationRunner:
             "stderr.log",
             "twitter_simulation.db",  # Twitter 平台数据库
             "reddit_simulation.db",   # Reddit 平台数据库
+            "private_simulation.db",  # Private Impact 平台数据库
             "env_status.json",        # 环境状态文件
         ]
-        
+
         # 要删除的目录列表（包含动作日志）
-        dirs_to_clean = ["twitter", "reddit"]
+        dirs_to_clean = ["twitter", "reddit", "private"]
         
         # 删除文件
         for filename in files_to_delete:
@@ -1236,6 +1296,7 @@ class SimulationRunner:
                         state.runner_status = RunnerStatus.STOPPED
                         state.twitter_running = False
                         state.reddit_running = False
+                        state.private_running = False
                         state.completed_at = datetime.now().isoformat()
                         state.error = "服务器关闭，模拟被终止"
                         cls._save_run_state(state)

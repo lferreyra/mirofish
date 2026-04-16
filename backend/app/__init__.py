@@ -67,6 +67,8 @@ def create_app(config_class=Config):
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    from .api import private_bp
+    app.register_blueprint(private_bp)
     
     # 健康检查
     @app.route('/health')

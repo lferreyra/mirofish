@@ -215,6 +215,13 @@ const handleNewProject = async () => {
       currentProjectId.value = res.data.project_id
       projectData.value = res.data
       
+      const pendingMode = sessionStorage.getItem('pendingSimMode')
+      sessionStorage.removeItem('pendingSimMode')
+      if (pendingMode === 'private') {
+        router.push(`/private/${res.data.project_id}`)
+        return
+      }
+
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
       addLog(`Ontology generated successfully for project ${res.data.project_id}`)
