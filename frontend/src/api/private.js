@@ -20,3 +20,6 @@ export const generatePrivateReport = (simId, data = {}) =>
 
 export const cleanupPrivateSimulation = (simId) =>
   service.delete(`/api/private-impact/cleanup/${simId}`)
+
+export const getPrivateReportStatus = (taskId) =>
+  service.post('/api/report/generate/status', { task_id: taskId })

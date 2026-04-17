@@ -215,9 +215,9 @@ const handleNewProject = async () => {
       currentProjectId.value = res.data.project_id
       projectData.value = res.data
       
-      const pendingMode = sessionStorage.getItem('pendingSimMode')
-      sessionStorage.removeItem('pendingSimMode')
+      const pendingMode = route.query.mode
       if (pendingMode === 'private') {
+        await startBuildGraph()
         router.push(`/private/${res.data.project_id}`)
         return
       }

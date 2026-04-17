@@ -212,36 +212,43 @@ def build_relational_graph(agent_configs: List[Dict[str, Any]]) -> Dict[int, Lis
 
 def get_initial_exposed_agents(config: Dict[str, Any]) -> Set[int]:
     """
-    Determine distance-1 agents: those directly targeted by initial_posts.
+    Return the full set of agent IDs — all agents are exposed to the decision
+    at simulation start.
 
-    Divergence from run_parallel_simulation.py:
-    Instead of posting on Twitter/Reddit, the decision maker (poster_agent_id=0)
-    announces the decision to agents listed in initial_posts targets.
-    All agent_ids mentioned in initial_posts (excluding the poster) are exposed.
+    Relational network propagation: in Private Impact mode, the decision
+    circulates through the network (e.g. LinkedIn post) and all agents
+    receive context from round 1. The LLM-generated initial_exposed_agent_ids
+    is intentionally ignored — exposure is a structural parameter, not an
+    LLM decision.
     """
     exposed: Set[int] = set()
-    event_config = config.get("event_config", {})
-    for post in event_config.get("initial_posts", []):
-        poster_id = post.get("poster_agent_id", 0)
-        # All agents except the poster are exposed at distance 1
-        for cfg in config.get("agent_configs", []):
-            agent_id = cfg.get("agent_id")
-            if agent_id is not None and agent_id != poster_id:
-                exposed.add(agent_id)
+    for cfg in config.get("agent_configs", []):
+        agent_id = cfg.get("agent_id")
+        if agent_id is not None:
+            exposed.add(agent_id)
     return exposed
 
 
 def get_decision_context(config: Dict[str, Any]) -> str:
     """
-    Extract the triggering decision text from event_config.initial_posts.
+    Extract the triggering decision text from event_config.
 
-    Reuses the initial_posts mechanism but changes its semantic:
-    instead of a Twitter post, it is the private decision announcement.
+    Supports two event_config formats:
+    - PrivateImpactConfigGenerator: decision_statement (plain text)
+    - OASIS initial_posts: content of the first post
     """
     event_config = config.get("event_config", {})
+
+    # PrivateImpactConfigGenerator format
+    decision_statement = event_config.get("decision_statement", "")
+    if decision_statement:
+        return decision_statement
+
+    # OASIS initial_posts format
     posts = event_config.get("initial_posts", [])
     if posts:
         return posts[0].get("content", "A private decision has been made.")
+
     return "A private decision has been made."
 
 
@@ -689,12 +696,20 @@ async def run_private_simulation(
     log(f"Decision injected: {initial_count} initial post(s)")
 
     if action_logger:
-        action_logger.log_round_end(0, initial_count)
+        action_logger.log_round_end(0, initial_count, simulated_day=1)
 
-    # Compute total rounds
-    total_hours = time_config.get("total_simulation_hours", 72)
-    minutes_per_round = time_config.get("minutes_per_round", 30)
-    total_rounds = (total_hours * 60) // minutes_per_round
+    # Compute total rounds — support both time config formats:
+    # PrivateImpactConfigGenerator: total_simulation_days + rounds_per_day
+    # OASIS format: total_simulation_hours + minutes_per_round
+    if "total_simulation_days" in time_config:
+        _days = int(time_config["total_simulation_days"])
+        _rpd = int(time_config.get("rounds_per_day", 3))
+        total_rounds = _days * _rpd
+        minutes_per_round = (24 * 60) // _rpd if _rpd > 0 else 480
+    else:
+        total_hours = time_config.get("total_simulation_hours", 72)
+        minutes_per_round = time_config.get("minutes_per_round", 30)
+        total_rounds = (total_hours * 60) // minutes_per_round
 
     if max_rounds is not None and max_rounds > 0:
         original_rounds = total_rounds
@@ -725,7 +740,7 @@ async def run_private_simulation(
 
         if not active_cfgs:
             if action_logger:
-                action_logger.log_round_end(round_num + 1, 0)
+                action_logger.log_round_end(round_num + 1, 0, simulated_day=simulated_day)
             continue
 
         # Build context summary for LLM prompts this round
@@ -792,7 +807,7 @@ async def run_private_simulation(
         exposed_agents.update(newly_exposed)
 
         if action_logger:
-            action_logger.log_round_end(round_num + 1, round_action_count)
+            action_logger.log_round_end(round_num + 1, round_action_count, simulated_day=simulated_day)
 
         if (round_num + 1) % 20 == 0:
             progress = (round_num + 1) / total_rounds * 100
@@ -865,13 +880,23 @@ async def main() -> None:
     log_manager.info("=" * 60)
 
     time_config = config.get("time_config", {})
-    total_hours = time_config.get("total_simulation_hours", 72)
-    minutes_per_round = time_config.get("minutes_per_round", 30)
-    config_total_rounds = (total_hours * 60) // minutes_per_round
+    if "total_simulation_days" in time_config:
+        config_total_rounds = (
+            int(time_config["total_simulation_days"])
+            * int(time_config.get("rounds_per_day", 3))
+        )
+    else:
+        total_hours = time_config.get("total_simulation_hours", 72)
+        minutes_per_round = time_config.get("minutes_per_round", 30)
+        config_total_rounds = (total_hours * 60) // minutes_per_round
 
     log_manager.info("Simulation parameters:")
-    log_manager.info(f"  - Total simulated duration: {total_hours}h")
-    log_manager.info(f"  - Minutes per round: {minutes_per_round}")
+    if "total_simulation_days" in time_config:
+        log_manager.info(f"  - Total simulated duration: {time_config['total_simulation_days']} days")
+        log_manager.info(f"  - Rounds per day: {time_config.get('rounds_per_day', 3)}")
+    else:
+        log_manager.info(f"  - Total simulated duration: {time_config.get('total_simulation_hours', 72)}h")
+        log_manager.info(f"  - Minutes per round: {time_config.get('minutes_per_round', 30)}")
     log_manager.info(f"  - Config total rounds: {config_total_rounds}")
     if args.max_rounds:
         log_manager.info(f"  - Round cap: {args.max_rounds}")

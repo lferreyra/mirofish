@@ -228,11 +228,6 @@ const selectedMode = ref(null)
 
 const handleModeSelected = (mode) => {
   selectedMode.value = mode
-  if (mode === 'private') {
-    sessionStorage.setItem('pendingSimMode', 'private')
-  } else {
-    sessionStorage.removeItem('pendingSimMode')
-  }
 }
 
 // 表单数据
@@ -321,7 +316,8 @@ const startSimulation = () => {
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
       name: 'Process',
-      params: { projectId: 'new' }
+      params: { projectId: 'new' },
+      query: selectedMode.value === 'private' ? { mode: 'private' } : {},
     })
   })
 }

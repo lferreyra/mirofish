@@ -799,7 +799,7 @@ class ZepToolsService:
         filtered = []
         for node in all_nodes:
             # 检查labels是否包含指定类型
-            if entity_type in node.labels:
+            if any(lbl.lower() == entity_type.lower() for lbl in node.labels):
                 filtered.append(node)
         
         logger.info(t("console.foundEntitiesByType", count=len(filtered), type=entity_type))

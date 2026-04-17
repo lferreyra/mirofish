@@ -72,6 +72,29 @@
           <p class="section-hint">Fill in the decision context. These details will drive the simulation.</p>
         </div>
 
+        <div
+          class="drop-zone"
+          :class="{ 'drop-zone--active': isDragOver }"
+          @dragover.prevent="isDragOver = true"
+          @dragleave="isDragOver = false"
+          @drop.prevent="handleDrop"
+          @click="triggerImport"
+        >
+          <input type="file" ref="importInput" accept=".txt" style="display:none" @change="handleImport" />
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span class="drop-zone-label">Glisser le fichier ici ou cliquer pour importer</span>
+          <span class="drop-zone-hint">private_impact_requirement.txt — dossier 02_simulation_params/</span>
+        </div>
+
+        <div v-if="!projectData?.graph_id" class="graph-building-notice">
+          <div class="loading-ring loading-ring--sm"></div>
+          <span>Graphe en construction — les champs peuvent déjà être remplis. Le bouton s'activera automatiquement.</span>
+        </div>
+
         <div class="form-grid">
           <!-- Left column -->
           <div class="form-col">
@@ -123,23 +146,37 @@
                     class="checkbox-native"
                   />
                   <span class="checkbox-box"></span>
-                  <span class="checkbox-label">{{ t }}</span>
+                  <span class="checkbox-label">{{ RELATIONAL_TYPE_LABELS[t] }}</span>
                 </label>
+              </div>
+
+              <div v-if="form.relationalTypes.length > 0" class="agent-counts-block">
+                <div v-for="t in form.relationalTypes" :key="t" class="agent-count-row">
+                  <span class="agent-count-label">{{ RELATIONAL_TYPE_LABELS[t] }}</span>
+                  <div class="agent-count-sep"></div>
+                  <input
+                    type="number"
+                    class="agent-count-input"
+                    v-model.number="agentCounts[t]"
+                    min="1"
+                    max="200"
+                  />
+                </div>
+                <div class="agent-count-total">Total : {{ totalAgents }} agents</div>
               </div>
             </div>
 
             <div class="field-group">
-              <label class="field-label">TEMPORAL HORIZON — {{ form.horizonDays }} days</label>
-              <div class="slider-group">
-                <input
-                  type="range"
-                  class="field-slider"
-                  v-model.number="form.horizonDays"
-                  min="7" max="90" step="1"
-                />
-                <div class="slider-ticks">
-                  <span>7d</span><span>30d</span><span>60d</span><span>90d</span>
-                </div>
+              <label class="field-label">TEMPORAL HORIZON</label>
+              <div class="horizon-btns">
+                <button
+                  v-for="opt in HORIZON_OPTIONS"
+                  :key="opt.days"
+                  type="button"
+                  class="horizon-btn"
+                  :class="{ 'is-active': form.horizonDays === opt.days }"
+                  @click="form.horizonDays = opt.days"
+                >{{ opt.label }}</button>
               </div>
             </div>
 
@@ -158,7 +195,7 @@
         <div class="form-footer">
           <button
             class="btn-primary"
-            :disabled="!form.decisionText.trim() || form.relationalTypes.length === 0"
+            :disabled="!form.decisionText.trim() || form.relationalTypes.length === 0 || !projectData?.graph_id"
             @click="runPrepare"
           >
             Prepare Simulation
@@ -306,21 +343,25 @@
           </div>
         </div>
 
-        <!-- Right: Live action feed -->
-        <div class="run-feed-panel" ref="feedPanel">
-          <div class="feed-header">LIVE ACTION FEED</div>
-          <div class="feed-list">
-            <div
-              v-for="(action, idx) in recentActions"
-              :key="idx"
-              class="feed-item"
-            >
-              <span class="feed-round mono">#{{ action.round_num }}</span>
-              <span class="feed-agent">{{ action.agent_name || `Agent ${action.agent_id}` }}</span>
-              <span class="feed-action-type" :class="actionTypeClass(action.action_type)">{{ action.action_type }}</span>
-              <span class="feed-time mono">{{ shortTime(action.timestamp) }}</span>
+        <!-- Right col: propagation graph + reduced feed -->
+        <div class="run-right-col">
+          <div class="graph-panel" ref="graphContainer"></div>
+
+          <div class="run-feed-panel" ref="feedPanel">
+            <div class="feed-header">LIVE ACTION FEED</div>
+            <div class="feed-list">
+              <div
+                v-for="(action, idx) in recentActions.slice(-10)"
+                :key="idx"
+                class="feed-item"
+              >
+                <span class="feed-round mono">#{{ action.round_num }}</span>
+                <span class="feed-agent">{{ action.agent_name || `Agent ${action.agent_id}` }}</span>
+                <span class="feed-action-type" :class="actionTypeClass(action.action_type)">{{ action.action_type }}</span>
+                <span class="feed-time mono">{{ shortTime(action.timestamp) }}</span>
+              </div>
+              <div v-if="recentActions.length === 0" class="feed-empty">Waiting for simulation events…</div>
             </div>
-            <div v-if="recentActions.length === 0" class="feed-empty">Waiting for simulation events…</div>
           </div>
         </div>
 
@@ -349,14 +390,11 @@
             Report ready
           </div>
 
-          <h2 class="report-title">{{ reportResult.title }}</h2>
-          <p class="report-summary">{{ reportResult.summary }}</p>
-
-          <div class="report-sections" v-if="reportResult.sections">
-            <div v-for="(section, idx) in reportResult.sections" :key="idx" class="report-section">
+          <div class="report-sections" v-if="reportResult.outline?.sections?.length">
+            <div v-for="(section, idx) in reportResult.outline.sections" :key="idx" class="report-section">
               <div class="rs-header" @click="toggleSection(idx)">
                 <span class="rs-num">{{ String(idx + 1).padStart(2, '0') }}</span>
-                <span class="rs-title">{{ section.title }}</span>
+                <span class="rs-title">{{ section.title || ('Section ' + String(idx + 1).padStart(2, '0')) }}</span>
                 <svg class="rs-chevron" :class="{ 'is-open': !collapsedSections.has(idx) }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -366,8 +404,12 @@
               </div>
             </div>
           </div>
+          <pre v-else-if="reportResult.markdown_content" class="report-markdown">{{ reportResult.markdown_content }}</pre>
 
           <div class="result-actions">
+            <button class="btn-secondary" @click="exportReportMarkdown">
+              Export .md
+            </button>
             <button class="btn-secondary" @click="goToStep(5)">
               Talk to Agents →
             </button>
@@ -460,10 +502,11 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import * as d3 from 'd3'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import { getProject } from '../api/graph.js'
 import { interviewAgents } from '../api/simulation.js'
-import { getReportStatus, getReport } from '../api/report.js'
+import { getReport } from '../api/report.js'
 import {
   preparePrivateSimulation,
   startPrivateSimulation,
@@ -471,6 +514,7 @@ import {
   stopPrivateSimulation,
   getPrivateActions,
   generatePrivateReport,
+  getPrivateReportStatus,
 } from '../api/private.js'
 
 const props = defineProps({
@@ -482,8 +526,26 @@ const router = useRouter()
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const RELATIONAL_TYPES = [
-  'employee', 'manager', 'client', 'competitor',
-  'partner', 'familymember', 'colleague', 'investor',
+  'ouvrier_production', 'technicien', 'commercial',
+  'manager', 'codir', 'client_externe', 'partenaire', 'concurrent',
+]
+
+const RELATIONAL_TYPE_LABELS = {
+  ouvrier_production: 'Ouvrier / Production',
+  technicien: 'Technicien',
+  commercial: 'Commercial',
+  manager: 'Manager',
+  codir: 'CODIR',
+  client_externe: 'Client externe',
+  partenaire: 'Partenaire',
+  concurrent: 'Concurrent',
+}
+
+const HORIZON_OPTIONS = [
+  { days: 3, label: '3 jours (72h)' },
+  { days: 7, label: '7 jours' },
+  { days: 30, label: '30 jours' },
+  { days: 180, label: '6 mois (180 jours)' },
 ]
 
 const stepNames = ['Requirement', 'Prepare', 'Run', 'Report', 'Interact']
@@ -500,10 +562,24 @@ const isLoading = ref(false)
 const error = ref(null)
 const reportProgress = ref('')
 
+// Step 1 - import config
+const importInput = ref(null)
+const isDragOver = ref(false)
+
 // Step 3 - live feed
 const recentActions = ref([])
 const feedPanel = ref(null)
 let pollingTimer = null
+
+// Step 1 - graph ready polling
+let graphReadyTimer = null
+
+// Step 3 - D3 propagation graph
+const graphContainer = ref(null)
+let simulation = null
+let svgEl = null
+let linkGroup = null
+let nodeGroup = null
 
 // Step 4 - report polling
 let reportPollingTimer = null
@@ -524,12 +600,28 @@ const form = reactive({
   decisionMakerCompany: '',
   decisionText: '',
   decisionContext: '',
-  relationalTypes: ['employee', 'manager', 'client', 'partner', 'familymember'],
-  horizonDays: 30,
+  relationalTypes: ['ouvrier_production', 'technicien', 'commercial', 'manager', 'codir'],
+  horizonDays: 3,
   questionsToMeasure: '',
 })
 
+// Agent counts per relational type
+const agentCounts = reactive({})
+
+watch(() => form.relationalTypes, (types) => {
+  for (const t of types) {
+    if (!(t in agentCounts)) agentCounts[t] = 10
+  }
+  for (const key of Object.keys(agentCounts)) {
+    if (!types.includes(key)) delete agentCounts[key]
+  }
+}, { immediate: true })
+
 // ── Computed ───────────────────────────────────────────────────────────────
+
+const totalAgents = computed(() =>
+  Object.values(agentCounts).reduce((sum, n) => sum + (n || 0), 0)
+)
 
 const statusClass = computed(() => {
   const s = simStatus.value?.runner_status
@@ -550,7 +642,8 @@ const statusText = computed(() => {
 })
 
 const roundProgress = computed(() => {
-  const total = simStatus.value?.total_rounds || 0
+  if (simStatus.value?.progress_percent != null) return simStatus.value.progress_percent
+  const total = simStatus.value?.private_total_rounds || 0
   const current = simStatus.value?.private_current_round || 0
   if (!total) return 0
   return Math.round((current / total) * 100)
@@ -573,6 +666,231 @@ const currentMessages = computed(() => {
   return chatMessages[selectedAgentId.value] || []
 })
 
+// ── D3 Graph ───────────────────────────────────────────────────────────────
+
+const ACTION_COLORS = {
+  CONFRONT: '#F44336',
+  COALITION_BUILD: '#FF9800',
+  VOCAL_SUPPORT: '#4CAF50',
+  SILENT_LEAVE: '#616161',
+  REACT_PRIVATELY: '#E0E0E0',
+  DO_NOTHING: '#E0E0E0',
+}
+
+const nodeColor = (actionType) => {
+  if (!actionType) return '#E0E0E0'
+  const upper = actionType.toUpperCase()
+  for (const [key, color] of Object.entries(ACTION_COLORS)) {
+    if (upper.includes(key)) return color
+  }
+  return '#E0E0E0'
+}
+
+const ticked = () => {
+  if (!linkGroup || !nodeGroup) return
+  linkGroup.selectAll('line')
+    .attr('x1', d => d.source.x)
+    .attr('y1', d => d.source.y)
+    .attr('x2', d => d.target.x)
+    .attr('y2', d => d.target.y)
+  nodeGroup.selectAll('g.node')
+    .attr('transform', d => `translate(${d.x},${d.y})`)
+}
+
+const initGraph = () => {
+  if (!graphContainer.value) return
+  const container = graphContainer.value
+  const width = container.clientWidth || 600
+  const height = container.clientHeight || 400
+
+  d3.select(container).selectAll('*').remove()
+
+  svgEl = d3.select(container)
+    .append('svg')
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+
+  linkGroup = svgEl.append('g').attr('class', 'links')
+  nodeGroup = svgEl.append('g').attr('class', 'nodes')
+
+  simulation = d3.forceSimulation([])
+    .force('charge', d3.forceManyBody().strength(-120))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('link', d3.forceLink([]).id(d => d.id).distance(80))
+    .on('tick', ticked)
+}
+
+const updateGraph = (actions) => {
+  if (!simulation || !svgEl) return
+
+  const agentActions = {}
+  const agentNames = {}
+  const linkPairs = {}
+
+  // Seed nodes from static config so the graph shows the full relational
+  // network even before any action has been recorded.
+  const staticAgents = simStatus.value?.agents || []
+  for (const a of staticAgents) {
+    if (a.agent_id === undefined || a.agent_id === null) continue
+    const sid = String(a.agent_id)
+    agentNames[sid] = a.entity_name || `Agent ${sid}`
+  }
+
+  for (const action of actions) {
+    const id = action.agent_id
+    if (id === undefined || id === null) continue
+    const sid = String(id)
+    agentNames[sid] = action.agent_name || agentNames[sid] || `Agent ${sid}`
+    if (!agentActions[sid]) agentActions[sid] = {}
+    const t = action.action_type || 'DO_NOTHING'
+    agentActions[sid][t] = (agentActions[sid][t] || 0) + 1
+    if (action.target_agent_id !== undefined && action.target_agent_id !== null) {
+      const key = `${sid}__${String(action.target_agent_id)}`
+      linkPairs[key] = (linkPairs[key] || 0) + 1
+    }
+  }
+
+  const nodes = Object.keys(agentNames).map(id => {
+    const counts = agentActions[id] || {}
+    const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'DO_NOTHING'
+    return { id, name: agentNames[id], dominant }
+  })
+
+  const nodeIds = new Set(nodes.map(n => n.id))
+
+  // Merge static cascade_influence edges with dynamic action-based edges.
+  const staticEdges = simStatus.value?.relational_edges || []
+  const staticKeys = new Set()
+  for (const e of staticEdges) {
+    if (e.source === undefined || e.target === undefined) continue
+    staticKeys.add(`${String(e.source)}__${String(e.target)}`)
+  }
+
+  const links = []
+  staticKeys.forEach(key => {
+    const [source, target] = key.split('__')
+    if (nodeIds.has(source) && nodeIds.has(target)) {
+      links.push({ source, target, count: linkPairs[key] || 0, kind: 'cascade' })
+    }
+  })
+  Object.entries(linkPairs).forEach(([key, count]) => {
+    if (staticKeys.has(key)) return
+    const [source, target] = key.split('__')
+    if (nodeIds.has(source) && nodeIds.has(target)) {
+      links.push({ source, target, count, kind: 'action' })
+    }
+  })
+
+  const existing = {}
+  simulation.nodes().forEach(n => { existing[n.id] = { x: n.x, y: n.y, vx: n.vx, vy: n.vy } })
+  nodes.forEach(n => {
+    if (existing[n.id]) {
+      n.x = existing[n.id].x; n.y = existing[n.id].y
+      n.vx = existing[n.id].vx; n.vy = existing[n.id].vy
+    }
+  })
+
+  simulation.nodes(nodes)
+  simulation.force('link').links(links)
+  simulation.alpha(0.3).restart()
+
+  const linkSel = linkGroup.selectAll('line')
+    .data(links, d => `${d.source.id || d.source}__${d.target.id || d.target}`)
+  linkSel.exit().remove()
+  linkSel.enter().append('line')
+    .merge(linkSel)
+    .attr('stroke', d => d.kind === 'cascade' && d.count === 0 ? '#E5E5E5' : '#999')
+    .attr('stroke-dasharray', d => d.kind === 'cascade' && d.count === 0 ? '3,3' : null)
+    .attr('stroke-width', d => Math.min(1 + d.count * 0.5, 4))
+
+  const nodeSel = nodeGroup.selectAll('g.node').data(nodes, d => d.id)
+  nodeSel.exit().remove()
+  const nodeEnter = nodeSel.enter().append('g').attr('class', 'node')
+  nodeEnter.append('circle').attr('r', 8)
+  nodeEnter.append('text')
+    .attr('y', 20)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '9px')
+    .attr('fill', '#555')
+
+  const nodeMerge = nodeEnter.merge(nodeSel)
+  nodeMerge.select('circle')
+    .attr('fill', d => nodeColor(d.dominant))
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 1.5)
+  nodeMerge.select('text')
+    .text(d => d.name.slice(0, 12))
+}
+
+// ── Import config (Step 1) ─────────────────────────────────────────────────
+
+const triggerImport = () => { importInput.value?.click() }
+
+const handleDrop = (event) => {
+  isDragOver.value = false
+  const file = event.dataTransfer.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => parseImportedConfig(e.target.result)
+  reader.readAsText(file)
+}
+
+const handleImport = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    parseImportedConfig(e.target.result)
+    event.target.value = ''
+  }
+  reader.readAsText(file)
+}
+
+const parseImportedConfig = (text) => {
+  let configText = text
+  const configMatch = text.match(/#CONFIG\n([\s\S]*?)\n#END_CONFIG/)
+  if (configMatch) configText = configMatch[1]
+
+  const labelToKey = {}
+  for (const [key, label] of Object.entries(RELATIONAL_TYPE_LABELS)) {
+    labelToKey[label.toLowerCase()] = key
+  }
+
+  for (const line of configText.split('\n')) {
+    try {
+      if (line.startsWith('Décideur :')) {
+        const val = line.replace('Décideur :', '').trim()
+        const [nameAndRole, company] = val.split(' at ')
+        const [name, role] = (nameAndRole || '').split(' — ')
+        if (name) form.decisionMakerName = name.trim()
+        if (role) form.decisionMakerRole = role.trim()
+        if (company) form.decisionMakerCompany = company.trim()
+      } else if (line.startsWith('Décision :')) {
+        form.decisionText = line.replace('Décision :', '').trim()
+      } else if (line.startsWith('Réseau simulé :')) {
+        const types = line.replace('Réseau simulé :', '').trim()
+          .split(', ').map(s => s.trim()).filter(t => RELATIONAL_TYPES.includes(t))
+        if (types.length) form.relationalTypes = types
+      } else if (line.startsWith('Horizon temporel :')) {
+        const days = parseInt(line.replace('Horizon temporel :', '').trim(), 10)
+        if (!isNaN(days)) form.horizonDays = days
+      } else if (line.startsWith('Questions to measure :')) {
+        form.questionsToMeasure = line.replace('Questions to measure :', '').trim()
+      } else if (line.startsWith('Agent distribution:')) {
+        const entries = line.replace('Agent distribution:', '').trim().split(',')
+        for (const entry of entries) {
+          const parts = entry.trim().split(' × ')
+          if (parts.length !== 2) continue
+          const key = labelToKey[parts[0].trim().toLowerCase()]
+          const count = parseInt(parts[1].trim(), 10)
+          if (key && !isNaN(count)) agentCounts[key] = count
+        }
+      }
+    } catch { /* ligne ignorée */ }
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const buildRequirement = () => {
@@ -586,6 +904,10 @@ const buildRequirement = () => {
   parts.push(`Relational network: ${form.relationalTypes.join(', ')}`)
   parts.push(`Temporal horizon: ${form.horizonDays} days`)
   if (form.questionsToMeasure) parts.push(`Questions to measure: ${form.questionsToMeasure}`)
+  const agentDistrib = form.relationalTypes
+    .map(t => `${RELATIONAL_TYPE_LABELS[t]} × ${agentCounts[t] || 10}`)
+    .join(', ')
+  parts.push(`Agent distribution: ${agentDistrib}`)
   return parts.join('\n')
 }
 
@@ -620,20 +942,67 @@ const toggleSection = (idx) => {
   collapsedSections.value = s
 }
 
+const exportReportMarkdown = () => {
+  const report = reportResult.value
+  if (!report) return
+
+  let md = report.markdown_content
+  if (!md) {
+    const title = report.outline?.title || 'Private Impact Report'
+    const summary = report.outline?.summary || ''
+    const sections = report.outline?.sections || []
+    md = `# ${title}\n\n`
+    if (summary) md += `> ${summary}\n\n`
+    sections.forEach((s, idx) => {
+      const num = String(idx + 1).padStart(2, '0')
+      md += `## ${num} — ${s.title || 'Section ' + num}\n\n`
+      md += `${s.content || ''}\n\n`
+    })
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `private-impact-report-${simId.value || 'report'}.md`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 // ── Data loading ───────────────────────────────────────────────────────────
 
 onMounted(async () => {
   try {
     const res = await getProject(props.projectId)
     projectData.value = res.data
+    if (!res.data?.graph_id) {
+      waitForGraph()
+    }
   } catch (e) {
     error.value = `Could not load project: ${e.message}`
   }
 })
 
+const waitForGraph = () => {
+  graphReadyTimer = setInterval(async () => {
+    try {
+      const res = await getProject(props.projectId)
+      if (res.data?.graph_id) {
+        projectData.value = res.data
+        clearInterval(graphReadyTimer)
+        graphReadyTimer = null
+      }
+    } catch { /* continue polling */ }
+  }, 3000)
+}
+
 onUnmounted(() => {
   stopPolling()
   stopReportPolling()
+  if (simulation) simulation.stop()
+  if (graphReadyTimer) { clearInterval(graphReadyTimer); graphReadyTimer = null }
 })
 
 // ── Step 2: Prepare ────────────────────────────────────────────────────────
@@ -734,36 +1103,46 @@ const runReport = async () => {
   try {
     const res = await generatePrivateReport(simId.value)
     const reportId = res.data.report_id
-    startReportPolling(reportId)
+    const taskId = res.data.task_id
+
+    if (res.data.already_generated) {
+      const fullRes = await getReport(reportId)
+      reportResult.value = fullRes.data
+      isLoading.value = false
+      return
+    }
+
+    startReportPolling(taskId, reportId)
   } catch (e) {
     error.value = `Report trigger failed: ${e.message}`
     isLoading.value = false
   }
 }
 
-const startReportPolling = (reportId) => {
-  reportPollingTimer = setInterval(() => pollReport(reportId), 4000)
-  pollReport(reportId)
+const startReportPolling = (taskId, reportId) => {
+  reportPollingTimer = setInterval(() => pollReport(taskId, reportId), 4000)
+  pollReport(taskId, reportId)
 }
 
 const stopReportPolling = () => {
   if (reportPollingTimer) { clearInterval(reportPollingTimer); reportPollingTimer = null }
 }
 
-const pollReport = async (reportId) => {
+const pollReport = async (taskId, reportId) => {
   try {
-    const res = await getReportStatus(reportId)
+    const res = await getPrivateReportStatus(taskId)
     const status = res.data?.status
     reportProgress.value = res.data?.message || 'Generating…'
 
     if (status === 'completed') {
       stopReportPolling()
-      const fullRes = await getReport(reportId)
+      const finalReportId = res.data?.result?.report_id || reportId
+      const fullRes = await getReport(finalReportId)
       reportResult.value = fullRes.data
       isLoading.value = false
     } else if (status === 'failed') {
       stopReportPolling()
-      error.value = `Report failed: ${res.data?.error}`
+      error.value = `Report failed: ${res.data?.error || res.data?.message}`
       isLoading.value = false
     }
   } catch (e) {
@@ -774,6 +1153,10 @@ const pollReport = async (reportId) => {
 // ── Step 5: Interaction ────────────────────────────────────────────────────
 
 watch(() => currentStep.value, async (step) => {
+  if (step === 3) {
+    await nextTick()
+    initGraph()
+  }
   if (step === 5 && chatAgents.value.length === 0) {
     loadChatAgents()
   }
@@ -817,13 +1200,28 @@ const sendChat = async () => {
       .slice(0, -1)
       .map(m => ({ role: m.role, content: m.content }))
 
+    const historyContext = history
+      .map(m => `${m.role === 'user' ? 'User' : 'You'}: ${m.content}`)
+      .join('\n')
+    const prompt = historyContext
+      ? `Previous conversation:\n${historyContext}\n\nNew question: ${userMsg}`
+      : userMsg
+
     const res = await interviewAgents({
       simulation_id: simId.value,
-      agent_ids: [selectedAgentId.value],
-      prompt: userMsg,
-      chat_history: history,
+      interviews: [{
+        agent_id: selectedAgentId.value,
+        prompt,
+      }],
     })
-    const reply = res.data?.[0]?.response || res.data?.response || '(no response)'
+
+    let reply = '(no response)'
+    if (res.success && res.data) {
+      const resultData = res.data.result || res.data
+      const resultsDict = resultData.results || resultData
+      const first = Object.values(resultsDict || {}).find(v => v && v.response)
+      if (first?.response) reply = first.response
+    }
     chatMessages[selectedAgentId.value].push({ role: 'agent', content: reply })
   } catch (e) {
     chatMessages[selectedAgentId.value].push({ role: 'agent', content: `Error: ${e.message}` })
@@ -840,12 +1238,20 @@ const scrollChat = () => {
   }
 }
 
-// Auto-scroll feed
+// Auto-scroll feed + update propagation graph
 watch(() => recentActions.value.length, () => {
   nextTick(() => {
     if (feedPanel.value) feedPanel.value.scrollTop = feedPanel.value.scrollHeight
   })
+  updateGraph(recentActions.value)
 })
+
+// Re-render graph skeleton as soon as the static cascade graph arrives,
+// even if no action has been produced yet.
+watch(
+  () => (simStatus.value?.agents?.length || 0) + (simStatus.value?.relational_edges?.length || 0),
+  () => updateGraph(recentActions.value || [])
+)
 </script>
 
 <style scoped>
@@ -1030,6 +1436,44 @@ watch(() => recentActions.value.length, () => {
 .form-container { max-width: 1100px; margin: 0 auto; }
 
 .section-title-row { margin-bottom: 24px; }
+
+.graph-building-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #FFF8E1;
+  border: 1px solid #FFE082;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #795548;
+  margin-bottom: 20px;
+}
+
+.loading-ring--sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
+
+.drop-zone {
+  border: 2px dashed #D0D0D0;
+  border-radius: 6px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 24px;
+  color: #AAA;
+}
+.drop-zone:hover { border-color: #000; color: #000; }
+.drop-zone--active { border-color: #000; background: #F5F5F5; color: #000; }
+.drop-zone-label { font-size: 13px; font-weight: 600; }
+.drop-zone-hint { font-size: 10px; letter-spacing: 0.04em; }
 .section-h2 { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 6px; }
 .section-hint { font-size: 13px; color: #777; }
 
@@ -1327,6 +1771,22 @@ watch(() => recentActions.value.length, () => {
 
 .run-controls { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
 
+/* ── Right column + graph panel (step 3) ─────────────────────────────────── */
+.run-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100vh - 172px);
+}
+
+.graph-panel {
+  flex: 1;
+  border: 1.5px solid #EFEFEF;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #FAFAFA;
+}
+
 /* ── Feed panel (step 3 right) ───────────────────────────────────────────── */
 .run-feed-panel {
   border: 1.5px solid #EFEFEF;
@@ -1334,6 +1794,8 @@ watch(() => recentActions.value.length, () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  height: 200px;
+  flex-shrink: 0;
 }
 
 .feed-header {
@@ -1382,8 +1844,7 @@ watch(() => recentActions.value.length, () => {
 
 /* ── Report (step 4) ─────────────────────────────────────────────────────── */
 .report-ready { display: flex; flex-direction: column; gap: 20px; padding: 20px 0; }
-.report-title { font-size: 22px; font-weight: 700; color: #000; line-height: 1.3; }
-.report-summary { font-size: 14px; color: #555; line-height: 1.6; }
+.report-markdown { white-space: pre-wrap; font-size: 13px; line-height: 1.7; color: #222; font-family: inherit; background: #FAFAFA; border: 1.5px solid #E8E8E8; border-radius: 4px; padding: 20px; margin: 0; }
 
 .report-sections { display: flex; flex-direction: column; gap: 0; border: 1.5px solid #E8E8E8; border-radius: 4px; overflow: hidden; }
 
@@ -1548,6 +2009,81 @@ watch(() => recentActions.value.length, () => {
 
 .chat-send-btn:hover { background: #222; }
 .chat-send-btn:disabled { background: #CCC; cursor: not-allowed; }
+
+/* ── Horizon buttons ─────────────────────────────────────────────────────── */
+.horizon-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.horizon-btn {
+  padding: 7px 14px;
+  border: 1.5px solid #E8E8E8;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #444;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.horizon-btn.is-active {
+  border-color: #000;
+  background: #FAFAFA;
+  color: #000;
+  font-weight: 600;
+}
+
+/* ── Agent counts block ──────────────────────────────────────────────────── */
+.agent-counts-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.agent-count-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-count-label {
+  min-width: 130px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #444;
+  flex-shrink: 0;
+}
+
+.agent-count-sep {
+  flex: 1;
+  height: 1px;
+  background: #E8E8E8;
+}
+
+.agent-count-input {
+  width: 64px;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #000;
+  text-align: right;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.agent-count-input:focus { outline: none; border-color: #000; }
+
+.agent-count-total {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: 0.04em;
+  text-align: right;
+  margin-top: 4px;
+}
 
 /* ── Mono utility ────────────────────────────────────────────────────────── */
 .mono { font-family: 'JetBrains Mono', monospace; }

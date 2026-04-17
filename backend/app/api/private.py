@@ -19,7 +19,7 @@ from ..config import Config
 from ..services.private_impact_profile_generator import PrivateImpactProfileGenerator
 from ..services.private_impact_config_generator import PrivateImpactConfigGenerator
 from ..services.private_impact_runner import PrivateImpactRunner
-from ..services.zep_entity_reader import ZepEntityReader
+from ..services.zep_entity_reader import ZepEntityReader, EntityNode
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager
@@ -32,10 +32,72 @@ logger = get_logger('mirofish.api.private')
 _SIM_DIR = os.path.join(os.path.dirname(__file__), '../../uploads/simulations')
 
 # Relational entity types recognised by PrivateImpactProfileGenerator
+# Used as last-resort fallback when no project ontology is available.
 _RELATIONAL_ENTITY_TYPES = [
     "employee", "manager", "client", "competitor",
     "partner", "familymember", "colleague", "investor",
 ]
+
+# Structural/non-person entity type suffixes to exclude when reading ontology types
+_STRUCTURAL_SUFFIXES = ('company', 'media', 'platform', 'organization', 'union')
+_STRUCTURAL_EXACT = frozenset({'Person', 'Organization'})
+
+
+def _is_structural_type(entity_type: str) -> bool:
+    """Return True if the entity type represents an org/platform rather than a person."""
+    if entity_type in _STRUCTURAL_EXACT:
+        return True
+    return any(entity_type.lower().endswith(s) for s in _STRUCTURAL_SUFFIXES)
+
+
+def _build_synthetic_entities(
+    entity_types: list,
+    simulation_requirement: str = '',
+) -> list:
+    """
+    Fallback: create synthetic EntityNode objects when Zep has no matching entities.
+
+    Parses Agent distribution from the #CONFIG block of simulation_requirement to
+    determine how many agents to create per type (capped at 3 for performance).
+    Falls back to 1 agent per type if no distribution info is found.
+
+    LLM will enrich these synthetic profiles during profile generation — no Zep
+    anchoring, which is acceptable for simulation when the graph has no typed nodes.
+    """
+    import re as _re
+
+    dist: dict = {}
+    config_match = _re.search(r'#CONFIG(.*?)#END_CONFIG', simulation_requirement, _re.DOTALL)
+    if config_match:
+        dist_match = _re.search(r'Agent distribution:\s*(.+)', config_match.group(1))
+        if dist_match:
+            for part in dist_match.group(1).split(','):
+                m = _re.match(r'(.+?)\s*[×x]\s*(\d+)', part.strip())
+                if m:
+                    dist[m.group(1).strip().lower()] = min(int(m.group(2)), 3)
+
+    entities = []
+    for etype in entity_types:
+        count = 1
+        for dist_label, dist_count in dist.items():
+            if dist_label in etype.lower() or etype.lower() in dist_label:
+                count = dist_count
+                break
+        for i in range(count):
+            suffix = f" {i + 1}" if count > 1 else ""
+            entities.append(EntityNode(
+                uuid=f"synthetic_{uuid.uuid4().hex[:8]}",
+                name=f"{etype.capitalize()}{suffix}",
+                labels=[etype, "Entity"],
+                summary=f"Synthetic {etype} agent in the decision maker's network.",
+                attributes={},
+            ))
+
+    logger.info(
+        f"[PRIVATE] Synthetic fallback: {len(entities)} agents "
+        f"from {len(entity_types)} types"
+    )
+    return entities
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -92,7 +154,7 @@ def prepare_private_simulation():
         { "success": true, "data": { "sim_id": "...", "agent_count": N, "status": "prepared" } }
     """
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
 
         # Resolve graph_id and simulation_requirement
         project_id = data.get('project_id')
@@ -133,28 +195,54 @@ def prepare_private_simulation():
         os.makedirs(_sim_dir(sim_id), exist_ok=True)
 
         use_llm = data.get('use_llm', True)
-        entity_types = data.get('entity_types') or _RELATIONAL_ENTITY_TYPES
 
-        # Read relational entities from Zep
+        # Resolve entity types to query:
+        # 1. Explicit list from request  (user override)
+        # 2. Ontology types from project (auto — excludes structural types)
+        # 3. Default hardcoded list       (fallback for projects without ontology)
+        entity_types = data.get('entity_types')
+        if not entity_types:
+            if project and project.ontology:
+                ontology_types = [
+                    e.get('name') for e in project.ontology.get('entity_types', [])
+                    if e.get('name') and not _is_structural_type(e.get('name'))
+                ]
+                entity_types = ontology_types or _RELATIONAL_ENTITY_TYPES
+                logger.info(f"[PRIVATE] Using ontology entity types: {entity_types}")
+            else:
+                entity_types = _RELATIONAL_ENTITY_TYPES
+
+        # Read relational entities from Zep — single call for all types at once
         reader = ZepEntityReader()
-        all_entities = []
-        for etype in entity_types:
-            try:
-                found = reader.get_entities_by_type(
-                    graph_id=graph_id,
-                    entity_type=etype,
-                    enrich_with_edges=True,
-                )
-                all_entities.extend(found)
-                logger.info(f"[PRIVATE] {len(found)} '{etype}' entities read")
-            except Exception as e:
-                logger.warning(f"[PRIVATE] Could not read '{etype}' entities: {e}")
+        try:
+            zep_result = reader.filter_defined_entities(
+                graph_id=graph_id,
+                defined_entity_types=entity_types,
+                enrich_with_edges=True,
+            )
+            all_entities = zep_result.entities
+            logger.info(
+                f"[PRIVATE] Zep read: {zep_result.total_count} nodes total, "
+                f"{len(all_entities)} matched ({list(zep_result.entity_types)})"
+            )
+        except Exception as e:
+            logger.warning(f"[PRIVATE] Zep read failed: {e}")
+            all_entities = []
 
         if not all_entities:
-            return jsonify({
-                "success": False,
-                "error": "No relational entities found in the graph for the given entity types."
-            }), 404
+            logger.warning(
+                f"[PRIVATE] No Zep entities matched {entity_types} in graph {graph_id}. "
+                f"Switching to synthetic fallback (no Zep anchoring)."
+            )
+            all_entities = _build_synthetic_entities(
+                entity_types=entity_types or _RELATIONAL_ENTITY_TYPES,
+                simulation_requirement=simulation_requirement,
+            )
+            if not all_entities:
+                return jsonify({
+                    "success": False,
+                    "error": "No relational entities found and synthetic fallback produced 0 agents."
+                }), 404
 
         # Generate RelationalAgentProfile instances
         profile_generator = PrivateImpactProfileGenerator()
@@ -240,7 +328,7 @@ def start_private_simulation():
         { "success": true, "data": { "sim_id": "...", "status": "running" } }
     """
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
 
         sim_id = data.get('sim_id')
         if not sim_id:
@@ -306,9 +394,39 @@ def get_private_status(sim_id: str):
                 "error": f"No private simulation found for sim_id: {sim_id}"
             }), 404
 
+        data = state.to_detail_dict()
+
+        # Attach static relational graph (cascade_influence) so the frontend
+        # can render edges even before any action has been logged.
+        config_path = os.path.join(_SIM_DIR, sim_id, "private_simulation_config.json")
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    sim_cfg = json.load(f)
+                agent_configs = sim_cfg.get("agent_configs", []) or []
+                data["agents"] = [
+                    {
+                        "agent_id": a.get("agent_id"),
+                        "entity_name": a.get("entity_name"),
+                        "cascade_influence": a.get("cascade_influence", []) or [],
+                    }
+                    for a in agent_configs
+                    if a.get("agent_id") is not None
+                ]
+                edges = []
+                for a in agent_configs:
+                    src = a.get("agent_id")
+                    if src is None:
+                        continue
+                    for tgt in (a.get("cascade_influence") or []):
+                        edges.append({"source": src, "target": tgt})
+                data["relational_edges"] = edges
+            except Exception as cfg_err:
+                logger.warning(f"[PRIVATE] Could not load cascade graph: {cfg_err}")
+
         return jsonify({
             "success": True,
-            "data": state.to_detail_dict()
+            "data": data
         })
 
     except Exception as e:
@@ -414,7 +532,7 @@ def generate_private_report(sim_id: str):
         { "success": true, "data": { "sim_id": "...", "report_id": "...", "task_id": "..." } }
     """
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         force_regenerate = data.get('force_regenerate', False)
 
         meta = _read_meta(sim_id)

@@ -77,7 +77,7 @@ class PlatformActionLogger:
         with open(self.log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
-    def log_round_end(self, round_num: int, actions_count: int):
+    def log_round_end(self, round_num: int, actions_count: int, simulated_day: Optional[int] = None):
         """记录轮次结束"""
         entry = {
             "round": round_num,
@@ -85,7 +85,9 @@ class PlatformActionLogger:
             "event_type": "round_end",
             "actions_count": actions_count,
         }
-        
+        if simulated_day is not None:
+            entry["simulated_day"] = simulated_day
+
         with open(self.log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
