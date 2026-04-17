@@ -734,6 +734,8 @@ SECTION_SYSTEM_PROMPT_TEMPLATE = """\
 - 禁止在一次回复中同时包含工具调用和 Final Answer
 - 禁止自己编造工具返回结果（Observation），所有工具结果由系统注入
 - 每次回复最多调用一个工具
+- 禁止在回复中包含 <tool_result> 标签 —— 只有系统才会提供工具返回结果
+- 禁止编造用户名、引用、统计数据或互动数据；所有事实必须来自真实的工具返回结果
 
 ═══════════════════════════════════════════════════════════════
 【章节内容要求】
@@ -1123,7 +1125,27 @@ class ReportAgent:
                 data["parameters"] = data.pop("params")
             return True
         return False
-    
+
+    @staticmethod
+    def _strip_fake_tool_results(response: str) -> str:
+        """Strip any <tool_result> blocks the LLM fabricated in its response.
+
+        The LLM sometimes hallucinates <tool_result>...</tool_result> blocks
+        containing invented data.  If these are kept in the message history,
+        subsequent iterations treat the fabricated data as authoritative,
+        causing the final report to cite completely fictional entities,
+        quotes, and statistics.  See issue #529.
+        """
+        cleaned = re.sub(
+            r'<tool_result>.*?</tool_result>',
+            '',
+            response,
+            flags=re.DOTALL,
+        )
+        # Collapse runs of 3+ newlines that the removal may leave behind
+        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+        return cleaned.strip()
+
     def _get_tools_description(self) -> str:
         """生成工具描述文本"""
         desc_parts = ["可用工具："]
@@ -1335,7 +1357,7 @@ class ReportAgent:
 
                 if conflict_retries <= 2:
                     # 前两次：丢弃本次响应，要求 LLM 重新回复
-                    messages.append({"role": "assistant", "content": response})
+                    messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
                     messages.append({
                         "role": "user",
                         "content": (
@@ -1375,7 +1397,7 @@ class ReportAgent:
             if has_final_answer:
                 # 工具调用次数不足，拒绝并要求继续调工具
                 if tool_calls_count < min_tool_calls:
-                    messages.append({"role": "assistant", "content": response})
+                    messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
                     unused_tools = all_tools - used_tools
                     unused_hint = f"（这些工具还未使用，推荐用一下他们: {', '.join(unused_tools)}）" if unused_tools else ""
                     messages.append({
@@ -1405,7 +1427,7 @@ class ReportAgent:
             if has_tool_calls:
                 # 工具额度已耗尽 → 明确告知，要求输出 Final Answer
                 if tool_calls_count >= self.MAX_TOOL_CALLS_PER_SECTION:
-                    messages.append({"role": "assistant", "content": response})
+                    messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
                     messages.append({
                         "role": "user",
                         "content": REACT_TOOL_LIMIT_MSG.format(
@@ -1453,7 +1475,7 @@ class ReportAgent:
                 if unused_tools and tool_calls_count < self.MAX_TOOL_CALLS_PER_SECTION:
                     unused_hint = REACT_UNUSED_TOOLS_HINT.format(unused_list="、".join(unused_tools))
 
-                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
                 messages.append({
                     "role": "user",
                     "content": REACT_OBSERVATION_TEMPLATE.format(
@@ -1468,7 +1490,7 @@ class ReportAgent:
                 continue
 
             # ── 情况3：既没有工具调用，也没有 Final Answer ──
-            messages.append({"role": "assistant", "content": response})
+            messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
 
             if tool_calls_count < min_tool_calls:
                 # 工具调用次数不足，推荐未用过的工具
@@ -1856,8 +1878,8 @@ class ReportAgent:
                 })
                 tool_calls_made.append(call)
             
-            # 将结果添加到消息
-            messages.append({"role": "assistant", "content": response})
+            # 将结果添加到消息（strip fabricated <tool_result> blocks, see #529）
+            messages.append({"role": "assistant", "content": self._strip_fake_tool_results(response)})
             observation = "\n".join([f"[{r['tool']}结果]\n{r['result']}" for r in tool_results])
             messages.append({
                 "role": "user",
