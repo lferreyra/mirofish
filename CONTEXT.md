@@ -435,3 +435,184 @@ Robustesse : `PrivateImpactView` polle `getProject()` jusqu'à ce que `graph_id`
 ##### Prochaine étape
 - **PR** vers `main` : `feature/private-impact` — regrouper cette session avec les sessions 1–2.
 - **À anticiper post-PR** : créer une route `/api/private-impact/chat/<sim_id>` dédiée pour finaliser le bug 4 (le runner privé n'a pas d'IPC de type `send_batch_interview`, donc un chat direct via `ReportAgent.chat` ou un LLM call sur le profil d'agent est sans doute plus pertinent).
+
+---
+
+### 2026-04-17 — Session 4 (Prompt N°23 — Éclatement PrivateImpactView en 4 sous-composants)
+
+#### Objectif
+Refactoring iso-comportement de `PrivateImpactView.vue` (monolithe 2091 lignes) en orchestrateur + 4 sous-composants autonomes, pour préparer l'intégration future dans `MainView` (wizard partagé Public/Private, Prompt N°24).
+
+#### Fichiers créés
+| Fichier | Rôle |
+|---|---|
+| `frontend/src/constants/private.js` | Constantes extraites : `RELATIONAL_TYPES`, `RELATIONAL_TYPE_LABELS`, `HORIZON_OPTIONS`, `ACTION_COLORS`, `STEP_NAMES` |
+| `frontend/src/utils/private.js` | Helpers purs : `shortTime`, `actionTypeClass`, `initials`, `nodeColor`, `buildRequirement`, `parseImportedConfig`, `exportReportMarkdown` |
+| `frontend/src/components/private/Step2PrivateDecision.vue` | Formulaire décision + import .txt + bouton Prepare (émet `@prepare`) |
+| `frontend/src/components/private/Step3PrivateSim.vue` | Graphe D3 force-directed + live feed + contrôles start/stop (émet `@stop`, `@report`) |
+| `frontend/src/components/private/Step4PrivateReport.vue` | Affichage rapport + export markdown (émet `@retry`, `@next`) |
+| `frontend/src/components/private/Step5PrivateInteraction.vue` | Liste agents + chat local (props `simId` + `chatAgents`) |
+
+#### Fichier modifié
+- `frontend/src/views/PrivateImpactView.vue` — réduit à l'orchestrateur : header, steps-bar, error banner, état global (`currentStep`, `simId`, `simStatus`, `prepareResult`, `reportResult`, `form`, `agentCounts`, `recentActions`, `chatAgents`, timers), méthodes async (`runPrepare`, `runStart`, `runReport`, `handleStop`, polling status/report, `waitForGraph`, `loadChatAgents`, `goToStep`), Step 2 (Prepare Results) conservé inline.
+
+#### Décisions d'architecture — Session 4
+- `form` et `agentCounts` restent des `reactive` dans le parent et sont passés en props aux enfants — les mutations (v-model) se propagent naturellement grâce à la réactivité Vue 3.
+- Le watcher `form.relationalTypes` → `agentCounts` vit dans `Step2PrivateDecision` (avec `deep: true` pour capter les mutations d'array).
+- Le cycle de vie D3 (`initGraph`, `updateGraph`, `simulation.stop()`) vit dans `Step3PrivateSim` via `onMounted` / `onUnmounted` — plus besoin du watcher `currentStep === 3` dans le parent.
+- Les styles communs (`.btn-primary`, `.btn-secondary`, `.mono`, `.loading-ring`) sont dupliqués dans chaque composant `scoped` pour rester autonomes ; le parent conserve uniquement les styles réellement utilisés par son template (header, steps-bar, error banner, centered-panel, prepare-results).
+- Le chargement initial de `chatAgents` reste dans le parent (`loadChatAgents` déclenché par le watcher `currentStep === 5`) — `Step5PrivateInteraction` reçoit la liste en prop et n'appelle jamais `getPrivateActions`.
+- Step 2 (Prepare Results, ~60 lignes) reste inline dans l'orchestrateur — trop couplé à l'état parent pour justifier un 5ème composant.
+
+#### Prochaine étape
+- **Prompt N°24** — Refactor `MainView.vue` avec bifurcation `mode=public` / `mode=private` après le graph build (wizard partagé qui ré-utilise les 4 sous-composants privés + leurs équivalents publics).
+
+---
+
+### 2026-04-17 — Session 5 (Prompt N°24 — Bifurcation MainView par `route.query.mode`)
+
+#### Objectif
+Fusionner les deux wizards (Public / Private) dans un unique `MainView.vue` qui bifurque selon `route.query.mode` après l'étape 1 (graph build). `PrivateImpactView.vue` devient un simple passthrough de redirection vers `/process/:projectId?mode=private`.
+
+#### Fichiers modifiés
+| Fichier | Modification |
+|---|---|
+| `frontend/src/components/Step1GraphBuild.vue` | Ajout prop `mode: { type: String, default: 'public' }`. Si `mode === 'private'`, `handleEnterEnvSetup` émet `next-step` sans créer de simulation OASIS (pas de `createSimulation` ni de `router.push('/simulation/...')`). Le comportement public reste **strictement inchangé**. |
+| `frontend/src/views/MainView.vue` | Refactor complet : `isPrivateMode` computed (`route.query.mode === 'private'`), ajout de tout l'état Private (`privateForm`, `privateAgentCounts`, `privateSimId`, `privateSimStatus`, `privatePrepareResult`, `privatePrepareReady`, `privateReportResult`, `privateIsLoading`, `privateError`, `privateReportProgress`, `privateRecentActions`, `privateChatAgents`, timers `privatePollingTimer` + `privateReportPollingTimer`). Méthodes Private migrées depuis PrivateImpactView : `runPrivatePrepare`, `runPrivateStart`, `pollPrivateStatus`, `handlePrivateStop`, `runPrivateReport`, `pollPrivateReport`, `loadPrivateChatAgents`. Template bifurqué : Step 1 commun (split layout, mode prop), Steps 2–5 branchés selon le mode. `onBeforeRouteLeave`, `onBeforeRouteUpdate`, `onUnmounted` cleanupent **tous** les timers (publics + privés). `watch(isPrivateMode)` reset `currentStep = 1` et `privatePrepareReady = false`. `handleNewProject` propage désormais `query: { mode }` dans `router.replace({ name: 'Process', ... })` au lieu de rediriger vers `/private/:projectId`. |
+| `frontend/src/views/PrivateImpactView.vue` | Réduit à un composant de redirection : `onMounted` → `router.replace({ name: 'Process', params: { projectId }, query: { mode: 'private' } })`. |
+| `frontend/src/components/ModeSelector.vue` | Suppression du `router.push({ name: 'PrivateImpact' })` (le routing est désormais déclenché par `Home.vue` via `selectedMode.value === 'private' ? { mode: 'private' } : {}`). |
+
+#### Décisions d'architecture — Session 5
+- **Step 1 inchangé pour le public** : ajout d'un prop `mode` avec default `'public'`. Le public branche exécute exactement l'ancien code (createSimulation + router.push vers `/simulation/:id`). Seule la branche `private` est nouvelle (émet `next-step`).
+- **Étiquettes des étapes différentes par mode** :
+  - Public : `stepNames` venant de `tm('main.stepNames')` (i18n)
+  - Private : `['Graph Build', 'Requirement', 'Run', 'Report', 'Interact']`
+- **Étape 2 privée (Requirement + Prepare)** : `privatePrepareReady` est un flag local dans MainView qui permet d'afficher le formulaire (`false`) ou le résultat `preparePrivateSimulation` (`true`). Le bouton « Back » remet le flag à `false` (retour au formulaire avec données conservées).
+- **Steps bar Private** : affichée uniquement à partir de `currentStep >= 2` (étape 1 = graph build commun, avec son propre UI). Le breadcrumb couvre les étapes 2→5 (`['Requirement', 'Run', 'Report', 'Interact']`).
+- **Cleanup timers** : un seul point de vérité `cleanupAllTimers()` appelé dans `onBeforeRouteLeave`, `onBeforeRouteUpdate` (si `projectId` change) et `onUnmounted`. `watch(isPrivateMode)` appelle uniquement `cleanupPrivateTimers()` (le changement de mode seul ne doit pas tuer les timers publics).
+- **`currentStep` jamais persisté** : reset automatique à 1 dès que `isPrivateMode` change. Pas de localStorage / sessionStorage.
+- **`PrivateImpactView.vue`** : maintenu comme simple redirecteur pour préserver la compatibilité des URLs `/private` et `/private/:projectId` (ModeSelector legacy, liens externes éventuels). À supprimer dans un prompt futur si plus utilisé.
+
+#### Validation
+- `npx vite build` → succès (704 modules, 1.96s, seuls les warnings préexistants persistent : chunk > 500 kB et dynamic import de `pendingUpload.js`).
+- Flow public : `Home → /process/new → Step1GraphBuild (mode=public) → createSimulation → /simulation/:id` — **inchangé**.
+- Flow private : `Home (mode=private) → /process/new?mode=private → Step1GraphBuild (mode=private) → emit next-step → Step 2 privée (form Prepare) → Step 3 Sim → Step 4 Report → Step 5 Chat`.
+- Compatibilité : `/private/:projectId` → redirige vers `/process/:projectId?mode=private`.
+
+#### Prochaine étape
+- PR `feature/private-impact` → `main` (regroupe Sessions 1 à 5).
+- Cleanup optionnel : supprimer complètement les routes `/private` et `/private/:projectId` si PR marchée en production (et que les liens externes sont migrés).
+
+---
+
+### 2026-04-17 — Session 6 (Prompt N°25 — ModeSelector via query param + suppression routes /private)
+
+#### Objectif
+Finaliser l'intégration du mode selector : plus aucun état de mode hors URL, suppression définitive des routes legacy `/private` / `/private/:projectId` et du fichier passthrough `PrivateImpactView.vue`.
+
+#### Fichiers modifiés
+| Fichier | Modification |
+|---|---|
+| `frontend/src/components/ModeSelector.vue` | Refactor complet. Nouveaux props : `projectId: { type: String, default: 'new' }` et `disabled: { type: Boolean, default: false }`. `selectMode(mode)` appelle `emit('mode-selected', mode)` (synchrone — permet au parent de stocker la pending upload avant la navigation) puis `router.push({ path: '/process/${projectId}', query: { mode } })`. Cards ont désormais `:disabled` natif + classe `.is-disabled` (opacity 0.45, cursor not-allowed). |
+| `frontend/src/views/Home.vue` | Suppression du bouton `start-engine-btn` (ModeSelector devient la CTA). Suppression de `selectedMode` ref, de `startSimulation()`, de `useRouter` import, de `error` ref non utilisé, du `mode-selector-wrapper` (déplacé dans console-box). ModeSelector est maintenant dans une `.console-section.mode-selector-section` après la textarea avec `:projectId="'new'"` + `:disabled="!canSubmit || loading"`. `handleModeSelected()` appelle `setPendingUpload(files, simulationRequirement)` de manière synchrone — l'emit Vue 3 s'exécute avant le `router.push` qui suit dans ModeSelector. Import de `setPendingUpload` passé de dynamic à statique. CSS obsolètes supprimées (`.start-engine-btn*`, `@keyframes pulse-border`, `.mode-selector-wrapper`, `.btn-section`). |
+| `frontend/src/router/index.js` | Suppression de l'import `PrivateImpactView` et des deux entrées de route `/private` (`PrivateImpact`) et `/private/:projectId` (`PrivateImpactWithProject`). Une URL legacy `/private/...` donne désormais une 404 du router (comportement Vue Router par défaut). |
+
+#### Fichier supprimé
+- `frontend/src/views/PrivateImpactView.vue` — le passthrough de redirection Session 5 devient obsolète une fois le ModeSelector reconnecté et les routes legacy retirées.
+
+#### Décisions d'architecture — Session 6
+- **Mode dans l'URL uniquement** : aucun `sessionStorage`, aucun `localStorage`, aucune `ref` Home persistée. La query param `?mode=public|private` est la source de vérité.
+- **Timing de `setPendingUpload`** : le parent (`Home.vue`) écoute `mode-selected`. L'emit Vue est synchrone et se déclenche AVANT le `router.push` dans le même `selectMode`. Le handler `handleModeSelected` s'exécute donc avant la navigation, garantissant que `getPendingUpload()` côté `MainView.handleNewProject` trouve bien les fichiers.
+- **UX ModeSelector** : cards désactivées tant que `canSubmit === false` (pas de fichiers OU pas de prompt de simulation). Opacity réduite + cursor not-allowed pour indiquer l'état.
+- **404 sur `/private*`** : choix délibéré pour nettoyer l'API publique du frontend. Aucun lien externe documenté dans le repo ne pointe vers ces URLs (confirmé par `grep -rn "/private"` restreint aux URLs frontend : 0 occurrence hors `api/private.js` backend et imports locaux `*/private/*` côté fichiers). Si un lien externe casse, la route pourra être rétablie en alias explicite dans une future PR.
+- **Bouton « Start Engine » supprimé** : redondant avec ModeSelector une fois que celui-ci navigue directement. Deux CTAs pour la même action = ambiguïté UX. L'animation `pulse-border` disparaît avec le bouton.
+
+#### Résultats des greps — AVANT (état pré-modification)
+```
+grep -rn "/private" frontend/src --include="*.vue" --include="*.js"
+→ router/index.js:47 path: '/private'
+→ router/index.js:53 path: '/private/:projectId'
+→ api/private.js (7 lignes : endpoints backend /api/private-impact/... — À CONSERVER)
+→ components/private/*.vue, utils/private.js, constants/private.js (imports fichiers locaux — À CONSERVER)
+
+grep -rn "PrivateImpactView" frontend/src
+→ router/index.js:8 import PrivateImpactView
+→ router/index.js:49 component: PrivateImpactView
+→ router/index.js:55 component: PrivateImpactView
+
+grep -rn "privateImpact" frontend/src → 0 match
+grep -rn "sessionStorage" frontend/src/components/ModeSelector.vue frontend/src/views/Home.vue → 0 match
+```
+
+#### Résultats des greps — APRÈS (état post-modification)
+```
+grep -rn "/private" frontend/src --include="*.vue" --include="*.js"
+→ api/private.js (7 lignes : endpoints backend — LÉGITIMES)
+→ MainView.vue + components/private/*.vue + utils/private.js + constants/private.js (imports locaux — LÉGITIMES)
+→ AUCUNE URL frontend `/private/...` restante ✓
+
+grep -rn "PrivateImpactView" frontend/src → 0 match ✓
+grep -rn "privateImpact" frontend/src → 0 match ✓
+grep -rn "sessionStorage" frontend/src → 0 match (recherche étendue au projet entier) ✓
+```
+
+#### Validation
+- `npx vite build` → succès (701 modules, 1.13s). Warning dynamic import de `pendingUpload.js` disparu (import statique dans Home.vue).
+- Scénario 1 : Home → upload + prompt → ModeSelector actif → clic « Public Opinion » → URL = `/process/new?mode=public` → `handleNewProject` lit pendingUpload → wizard public.
+- Scénario 2 : Home → upload + prompt → clic « Private Impact » → URL = `/process/new?mode=private` → wizard privé.
+- Scénario 3 : URL directe legacy `/private/:projectId` → 404 router (plus de route).
+- Scénario 4 : F5 sur `/process/:projectId?mode=private` → query param préservé, même flux.
+- Scénario 5 : back navigateur depuis wizard → retour à Home, ModeSelector en état `selected.value = null` (ref locale au composant, reset au remount).
+- Scénario 6 : switch manuel d'URL `?mode=public` → `?mode=private` sur même projectId → `watch(isPrivateMode)` reset `currentStep = 1` + cleanup timers privés (Session 5).
+
+#### Prochaine étape
+- **Prompt N°26** — Tests bout-en-bout les deux flux (upload → graph build → steps privés/publics → rapport → chat) + corrections de régressions éventuelles (UX cards désactivées, feedback visuel de chargement pendant `generateOntology`, cleanup pendingUpload après succès).
+
+---
+
+### Session 7 — Prompt N°27 — i18n Private + header polishing (2026-04-17)
+
+#### Objectif
+Migrer les `stepNames` et `modeBadge` Private hors des hardcodes vers les fichiers i18n. Unifier la mécanique du compteur `Step X/Y` via `stepNames.length` (déjà en place depuis N°24). Ne pas toucher au flux Public fonctionnel.
+
+#### Audit i18n — état AVANT modifications
+Langues supportées (fichiers présents dans `locales/`) : **EN** (`en.json`), **ZH** (`zh.json`). Pas de `fr.json` malgré la présence de `fr` dans `locales/languages.json` (langue référencée mais sans pack). Langue par défaut : `zh`.
+
+Clés existantes pertinentes pour le header / wizard Public :
+- `main.stepNames` (array 5 entrées) — utilisé par `MainView.vue:288`, `SimulationView.vue:28`, `SimulationRunView.vue:28`, `ReportView.vue:28`, `InteractionView.vue:28`
+- `main.layoutGraph|layoutSplit|layoutWorkbench` — utilisé par les 5 vues ci-dessus
+- `common.ready|running|completed|failed|processing|error` — présents mais `statusText` dans `MainView.vue` reste hardcodé EN (hors périmètre de ce prompt — aucune divergence cross-mode)
+- Aucune clé Private préexistante (tout était hardcodé dans le JS `MainView.vue`).
+
+#### Fichiers modifiés
+| Fichier | Modification |
+|---|---|
+| `locales/en.json` | Ajout section `public` (`stepNames` copie de `main.stepNames` + `modeBadge: "PUBLIC OPINION"`) et section `private` (`stepNames: ["Requirement", "Prepare", "Run", "Report", "Interact"]` + `modeBadge: "PRIVATE IMPACT"`). `main.stepNames` conservé — utilisé par 4 autres vues (SimulationView, SimulationRunView, ReportView, InteractionView) hors scope. |
+| `locales/zh.json` | Idem, symétrique. Private ZH : `["需求", "准备", "运行", "报告", "互动"]`. Badge ZH : `"私域影响"` (Private) / `"公共舆论"` (Public). |
+| `frontend/src/views/MainView.vue` | Template : `PRIVATE IMPACT` → `{{ t('private.modeBadge') }}`. Script : `publicStepNames` lit désormais `tm('public.stepNames')` (aligné sur la nouvelle clé). `privateStepNames` passe d'array statique à `computed(() => tm('private.stepNames'))`. `privateBreadcrumb` passe d'array statique à `computed(() => privateStepNames.value.slice(1))` — dérivé, toujours synchronisé. `currentStepNames` adapté pour `.value` sur la computed privée. Compteur `Step {{ currentStep }}/{{ currentStepNames.length }}` déjà robuste (N°24) — pas de modification. |
+
+#### Clés i18n ajoutées
+- `public.stepNames` (EN, ZH) — mirror de `main.stepNames`
+- `public.modeBadge` (EN, ZH) — pour usage futur si badge Public affiché (non rendu actuellement dans le template puisque `<div v-if="isPrivateMode" class="mode-badge">`)
+- `private.stepNames` (EN, ZH)
+- `private.modeBadge` (EN, ZH)
+
+#### Décisions — Session 7
+- **Coexistence `main.stepNames` ↔ `public.stepNames`** : les deux clés contiennent actuellement la même liste. `main.stepNames` reste la source de vérité pour les 4 vues sub-étape (SimulationView, SimulationRunView, ReportView, InteractionView) qui lisent `$tm('main.stepNames')[N]`. `public.stepNames` est lu uniquement par MainView pour la symétrie avec `private.stepNames`. Migration complète vers `public.stepNames` hors périmètre de ce prompt (toucherait 4 vues non mentionnées).
+- **Écart spec vs UI** : le prompt liste `['Requirement', 'Prepare', 'Run', 'Report', 'Interact']` mais Step 1 dans la UI est le composant `Step1GraphBuild` commun aux deux modes. La valeur « Requirement » pour Step 1 Private est donc sémantiquement le **cadrage** (l'utilisateur fournit les docs requirement qui alimentent la construction du graphe), pas la construction graph elle-même. Choix : suivre le prompt littéralement — le label affiché dans le header pour Step 1 en mode Private est « Requirement » (ZH : 需求). Le composant sous-jacent ne change pas.
+- **Badge Public non affiché** : `public.modeBadge` est ajoutée pour cohérence API i18n (symétrie avec `private.modeBadge`) mais le template `<div v-if="isPrivateMode" class="mode-badge">` n'affiche pas de badge en mode Public. Comportement inchangé vs avant N°27. Activation future = retrait du `v-if`.
+- **Pas de migration `statusText`** : les labels `Ready|Running|Completed|Failed|Error|Processing|Building Graph|Generating Ontology|Initializing` restent hardcodés EN dans `MainView.vue:368-385`. Ils sont identiques pour les deux modes (non-divergents). Per prompt section 5 : « Si aucune divergence supplémentaire trouvée au-delà de stepNames et modeBadge, c'est OK ». Migration i18n complète du `statusText` = hors périmètre (un prompt futur pourra le traiter).
+
+#### Validation
+- `npx vite build` → succès (701 modules, 1.13s, aucun warning nouveau).
+- Lecture code : `currentStepNames.length === 5` dans les deux modes (header `Step X/5` cohérent).
+- Lecture template : `privateBreadcrumb` (computed) = 4 entrées (`stepNames.slice(1)`), affiché uniquement pour steps 2→5 via `v-if="currentStep >= 2"`. Numérotation `{{ idx + 1 }}` = 1→4 (N°24, cohérent).
+- Changement de langue via `LanguageSwitcher` : `tm('private.stepNames')` et `t('private.modeBadge')` sont réactifs via vue-i18n → bascule EN/ZH immédiate sans perte d'état (watch interne vue-i18n).
+- Changement de mode (URL `?mode=public` ↔ `?mode=private`) : la langue active ne bouge pas (stockée dans `localStorage` par `i18n/index.js`, indépendante de la query param).
+
+#### Non-régressions constatées
+- Aucune modification dans les 4 vues qui lisent `main.stepNames[N]` (SimulationView, SimulationRunView, ReportView, InteractionView) — leur header conserve son label EN/ZH existant.
+- Public flow : `publicStepNames` renvoie `tm('public.stepNames')` dont le contenu est identique à `main.stepNames` → aucun changement visuel.
+
+#### Prochaine étape
+- **Prompt N°28** — Commit feature/private-impact + push + mise à jour PR #544.
