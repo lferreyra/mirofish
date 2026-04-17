@@ -616,3 +616,52 @@ Clés existantes pertinentes pour le header / wizard Public :
 
 #### Prochaine étape
 - **Prompt N°28** — Commit feature/private-impact + push + mise à jour PR #544.
+
+---
+
+## Session refactoring wizard — Terminée le 2026-04-17
+
+Prompts exécutés : **N°23 → N°28** (N°26 absorbé : tests manuels skippés, aucune régression corrigée).
+
+### Résultat
+- **Private Impact** intégré dans le wizard MiroFish via bifurcation `route.query.mode`.
+- **Public Opinion** préservé sans régression (zéro modification de `Step2EnvSetup.vue` et des 4 vues sub-étape).
+- PR [#544](https://github.com/666ghj/MiroFish/pull/544) à jour (7 commits au total, état MERGEABLE, description refaite).
+
+### Commits poussés (branche `fork/feature/private-impact`)
+| SHA | Type | Prompt |
+|---|---|---|
+| `e4fe3f9` | refactor(private): extraire composants, constantes et helpers | N°23 |
+| `75d5a9b` | refactor(wizard): bifurcation MainView selon route.query.mode + i18n Private | N°24 + N°27 |
+| `9899afe` | refactor(routing): ModeSelector via query param + suppression routes /private | N°25 |
+| `d73c0ac` | docs: journal sessions refactoring wizard (N°23 → N°27) | Session |
+
+### Fichiers finaux du refactoring
+**Créés** :
+- `frontend/src/components/private/Step{2-5}Private*.vue`
+- `frontend/src/constants/private.js`
+- `frontend/src/utils/private.js`
+
+**Modifiés** :
+- `frontend/src/components/ModeSelector.vue` — nouveaux props, navigation via query param
+- `frontend/src/components/Step1GraphBuild.vue` — prop `mode`
+- `frontend/src/views/Home.vue` — ModeSelector déplacé, Start Engine supprimé
+- `frontend/src/views/MainView.vue` — bifurcation + i18n Private
+- `frontend/src/router/index.js` — routes `/private` supprimées
+- `locales/en.json` + `locales/zh.json` — clés `public.*` / `private.*`
+- `CONTEXT.md` — journal Sessions 4 → 7
+
+**Supprimé** :
+- `frontend/src/views/PrivateImpactView.vue` (passthrough obsolète après N°25)
+
+### Remotes Git
+- `fork` → `CyrilDEVIA/MiroFish` (push destination de PR #544)
+- `upstream` → `666ghj/MiroFish` (repo hébergeant PR #544)
+- Branche `feature/private-impact` trackée désormais sur `fork/feature/private-impact`.
+
+### Prochaines étapes (hors roadmap actuelle)
+- Review PR #544 par le mainteneur `666ghj`
+- Merge vers `main`
+- Documentation utilisateur (README, guide d'usage mode Private)
+- Migration éventuelle du `statusText` de `MainView.vue` vers i18n (hors scope N°27)
+- Consolidation `main.stepNames` ↔ `public.stepNames` dans les 4 vues sub-étape (migration optionnelle)
