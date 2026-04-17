@@ -77,6 +77,14 @@
     "layoutWorkbench": "Workbench",
     "stepNames": ["Graph Build", "Env Setup", "Run Simulation", "Report Generation", "Deep Interaction"]
   },
+  "public": {
+    "stepNames": ["Graph Build", "Env Setup", "Run Simulation", "Report Generation", "Deep Interaction"],
+    "modeBadge": "PUBLIC OPINION"
+  },
+  "private": {
+    "stepNames": ["Requirement", "Prepare", "Run", "Report", "Interact"],
+    "modeBadge": "PRIVATE IMPACT"
+  },
   "step1": {
     "ontologyGeneration": "Ontology Generation",
     "ontologyCompleted": "Completed",

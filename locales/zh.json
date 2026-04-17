@@ -77,6 +77,14 @@
     "layoutWorkbench": "工作台",
     "stepNames": ["图谱构建", "环境搭建", "开始模拟", "报告生成", "深度互动"]
   },
+  "public": {
+    "stepNames": ["图谱构建", "环境搭建", "开始模拟", "报告生成", "深度互动"],
+    "modeBadge": "公共舆论"
+  },
+  "private": {
+    "stepNames": ["需求", "准备", "运行", "报告", "互动"],
+    "modeBadge": "私域影响"
+  },
   "step1": {
     "ontologyGeneration": "本体生成",
     "ontologyCompleted": "已完成",
