@@ -125,9 +125,6 @@
 
         <!-- 右栏：交互控制台 -->
         <div class="right-panel">
-          <div class="mode-selector-wrapper">
-            <ModeSelector @mode-selected="handleModeSelected" />
-          </div>
           <div class="console-box">
             <!-- 上传区域 -->
             <div class="console-section">
@@ -135,8 +132,8 @@
                 <span class="console-label">{{ $t('home.realitySeed') }}</span>
                 <span class="console-meta">{{ $t('home.supportedFormats') }}</span>
               </div>
-              
-              <div 
+
+              <div
                 class="upload-zone"
                 :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
                 @dragover.prevent="handleDragOver"
@@ -153,13 +150,13 @@
                   style="display: none"
                   :disabled="loading"
                 />
-                
+
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
                   <div class="upload-title">{{ $t('home.dragToUpload') }}</div>
                   <div class="upload-hint">{{ $t('home.orBrowse') }}</div>
                 </div>
-                
+
                 <div v-else class="file-list">
                   <div v-for="(file, index) in files" :key="index" class="file-item">
                     <span class="file-icon">📄</span>
@@ -192,17 +189,13 @@
               </div>
             </div>
 
-            <!-- 启动按钮 -->
-            <div class="console-section btn-section">
-              <button 
-                class="start-engine-btn"
-                @click="startSimulation"
+            <!-- Mode selector (CTA) -->
+            <div class="console-section mode-selector-section">
+              <ModeSelector
+                projectId="new"
                 :disabled="!canSubmit || loading"
-              >
-                <span v-if="!loading">{{ $t('home.startEngine') }}</span>
-                <span v-else>{{ $t('home.initializing') }}</span>
-                <span class="btn-arrow">→</span>
-              </button>
+                @mode-selected="handleModeSelected"
+              />
             </div>
           </div>
         </div>
@@ -216,19 +209,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import ModeSelector from '../components/ModeSelector.vue'
-
-const router = useRouter()
-
-// Mode sélectionné (public | private)
-const selectedMode = ref(null)
-
-const handleModeSelected = (mode) => {
-  selectedMode.value = mode
-}
+import { setPendingUpload } from '../store/pendingUpload.js'
 
 // 表单数据
 const formData = ref({
@@ -240,7 +224,6 @@ const files = ref([])
 
 // 状态
 const loading = ref(false)
-const error = ref('')
 const isDragOver = ref(false)
 
 // 文件输入引用
@@ -250,6 +233,14 @@ const fileInput = ref(null)
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
+
+// ModeSelector prend la main sur la navigation. Son emit `mode-selected` est
+// synchrone et arrive AVANT son `router.push`, ce qui permet de stocker la
+// pending upload avant que MainView ne la lise via getPendingUpload().
+const handleModeSelected = () => {
+  if (!canSubmit.value || loading.value) return
+  setPendingUpload(files.value, formData.value.simulationRequirement)
+}
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -305,22 +296,6 @@ const scrollToBottom = () => {
   })
 }
 
-// 开始模拟 - 立即跳转，API调用在Process页面进行
-const startSimulation = () => {
-  if (!canSubmit.value || loading.value) return
-  
-  // 存储待上传的数据
-  import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
-    
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
-    router.push({
-      name: 'Process',
-      params: { projectId: 'new' },
-      query: selectedMode.value === 'private' ? { mode: 'private' } : {},
-    })
-  })
-}
 </script>
 
 <style scoped>
@@ -684,10 +659,6 @@ const startSimulation = () => {
   flex: 1.2;
 }
 
-.mode-selector-wrapper {
-  margin-bottom: 20px;
-}
-
 .console-box {
   border: 1px solid #CCC; /* 外部实线 */
   padding: 8px; /* 内边距形成双重边框感 */
@@ -697,7 +668,7 @@ const startSimulation = () => {
   padding: 20px;
 }
 
-.console-section.btn-section {
+.console-section.mode-selector-section {
   padding-top: 0;
 }
 
@@ -837,57 +808,6 @@ const startSimulation = () => {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: #AAA;
-}
-
-.start-engine-btn {
-  width: 100%;
-  background: var(--black);
-  color: var(--white);
-  border: none;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 1px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* 可点击状态（非禁用） */
-.start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
-  animation: pulse-border 2s infinite;
-}
-
-.start-engine-btn:hover:not(:disabled) {
-  background: var(--orange);
-  border-color: var(--orange);
-  transform: translateY(-2px);
-}
-
-.start-engine-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
-  border: 1px solid #E5E5E5;
-}
-
-/* 引导动画：微妙的边框脉冲 */
-@keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 }
 
 /* 响应式适配 */

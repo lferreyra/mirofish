@@ -8,9 +8,11 @@
     <div class="mode-cards">
       <!-- Public Mode -->
       <button
+        type="button"
         class="mode-card"
-        :class="{ 'is-selected': selected === 'public' }"
-        @click="select('public')"
+        :class="{ 'is-selected': selected === 'public', 'is-disabled': disabled }"
+        :disabled="disabled"
+        @click="selectMode('public')"
       >
         <div class="card-icon">
           <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -38,9 +40,11 @@
 
       <!-- Private Impact Mode -->
       <button
+        type="button"
         class="mode-card mode-card--private"
-        :class="{ 'is-selected': selected === 'private' }"
-        @click="select('private')"
+        :class="{ 'is-selected': selected === 'private', 'is-disabled': disabled }"
+        :disabled="disabled"
+        @click="selectMode('private')"
       >
         <div class="card-icon">
           <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -70,14 +74,26 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const props = defineProps({
+  projectId: { type: String, default: 'new' },
+  disabled: { type: Boolean, default: false },
+})
 
 const emit = defineEmits(['mode-selected'])
 
 const selected = ref(null)
+const router = useRouter()
 
-const select = (mode) => {
+const selectMode = (mode) => {
+  if (props.disabled) return
   selected.value = mode
   emit('mode-selected', mode)
+  router.push({
+    path: `/process/${props.projectId}`,
+    query: { mode },
+  })
 }
 </script>
 
@@ -121,12 +137,13 @@ const select = (mode) => {
   border-radius: 4px;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s, opacity 0.18s;
   width: 100%;
   gap: 14px;
+  font-family: inherit;
 }
 
-.mode-card:hover {
+.mode-card:hover:not(.is-disabled) {
   border-color: #000;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -136,10 +153,15 @@ const select = (mode) => {
   background: #FAFAFA;
 }
 
-.mode-card--private:hover,
+.mode-card--private:hover:not(.is-disabled),
 .mode-card--private.is-selected {
   border-color: #1A1A1A;
   background: #F8F8F8;
+}
+
+.mode-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .card-icon {
