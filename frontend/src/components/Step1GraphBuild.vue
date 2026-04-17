@@ -201,10 +201,11 @@ const props = defineProps({
   ontologyProgress: Object,
   buildProgress: Object,
   graphData: Object,
-  systemLogs: { type: Array, default: () => [] }
+  systemLogs: { type: Array, default: () => [] },
+  mode: { type: String, default: 'public' }
 })
 
-defineEmits(['next-step'])
+const emit = defineEmits(['next-step'])
 
 const selectedOntologyItem = ref(null)
 const logContent = ref(null)
@@ -216,9 +217,15 @@ const handleEnterEnvSetup = async () => {
     console.error('缺少项目或图谱信息')
     return
   }
-  
+
+  // Mode privé : pas de simulation publique, on passe directement à l'étape 2 (Requirement)
+  if (props.mode === 'private') {
+    emit('next-step')
+    return
+  }
+
   creatingSimulation.value = true
-  
+
   try {
     const res = await createSimulation({
       project_id: props.projectData.project_id,
@@ -226,7 +233,7 @@ const handleEnterEnvSetup = async () => {
       enable_twitter: true,
       enable_reddit: true
     })
-    
+
     if (res.success && res.data?.simulation_id) {
       // 跳转到 simulation 页面
       router.push({

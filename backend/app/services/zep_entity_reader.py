@@ -259,9 +259,10 @@ class ZepEntityReader:
                 # 只有默认标签，跳过
                 continue
             
-            # 如果指定了预定义类型，检查是否匹配
+            # 如果指定了预定义类型，检查是否匹配 (case-insensitive)
             if defined_entity_types:
-                matching_labels = [l for l in custom_labels if l in defined_entity_types]
+                defined_lower = {t.lower() for t in defined_entity_types}
+                matching_labels = [l for l in custom_labels if l.lower() in defined_lower]
                 if not matching_labels:
                     continue
                 entity_type = matching_labels[0]

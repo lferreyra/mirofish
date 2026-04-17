@@ -77,7 +77,7 @@ class PlatformActionLogger:
         with open(self.log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
-    def log_round_end(self, round_num: int, actions_count: int):
+    def log_round_end(self, round_num: int, actions_count: int, simulated_day: Optional[int] = None):
         """记录轮次结束"""
         entry = {
             "round": round_num,
@@ -85,7 +85,9 @@ class PlatformActionLogger:
             "event_type": "round_end",
             "actions_count": actions_count,
         }
-        
+        if simulated_day is not None:
+            entry["simulated_day"] = simulated_day
+
         with open(self.log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
@@ -132,6 +134,7 @@ class SimulationLogManager:
         self.simulation_dir = simulation_dir
         self.twitter_logger: Optional[PlatformActionLogger] = None
         self.reddit_logger: Optional[PlatformActionLogger] = None
+        self.private_logger: Optional[PlatformActionLogger] = None
         self._main_logger: Optional[logging.Logger] = None
         
         # 设置主日志
@@ -177,7 +180,13 @@ class SimulationLogManager:
         if self.reddit_logger is None:
             self.reddit_logger = PlatformActionLogger("reddit", self.simulation_dir)
         return self.reddit_logger
-    
+
+    def get_private_logger(self) -> PlatformActionLogger:
+        """获取 Private Impact 平台日志记录器"""
+        if self.private_logger is None:
+            self.private_logger = PlatformActionLogger("private", self.simulation_dir)
+        return self.private_logger
+
     def log(self, message: str, level: str = "info"):
         """记录主日志"""
         if self._main_logger:
