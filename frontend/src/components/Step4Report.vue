@@ -2081,7 +2081,17 @@ const fetchAgentLog = async () => {
             stopPolling()
             // 滚动逻辑统一在循环结束后的 nextTick 中处理
           }
-          
+
+          // Agent 抛出错误时直接标记失败 —— 比 progress.json 轮询更即时，
+          // 也能兜底 update_progress 写失败的场景
+          if (log.action === 'error') {
+            reportStatus.value = 'failed'
+            reportError.value = log.details?.error || log.details?.message || null
+            currentSectionIndex.value = null
+            emit('update-status', 'error')
+            stopPolling()
+          }
+
           if (log.action === 'report_start') {
             startTime.value = new Date(log.timestamp)
           }
