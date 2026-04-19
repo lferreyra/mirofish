@@ -2077,19 +2077,29 @@ const fetchAgentLog = async () => {
           if (log.action === 'report_complete') {
             isComplete.value = true
             currentSectionIndex.value = null  // 确保清除 loading 状态
+            // 清掉历史 error 日志留下的 failed 态，防止 banner 残留
+            reportStatus.value = 'completed'
+            reportError.value = null
             emit('update-status', 'completed')
             stopPolling()
             // 滚动逻辑统一在循环结束后的 nextTick 中处理
           }
 
+          // Resume 日志 = 之前的 error 已被跨过，继续生成中
+          if (log.action === 'resume_start') {
+            reportStatus.value = 'generating'
+            reportError.value = null
+          }
+
           // Agent 抛出错误时直接标记失败 —— 比 progress.json 轮询更即时，
           // 也能兜底 update_progress 写失败的场景
+          // 注意：这里不 stopPolling，否则 Resume 后重新拉取日志会再次命中
+          // 这个历史 error 条目并立刻杀掉定时器，导致无法感知后续 resume/complete。
           if (log.action === 'error') {
             reportStatus.value = 'failed'
             reportError.value = log.details?.error || log.details?.message || null
             currentSectionIndex.value = null
             emit('update-status', 'error')
-            stopPolling()
           }
 
           if (log.action === 'report_start') {
@@ -2199,8 +2209,8 @@ const fetchProgress = async () => {
       reportError.value = res.data.status === 'failed' ? (res.data.message || null) : null
 
       if (res.data.status === 'failed') {
+        // 不 stopPolling：progress.json 可能在 resume 后翻回 generating
         emit('update-status', 'error')
-        stopPolling()
       } else if (res.data.status === 'completed') {
         emit('update-status', 'completed')
       } else if (prevStatus !== res.data.status) {
