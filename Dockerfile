@@ -19,11 +19,33 @@ COPY frontend/package.json frontend/package-lock.json ./frontend/
 COPY backend/pyproject.toml backend/uv.lock ./backend/
 
 # 安装依赖（Node + Python）
+# 生产镜像仅安装运行时依赖，减少体积。
+# GPU 相关包（NVIDIA CUDA 运行时、Triton 等）在无 GPU 的容器中不需要，
+# 通过 --no-install-package 跳过；torch 改用 CPU-only wheel（约节省 4-5 GB）。
 RUN npm ci \
   && npm ci --prefix frontend \
-  # 生产镜像仅安装运行时依赖，减少体积
   && cd backend && uv sync --frozen --no-dev \
+     --no-install-package torch \
+     --no-install-package triton \
+     --no-install-package nvidia-cublas-cu12 \
+     --no-install-package nvidia-cuda-cupti-cu12 \
+     --no-install-package nvidia-cuda-nvrtc-cu12 \
+     --no-install-package nvidia-cuda-runtime-cu12 \
+     --no-install-package nvidia-cudnn-cu12 \
+     --no-install-package nvidia-cufft-cu12 \
+     --no-install-package nvidia-cufile-cu12 \
+     --no-install-package nvidia-curand-cu12 \
+     --no-install-package nvidia-cusolver-cu12 \
+     --no-install-package nvidia-cusparse-cu12 \
+     --no-install-package nvidia-cusparselt-cu12 \
+     --no-install-package nvidia-nccl-cu12 \
+     --no-install-package nvidia-nvjitlink-cu12 \
+     --no-install-package nvidia-nvshmem-cu12 \
+     --no-install-package nvidia-nvtx-cu12 \
   && uv pip install --python .venv/bin/python --no-deps graphiti-core==0.28.2 \
+  && uv pip install --python .venv/bin/python \
+     "torch==2.9.1+cpu" \
+     --index-url https://download.pytorch.org/whl/cpu \
   # 依赖安装后立即清理缓存；后续若新增包管理安装步骤，应放在清理前
   && npm cache clean --force \
   && rm -rf /root/.cache
