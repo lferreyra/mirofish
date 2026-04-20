@@ -79,3 +79,42 @@ def test_generate_prose_calls_llm_with_context():
 def test_generate_prose_empty_actions_returns_placeholder():
     result = generate_prose([], [], tone="any", previous_beats=[])
     assert "quiet" in result.lower() or "pause" in result.lower()
+
+
+# ---- Round orchestration tests ----
+from app.services.narrative.narrative_translator import translate_round
+from app.services.narrative.story_store import StoryStore
+
+
+def test_translate_round_produces_beat(tmp_path):
+    sim_dir = str(tmp_path / "sim_test")
+    os.makedirs(sim_dir)
+    platform_dir = os.path.join(sim_dir, "twitter")
+    os.makedirs(platform_dir)
+    actions_path = os.path.join(platform_dir, "actions.jsonl")
+
+    lines = [
+        {"round": 1, "agent_id": 1, "agent_name": "Alice", "action_type": "CREATE_POST",
+         "action_args": {"content": "Hi"}, "success": True, "timestamp": "t"},
+        {"event_type": "round_end", "round": 1, "timestamp": "t"},
+    ]
+    with open(actions_path, "w") as f:
+        for line in lines:
+            f.write(json.dumps(line) + "\n")
+
+    store = StoryStore(sim_dir)
+    store.save_characters([{
+        "id": "1", "name": "Alice",
+        "emotional_state": {"current": {k: 0.0 for k in ["anger","fear","joy","sadness","trust","surprise"]}},
+    }])
+
+    with patch("app.services.narrative.narrative_translator.call_llm") as mock_llm:
+        mock_llm.return_value = "Alice spoke into the void."
+        beat = translate_round(sim_dir, platform="twitter", target_round=1, tone="neutral")
+
+    assert beat["round"] == 1
+    assert beat["prose"] == "Alice spoke into the void."
+    assert "Alice" in beat.get("characters", [])
+
+    stored_beats = store.get_all_beats()
+    assert len(stored_beats) == 1

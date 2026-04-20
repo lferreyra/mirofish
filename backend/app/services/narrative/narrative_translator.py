@@ -183,3 +183,57 @@ def generate_prose(actions: list, characters: list, tone: str, previous_beats: l
         previous=prev_prose or "(this is the first scene)",
     )
     return call_llm(prompt)
+
+
+# ---------------------------------------------------------------------------
+# Round orchestration — the entry point most callers use
+# ---------------------------------------------------------------------------
+
+def translate_round(sim_dir: str, platform: str, target_round: int, tone: str = "neutral") -> dict:
+    """Translate a single simulation round into a story beat end-to-end.
+
+    Steps:
+      1. Read the round's actions from `{sim_dir}/{platform}/actions.jsonl`
+         (starting from the saved file offset).
+      2. Generate prose via the LLM using current character state.
+      3. Apply emotional-state deltas for every action.
+      4. Persist the new beat, updated character state, and new file offset.
+
+    Returns the newly created story beat dict.
+    """
+    # Lazy imports keep module import lightweight for unit tests of helpers
+    from app.services.narrative.story_store import StoryStore
+    from app.services.narrative.character_engine import apply_action_emotional_delta
+
+    store = StoryStore(sim_dir)
+    actions_path = os.path.join(sim_dir, platform, "actions.jsonl")
+    start_offset = store.get_file_offset(platform)
+
+    actions, new_offset = read_actions_for_round(actions_path, start_offset, target_round)
+
+    characters = store.load_characters()
+    previous_beats = store.get_all_beats()
+
+    prose = generate_prose(actions, characters, tone, previous_beats)
+
+    # De-duplicated list of character names that acted this round
+    involved = sorted({a.get("agent_name") for a in actions if a.get("agent_name")})
+
+    # Mutate character emotional state in-place, then persist
+    char_by_name = {c["name"]: c for c in characters}
+    for action in actions:
+        char = char_by_name.get(action.get("agent_name"))
+        if char:
+            apply_action_emotional_delta(char, action.get("action_type", ""))
+    store.save_characters(list(char_by_name.values()))
+
+    beat = {
+        "round": target_round,
+        "prose": prose,
+        "characters": involved,
+        "action_count": len(actions),
+        "platform": platform,
+    }
+    store.append_beat(beat)
+    store.set_file_offset(platform, new_offset)
+    return beat
