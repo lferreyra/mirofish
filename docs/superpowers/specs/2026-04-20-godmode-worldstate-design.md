@@ -154,11 +154,13 @@ def modify_emotion(sim_dir: str, character_id: str, emotions: dict[str, float]) 
     """Overwrite specified emotion values for a character.
 
     Clamps to [0.0, 1.0]. Only modifies emotions named in the input dict;
-    unspecified emotions keep their current values.
+    unspecified emotions keep their current values. Unknown emotion keys
+    are silently ignored.
     """
 ```
 - Reads `characters.json`, finds character by `id`, applies overwrites
-- Raises if character not found
+- Raises `ValueError("character not found")` if `character_id` doesn't match
+- **Audit logging:** appends a `{"type": "god_mode_emotion_change", ...}` entry to `world_state.event_log` so the intervention is visible in the world event log UI
 
 ### 4.3 Kill character
 ```python
@@ -167,14 +169,33 @@ def kill_character(sim_dir: str, character_id: str) -> dict:
 ```
 - Sets `status = "dead"` on the target character
 - Translation pipeline filters dead characters from the characters list passed to LLM prompt, and ignores any actions with matching agent names
+- **Auto-appends a death event** to `world_state.event_log`: `{"type": "god_mode_death", "description": "{name} has died.", "round": current_round}` where `current_round` is defined as "last translated beat's round + 1, or 1 if no beats yet" (same rule `inject_event` uses). This guarantees the LLM knows the character is gone rather than silently omitting them — preventing "character vanishes mid-story" narrative bugs.
+- Raises `ValueError("character not found")` if `character_id` doesn't match
+
+### 4.4 Concurrency note
+
+God Mode writes to `characters.json` while background translation may also be reading/writing it. This is a classic read-modify-write race: if `translate_round` is mid-LLM-call when the user POSTs `/kill`, the subsequent save may overwrite the kill. **For v1 (single-user, 10–50 user scale), this is an accepted limitation, not a bug.** Authors are expected to intervene between rounds, not during. This constraint is documented in §10 non-goals. File-locking can be added in a follow-up if needed.
 
 ---
 
 ## 5. Translator prompt extension
 
+### 5.0 Integration — how the translator loads world state
+
+`translate_round` is extended to load `world_state.json` internally via a new `WorldStateStore.load(sim_dir)` (parallel to how it uses `StoryStore.load_characters()` today). If the file doesn't exist, load returns an empty world (`{"rules": [], "locations": {}, "event_log": []}`) — existing simulations without a world state continue to work unchanged.
+
+**Event round semantics:** every event in `event_log` has a `round` field, but this is **metadata only** (used for UI display and prompt formatting as `"(Round N)"`). `event_log` is append-only — the last element in the list is always the newest. The translator always surfaces the *last 3 events by insertion order*, regardless of their round. `event.round` is never used as a filter.
+
+**Lookup key discipline:** characters are keyed by both `id` (stable string like `"1"`) and `name` (display string like `"Elena"`). The canonical conventions are:
+- God Mode API endpoints always take `character_id` (the `id` field) in request bodies.
+- Internal handlers resolve `character_id → name` once and use `name` downstream for alive/dead filtering and action-log matching (since `actions.jsonl` stores `agent_name`, not id).
+- Location `id` (`"iron_tower"`) is stored on characters as `character.location`. The translator resolves `id → location.name` once when building the prompt — characters in the prose prompt read as "Elena (at The Iron Tower, feeling: anger=0.3, trust=0.1)".
+
 Current prompt has substitution fields: `{tone}`, `{characters}`, `{actions}`, `{previous}`.
 
 Add 3 new fields: `{world_rules}`, `{world_events}`, `{world_locations}`.
+
+**Prompt injection safety:** user-supplied strings (rules, event descriptions, location names/descriptions) are free-text and may contain `{` or `}`. Before rendering with `str.format()`, these strings are escaped: `{` → `{{`, `}` → `}}`. This prevents `KeyError` from stray braces in author content.
 
 **New prompt sections inserted before "Events this round":**
 
@@ -206,7 +227,9 @@ characters = [c for c in characters if c["name"] in alive]
 actions = [a for a in actions if a.get("agent_name") in alive]
 ```
 
-Dead characters are invisible to the LLM — no prose is generated about them unless the event log contains their death.
+Dead characters are invisible to the LLM — no prose is generated about them unless the event log contains their death (which is auto-populated by `kill_character` — see §4.3). The alive-filter applies only to the roster and action list passed into the prompt; there is no separate "observing" inference in the committed code today, so no other code paths need adjustment.
+
+**Backward compatibility:** `create_initial_character()` is updated to set `status: "alive"` on every new character. Existing saved characters without a `status` field are treated as alive via the `c.get("status", "alive")` default.
 
 ---
 
@@ -262,20 +285,27 @@ Added to `frontend/src/router/index.js`:
 
 ### 6.4 Navigation
 
-A small footer added to `StoryTimelineView.vue` linking to the two new views:
+A small cross-view nav is added to **all three views** (`StoryTimelineView`, `GodModeView`, `WorldBuilderView`) as a shared header strip — the links show the current route as active:
 
 ```
-Story | Characters | God Mode | World
+Story | God Mode | World
 ```
+
+Implementation: extracted into a small `<SimNav :simId="simId" />` component (not a separate file unless it grows — inline in each view is fine for v1) to avoid app-level layout changes.
+
+### 6.5 Kill confirmation UX
+
+The spec upgrades the Kill Character form beyond a checkbox: the user must **type the character's name** to enable the Kill button. This matches the GitHub-style pattern for irreversible destructive actions and eliminates misclicks. The input is case-insensitive and whitespace-trimmed.
 
 ---
 
 ## 7. Error handling
 
-- **Missing character**: API returns 404 with `{"error": "character not found"}`
+- **Missing character**: handler raises `ValueError("character not found")`; API returns 404 with `{"error": "character not found"}`
 - **Missing simulation**: API returns 404 (reuses existing pattern from Task 7)
 - **Invalid emotion name**: silently ignored (extra emotion keys don't break anything; they just don't affect state)
 - **Inject event before translation starts**: event is stored with `round: 0` and included in the first beat's prompt
+- **Invalid round number on inject_event**: API validates `round` is a non-negative integer (or null); otherwise returns 400
 
 ---
 
@@ -294,8 +324,12 @@ Story | Characters | God Mode | World
 - `test_kill_character_not_found_raises`
 
 **Integration** (extend `test_narrative_e2e.py`):
-- Inject an event between round 1 and round 2, verify the event appears in the round-2 prompt context
+- Inject an event between round 1 and round 2, verify the event appears in the round-2 prompt context (assert via `mock_llm.call_args[0][0]`)
 - Kill a character between rounds, verify their actions are skipped in the next translation
+- Set world rules + locations, verify they appear in the prompt
+
+**Prompt-inclusion unit test** (in `test_narrative_translator.py`):
+- Patch `call_llm`, call `translate_round` with a populated world_state, assert the captured prompt contains each rule, each event description, and each location name. This prevents silent regressions in §5 formatting.
 
 ---
 
@@ -311,7 +345,7 @@ When God Mode injects an event, the prose prompt will include it in "Recent even
 - **Medium**: current default — "weave it in OR acknowledge its aftermath"
 - **Hard**: "the opening line of this passage MUST reference the most recent world event"
 
-Marked as `EVENT_ENFORCEMENT_STRENGTH` constant in `narrative_translator.py`.
+Marked as `EVENT_ENFORCEMENT_STRENGTH` module-level constant in `narrative_translator.py`. Note: this is a **deployment-global** setting in v1, not per-simulation. Per-sim overrides are a v2 concern (would move this to `world_state.json`).
 
 ### 9.2 Location schema
 
@@ -333,3 +367,7 @@ Marked clearly in `world_state.py` as scaffolded default, with a TODO comment po
 - Location transitions (characters moving between locations during a round) — v1 locations are static per-character
 - Bulk intervention (applying to multiple characters at once)
 - Undo / history — God Mode actions are one-way in v1
+- **No delete endpoints** for locations, rules (they're replaced in bulk via the POST endpoint), or events. An author who mis-types must manually edit `world_state.json`.
+- **Concurrent write safety** — authors should intervene between rounds, not during (see §4.4). No file locking in v1.
+- **Event log rotation** — `event_log` grows unbounded. Fine at expected v1 scale (tens of events per sim); pruning can be added in v2.
+- **Per-simulation event enforcement strength** — `EVENT_ENFORCEMENT_STRENGTH` is deployment-global in v1 (§9.1).
