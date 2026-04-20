@@ -40,3 +40,8 @@ def test_dislike_post_increases_anger():
     char = create_initial_character(char_id="x", name="X")
     apply_action_emotional_delta(char, "DISLIKE_POST")
     assert char["emotional_state"]["current"]["anger"] > 0.0
+
+
+def test_create_initial_character_sets_status_alive():
+    char = create_initial_character(char_id="x", name="X")
+    assert char["status"] == "alive"

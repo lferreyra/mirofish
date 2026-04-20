@@ -33,6 +33,7 @@ def create_initial_character(
         "backstory": backstory,
         "motivations": motivations or [],
         "personality_traits": personality or [],
+        "status": "alive",
         "emotional_state": {
             "current": dict(INITIAL_EMOTIONAL_STATE),
             "history": [],
