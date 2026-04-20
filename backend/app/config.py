@@ -34,6 +34,11 @@ class Config:
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
+
+    # Service authentication
+    # When set, all /api/* requests must include a matching X-API-Key header.
+    # Leave unset (or empty) to run in permissive dev mode (no auth enforced).
+    MIROFISH_API_KEY = os.environ.get('MIROFISH_API_KEY')
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
