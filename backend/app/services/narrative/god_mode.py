@@ -59,3 +59,28 @@ def modify_emotion(sim_dir: str, character_id: str, emotions: dict) -> dict:
     })
 
     return target
+
+
+def kill_character(sim_dir: str, character_id: str) -> dict:
+    """Mark a character as dead and append a death event to the world log.
+
+    Death events are auto-appended so the LLM knows the character is gone
+    rather than silently omitting them from prose.
+    """
+    store = StoryStore(sim_dir)
+    characters = store.load_characters()
+
+    target = next((c for c in characters if str(c.get("id")) == str(character_id)), None)
+    if target is None:
+        raise ValueError(f"character not found: {character_id}")
+
+    target["status"] = "dead"
+    store.save_characters(characters)
+
+    WorldStateStore(sim_dir).append_event({
+        "type": "god_mode_death",
+        "description": f"{target['name']} has died.",
+        "round": _current_round(sim_dir),
+    })
+
+    return target

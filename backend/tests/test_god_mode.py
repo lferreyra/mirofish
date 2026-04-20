@@ -82,3 +82,32 @@ def test_modify_emotion_audit_logs_to_event_log(temp_sim_dir):
     assert len(log) == 1
     assert log[0]["type"] == "god_mode_emotion_change"
     assert "Elena" in log[0]["description"]
+
+
+# ---- kill_character ----
+from app.services.narrative.god_mode import kill_character
+
+
+def test_kill_character_sets_status_dead(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    result = kill_character(temp_sim_dir, "1")
+    assert result["status"] == "dead"
+
+    chars = StoryStore(temp_sim_dir).load_characters()
+    assert chars[0]["status"] == "dead"
+
+
+def test_kill_character_auto_appends_death_event(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    kill_character(temp_sim_dir, "1")
+
+    log = WorldStateStore(temp_sim_dir).load()["event_log"]
+    death_events = [e for e in log if e["type"] == "god_mode_death"]
+    assert len(death_events) == 1
+    assert "Elena" in death_events[0]["description"]
+
+
+def test_kill_character_not_found_raises(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    with pytest.raises(ValueError, match="not found"):
+        kill_character(temp_sim_dir, "nonexistent")
