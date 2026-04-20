@@ -36,3 +36,49 @@ def test_inject_event_defaults_round_to_beats_plus_one(temp_sim_dir):
 def test_inject_event_defaults_round_to_one_when_no_beats(temp_sim_dir):
     evt = inject_event(temp_sim_dir, description="first event")
     assert evt["round"] == 1
+
+
+# ---- modify_emotion ----
+from app.services.narrative.god_mode import modify_emotion
+
+
+def _seed_character(sim_dir, char_id="1", name="Elena"):
+    store = StoryStore(sim_dir)
+    neutral = {k: 0.0 for k in ["anger", "fear", "joy", "sadness", "surprise"]}
+    store.save_characters([{
+        "id": char_id, "name": name, "status": "alive",
+        "emotional_state": {"current": {**neutral, "trust": 0.5}, "history": []},
+    }])
+    return store
+
+
+def test_modify_emotion_overwrites_specified_emotions(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    result = modify_emotion(temp_sim_dir, "1", {"anger": 0.8, "joy": 0.2})
+
+    assert result["emotional_state"]["current"]["anger"] == 0.8
+    assert result["emotional_state"]["current"]["joy"] == 0.2
+    assert result["emotional_state"]["current"]["trust"] == 0.5
+
+
+def test_modify_emotion_clamps(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    result = modify_emotion(temp_sim_dir, "1", {"anger": 1.5, "fear": -0.3})
+    assert result["emotional_state"]["current"]["anger"] == 1.0
+    assert result["emotional_state"]["current"]["fear"] == 0.0
+
+
+def test_modify_emotion_character_not_found_raises(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    with pytest.raises(ValueError, match="not found"):
+        modify_emotion(temp_sim_dir, "nonexistent", {"anger": 0.5})
+
+
+def test_modify_emotion_audit_logs_to_event_log(temp_sim_dir):
+    _seed_character(temp_sim_dir)
+    modify_emotion(temp_sim_dir, "1", {"anger": 0.8})
+
+    log = WorldStateStore(temp_sim_dir).load()["event_log"]
+    assert len(log) == 1
+    assert log[0]["type"] == "god_mode_emotion_change"
+    assert "Elena" in log[0]["description"]

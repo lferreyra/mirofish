@@ -26,3 +26,36 @@ def inject_event(sim_dir: str, description: str, round_num: Optional[int] = None
         "description": description,
         "round": round_val,
     })
+
+
+def modify_emotion(sim_dir: str, character_id: str, emotions: dict) -> dict:
+    """Overwrite specified emotion values for a character. Clamps to [0, 1].
+
+    Raises ValueError if character_id is not found. Unknown emotion keys are
+    silently ignored (they don't corrupt state; they just don't apply).
+    Logs the intervention to world_state.event_log for auditability.
+    """
+    store = StoryStore(sim_dir)
+    characters = store.load_characters()
+
+    target = next((c for c in characters if str(c.get("id")) == str(character_id)), None)
+    if target is None:
+        raise ValueError(f"character not found: {character_id}")
+
+    current = target["emotional_state"]["current"]
+    changed = {}
+    for emo, val in emotions.items():
+        if emo in current:
+            new_val = max(0.0, min(1.0, float(val)))
+            changed[emo] = {"from": current[emo], "to": new_val}
+            current[emo] = new_val
+
+    store.save_characters(characters)
+
+    WorldStateStore(sim_dir).append_event({
+        "type": "god_mode_emotion_change",
+        "description": f"{target['name']} emotional state modified: {changed}",
+        "round": _current_round(sim_dir),
+    })
+
+    return target
