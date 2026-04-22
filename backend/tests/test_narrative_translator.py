@@ -118,3 +118,27 @@ def test_translate_round_produces_beat(tmp_path):
 
     stored_beats = store.get_all_beats()
     assert len(stored_beats) == 1
+
+
+def test_generate_prose_includes_world_context():
+    actions = [{"agent_name": "Alice", "action_type": "CREATE_POST", "action_args": {}}]
+    characters = [
+        {"id": "1", "name": "Alice", "status": "alive", "location": "tower",
+         "emotional_state": {"current": {"anger": 0, "fear": 0, "joy": 0,
+                                          "sadness": 0, "trust": 0.5, "surprise": 0}}},
+    ]
+    world = {
+        "rules": ["Magic is forbidden", "Winter is near"],
+        "locations": {"tower": {"id": "tower", "name": "The Tower", "description": "tall"}},
+        "event_log": [{"id": "evt_1", "round": 1, "type": "god_mode_injection",
+                       "description": "A stranger arrived."}],
+    }
+
+    with patch("app.services.narrative.narrative_translator.call_llm") as mock_llm:
+        mock_llm.return_value = "prose"
+        generate_prose(actions, characters, tone="noir", previous_beats=[], world=world)
+
+        prompt = mock_llm.call_args[0][0]
+        assert "Magic is forbidden" in prompt
+        assert "A stranger arrived" in prompt
+        assert "The Tower" in prompt
