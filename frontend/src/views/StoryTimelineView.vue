@@ -1,5 +1,11 @@
 <template>
   <div class="story-timeline">
+    <nav class="sim-nav">
+      <router-link :to="`/story/${simId}`" active-class="active">Story</router-link>
+      <router-link :to="`/godmode/${simId}`" active-class="active">God Mode</router-link>
+      <router-link :to="`/world/${simId}`" active-class="active">World</router-link>
+    </nav>
+
     <header class="page-header">
       <div class="header-left">
         <h1>Story Timeline</h1>
@@ -133,6 +139,24 @@ onMounted(refresh)
   max-width: 840px;
   margin: 0 auto;
   padding: 2rem 1.5rem 6rem;
+}
+.sim-nav {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5ddc4;
+  font-size: 0.9rem;
+}
+.sim-nav a {
+  color: #7d6b3f;
+  text-decoration: none;
+  font-weight: 500;
+}
+.sim-nav a.active {
+  color: #c9a45b;
+  border-bottom: 2px solid #c9a45b;
+  padding-bottom: 0.15rem;
 }
 .page-header {
   display: flex;

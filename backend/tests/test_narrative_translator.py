@@ -142,3 +142,33 @@ def test_generate_prose_includes_world_context():
         assert "Magic is forbidden" in prompt
         assert "A stranger arrived" in prompt
         assert "The Tower" in prompt
+
+
+def test_location_atmosphere_surfaces_in_prompt():
+    """Cinematic location schema — atmosphere should reach the LLM."""
+    actions = [{"agent_name": "Alice", "action_type": "CREATE_POST", "action_args": {}}]
+    characters = [
+        {"id": "1", "name": "Alice", "status": "alive",
+         "emotional_state": {"current": {"anger": 0, "fear": 0, "joy": 0,
+                                          "sadness": 0, "trust": 0.5, "surprise": 0}}},
+    ]
+    world = {
+        "rules": [],
+        "locations": {
+            "tower": {
+                "id": "tower",
+                "name": "The Iron Tower",
+                "description": "dark spire",
+                "atmosphere": "oppressive silence, dust in shafts of cold light",
+            }
+        },
+        "event_log": [],
+    }
+
+    with patch("app.services.narrative.narrative_translator.call_llm") as mock_llm:
+        mock_llm.return_value = "prose"
+        generate_prose(actions, characters, tone="noir", previous_beats=[], world=world)
+
+        prompt = mock_llm.call_args[0][0]
+        assert "atmosphere" in prompt.lower()
+        assert "oppressive silence" in prompt

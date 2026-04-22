@@ -37,10 +37,18 @@ def _format_world_locations(world: dict) -> str:
     locs = list(world.get("locations", {}).values())[:5]
     if not locs:
         return "(none)"
-    return "\n  ".join(
-        f"{_escape_braces(l.get('name', ''))} — {_escape_braces(l.get('description', ''))}"
-        for l in locs
-    )
+    lines = []
+    for l in locs:
+        name = _escape_braces(l.get("name", ""))
+        desc = _escape_braces(l.get("description", ""))
+        line = f"{name} — {desc}"
+        # Cinematic schema: if atmosphere is present, surface it to the LLM as
+        # a mood anchor for any scene set here.
+        atmosphere = l.get("atmosphere")
+        if atmosphere:
+            line += f" [atmosphere: {_escape_braces(atmosphere)}]"
+        lines.append(line)
+    return "\n  ".join(lines)
 
 
 def read_actions_for_round(
