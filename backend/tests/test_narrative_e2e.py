@@ -125,6 +125,10 @@ def test_killed_character_filtered_from_next_round(tmp_path):
         {"round": 1, "agent_id": 2, "agent_name": "Marcus", "action_type": "DISLIKE_POST",
          "action_args": {}, "success": True, "timestamp": "t"},
         {"event_type": "round_end", "round": 1, "timestamp": "t"},
+        # Round 2: Elena (alive) and Marcus (will be killed) both act — filter
+        # should keep Elena and drop Marcus
+        {"round": 2, "agent_id": 1, "agent_name": "Elena", "action_type": "QUOTE_POST",
+         "action_args": {}, "success": True, "timestamp": "t"},
         {"round": 2, "agent_id": 2, "agent_name": "Marcus", "action_type": "REPOST",
          "action_args": {}, "success": True, "timestamp": "t"},
         {"event_type": "round_end", "round": 2, "timestamp": "t"},
