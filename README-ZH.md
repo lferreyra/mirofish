@@ -298,6 +298,8 @@ LOCAL_ZEP_RERANK_TOP_K=50
 
 ### Tailscale 访问
 
+发布说明：Tailscale 支持主要面向源码/开发部署，即后端和 Vite 代理运行在同一台主机上。它不会自动公开本地 LLM、embedding 或 reranker 端点；除非你明确需要暴露，否则建议这些模型端点继续绑定在 `127.0.0.1`。
+
 前端现在默认走同源 `/api`，不再默认写死 `http://localhost:5001`。因此你从另一台 Tailscale 设备访问 Vite 开发服务器时，前端请求会继续命中宿主机后端，而不会错误地访问调用方自己的 localhost。
 
 建议在项目根目录 `.env` 中加入：
@@ -319,6 +321,8 @@ FLASK_PORT=5001
 如果你通过 `tailscale serve` 或 `tailscale funnel` 暴露后端，建议设置 `ENABLE_PROXY_FIX=true`。如果通过 MagicDNS 访问时 HMR 连接不稳定，再额外设置 `VITE_HMR_HOST` 为你的 Tailscale 主机名。
 
 ### 二、Docker 部署
+
+发布限制：Docker 部署属于旧路径，目前未针对本地 Zep 替代、外部 vLLM/llama.cpp 端点、以及拆分的 Python 3.11 OASIS 运行时做完整验证。需要本地优先工作流时，请使用源码部署。
 
 ```bash
 # 1. 配置环境变量（同源码部署）

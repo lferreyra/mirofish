@@ -298,6 +298,8 @@ Parameter rules:
 
 ### Tailscale Access
 
+Release note: Tailscale support is intended for source-code/dev deployments where the backend and Vite proxy run on the same host. It does not make the local LLM, embedding, or reranker endpoints public by itself; keep those endpoints bound to `127.0.0.1` unless you intentionally expose them.
+
 The frontend now defaults to same-origin `/api` instead of `http://localhost:5001`, so opening the Vite dev server from another device over Tailscale will still reach the backend running on the host machine.
 
 Recommended root `.env` settings:
@@ -319,6 +321,8 @@ Then access from another Tailscale device at:
 If you expose the backend through `tailscale serve` or `tailscale funnel`, set `ENABLE_PROXY_FIX=true`. If HMR does not reconnect correctly over MagicDNS, set `VITE_HMR_HOST` to your Tailscale hostname.
 
 ### Option 2: Docker Deployment
+
+Release constraint: Docker deployment is legacy/not validated for the local Zep replacement, external vLLM/llama.cpp endpoints, and split Python 3.11 OASIS runtime. Use source deployment for the tested local-first workflow.
 
 ```bash
 # 1. Configure environment variables (same as source deployment)
