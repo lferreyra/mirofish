@@ -78,6 +78,15 @@ class Config:
     MEMORY_ENABLE_IMPORTANCE = os.environ.get('MEMORY_ENABLE_IMPORTANCE', 'true').lower() == 'true'
     MEMORY_ENABLE_REFLECTION = os.environ.get('MEMORY_ENABLE_REFLECTION', 'true').lower() == 'true'
     MEMORY_ENABLE_CONTRADICTION = os.environ.get('MEMORY_ENABLE_CONTRADICTION', 'true').lower() == 'true'
+
+    # ===== Phase 3: transport =====
+    # zmq  -> ZeroMQ REQ/REP (commands) + PUB/SUB (events). Default.
+    # file -> legacy file-poll IPC. Preserved for back-compat; can't do events.
+    IPC_TRANSPORT = os.environ.get('IPC_TRANSPORT', 'zmq').lower()
+    # Optional explicit endpoints. When unset, the transport uses ipc:// sockets
+    # under <simulation_dir>/.sockets/.
+    IPC_CMD_ENDPOINT = os.environ.get('IPC_CMD_ENDPOINT')
+    IPC_EVENT_ENDPOINT = os.environ.get('IPC_EVENT_ENDPOINT')
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB

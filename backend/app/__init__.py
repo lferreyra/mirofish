@@ -70,6 +70,11 @@ def create_app(config_class=Config):
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     app.register_blueprint(agents_bp, url_prefix='/api/agents')
+
+    # Phase-3: WebSocket routes (/ws/simulation/<run_id>[, /interview]).
+    # No-op when flask-sock isn't installed, so the HTTP API keeps working.
+    from .ws.streaming import register_ws_routes
+    register_ws_routes(app)
     
     # 健康检查
     @app.route('/health')

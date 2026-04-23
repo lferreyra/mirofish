@@ -33,3 +33,15 @@ python-dotenv>=1.0.0
 
 # 数据验证
 pydantic>=2.0.0
+
+# ============= Phase 3: transport + streaming + checkpoint =============
+# ZeroMQ for command / event transport
+pyzmq>=26.0.0
+# WebSocket support for live event fan-out + streaming interviews
+flask-sock>=0.7.0
+# Fast compression for checkpoint archives (optional — gzip fallback is used when missing)
+zstandard>=0.22.0
+
+# ============= Phase 2: Neo4j backend (optional) =============
+# Enable by setting MEMORY_BACKEND=neo4j_local or neo4j_aura
+neo4j>=5.0.0
