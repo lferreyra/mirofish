@@ -51,6 +51,33 @@ class Config:
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
+
+    # ===== Phase 2: memory backend =====
+    # auto        -> pick based on what's configured (NEO4J_URI > ZEP_API_KEY > in_memory)
+    # in_memory   -> per-process dict; for tests + minimal local runs
+    # zep_cloud   -> pre-existing Zep path (requires ZEP_API_KEY)
+    # neo4j_local -> self-hosted Neo4j 5.x via bolt://
+    # neo4j_aura  -> managed Neo4j AuraDB via neo4j+s://
+    MEMORY_BACKEND = os.environ.get('MEMORY_BACKEND', 'auto').lower()
+    NEO4J_URI = os.environ.get('NEO4J_URI')
+    NEO4J_USER = os.environ.get('NEO4J_USER', 'neo4j')
+    NEO4J_PASSWORD = os.environ.get('NEO4J_PASSWORD')
+    NEO4J_DATABASE = os.environ.get('NEO4J_DATABASE', 'neo4j')
+
+    # ===== Phase 2: hierarchical memory =====
+    # Reflection cadence (rounds). Stanford Generative Agents used 10; we default
+    # to 5 because a typical MiroFish run is shorter than the GA paper's.
+    REFLECTION_EVERY_N_ROUNDS = int(os.environ.get('REFLECTION_EVERY_N_ROUNDS', '5'))
+    REFLECTION_TOP_K_SOURCES = int(os.environ.get('REFLECTION_TOP_K_SOURCES', '10'))
+    # Retrieval weights (α·recency + β·importance + γ·relevance). Any non-negative
+    # values are fine — the backend normalizes before combining.
+    MEMORY_ALPHA = float(os.environ.get('MEMORY_ALPHA', '1.0'))
+    MEMORY_BETA = float(os.environ.get('MEMORY_BETA', '1.0'))
+    MEMORY_GAMMA = float(os.environ.get('MEMORY_GAMMA', '1.0'))
+    # Feature flags — toggle off to A/B whether each contributed.
+    MEMORY_ENABLE_IMPORTANCE = os.environ.get('MEMORY_ENABLE_IMPORTANCE', 'true').lower() == 'true'
+    MEMORY_ENABLE_REFLECTION = os.environ.get('MEMORY_ENABLE_REFLECTION', 'true').lower() == 'true'
+    MEMORY_ENABLE_CONTRADICTION = os.environ.get('MEMORY_ENABLE_CONTRADICTION', 'true').lower() == 'true'
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB

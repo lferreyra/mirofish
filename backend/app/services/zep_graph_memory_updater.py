@@ -229,20 +229,28 @@ class ZepGraphMemoryUpdater:
     MAX_RETRIES = 3
     RETRY_DELAY = 2  # 秒
     
-    def __init__(self, graph_id: str, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        graph_id: str,
+        api_key: Optional[str] = None,
+        *,
+        simulation_id: Optional[str] = None,
+    ):
         """
         初始化更新器
-        
+
         Args:
             graph_id: Zep图谱ID
             api_key: Zep API Key（可选，默认从配置读取）
+            simulation_id: Phase-2 MemoryManager simulation id (defaults to graph_id)
         """
         self.graph_id = graph_id
+        self.simulation_id = simulation_id or graph_id
         self.api_key = api_key or Config.ZEP_API_KEY
-        
+
         if not self.api_key:
             raise ValueError("ZEP_API_KEY未配置")
-        
+
         self.client = Zep(api_key=self.api_key)
         
         # 活动队列
@@ -332,11 +340,40 @@ class ZepGraphMemoryUpdater:
         if activity.action_type == "DO_NOTHING":
             self._skipped_count += 1
             return
-        
+
         self._activity_queue.put(activity)
         self._total_activities += 1
         logger.debug(f"添加活动到Zep队列: {activity.agent_name} - {activity.action_type}")
+
+        # Phase-2: mirror each activity into the hierarchical MemoryManager. The
+        # legacy Zep batch writer continues to feed the document-seeded graph;
+        # the MemoryManager maintains per-agent observations, reflections, and
+        # contradiction edges used by the Phase-2 retrieval APIs.
+        self._mirror_to_memory_manager(activity)
     
+    # Action types that also produce public-timeline posts (visible to other agents).
+    _PUBLIC_ACTIONS = frozenset({"CREATE_POST", "QUOTE_POST", "REPOST", "CREATE_COMMENT"})
+
+    def _mirror_to_memory_manager(self, activity: AgentActivity) -> None:
+        try:
+            manager = ZepGraphMemoryManager.get_memory_manager(
+                self.simulation_id, graph_id=self.graph_id,
+            )
+            manager.record_agent_action(
+                agent_id=activity.agent_id,
+                round_num=activity.round_num,
+                content=activity.to_episode_text(),
+                action_type=activity.action_type,
+                author_id=activity.agent_id,
+                public=activity.action_type in self._PUBLIC_ACTIONS,
+            )
+        except Exception as exc:
+            # Mirror failures must never block the existing Zep path.
+            logger.debug(
+                "MemoryManager mirror failed for agent=%s action=%s: %s",
+                activity.agent_name, activity.action_type, exc,
+            )
+
     def add_activity_from_dict(self, data: Dict[str, Any], platform: str):
         """
         从字典数据添加活动
@@ -479,13 +516,42 @@ class ZepGraphMemoryUpdater:
 class ZepGraphMemoryManager:
     """
     管理多个模拟的Zep图谱记忆更新器
-    
+
     每个模拟可以有自己的更新器实例
+
+    Phase-2 adapter: this class now also hands out per-simulation
+    :class:`app.memory.manager.MemoryManager` instances via
+    :meth:`get_memory_manager`. The legacy Zep batch updater keeps running in
+    parallel for document-seeded graph enrichment; the MemoryManager is the
+    Phase-2 agent-memory layer (observations / reflections / contradictions).
     """
-    
+
     _updaters: Dict[str, ZepGraphMemoryUpdater] = {}
+    _memory_managers: Dict[str, "MemoryManagerT"] = {}  # type: ignore[name-defined]
     _lock = threading.Lock()
-    
+
+    @classmethod
+    def get_memory_manager(
+        cls,
+        simulation_id: str,
+        *,
+        graph_id: Optional[str] = None,
+    ):
+        """Return (or lazily create) the Phase-2 MemoryManager for a simulation.
+
+        Safe to call from any service — backend selection is env-driven via
+        ``MEMORY_BACKEND``. Returns the same instance on repeated calls."""
+        with cls._lock:
+            existing = cls._memory_managers.get(simulation_id)
+            if existing is not None:
+                return existing
+            from ..memory.manager import MemoryManager
+            manager = MemoryManager.create_for_simulation(
+                simulation_id, graph_id=graph_id or simulation_id,
+            )
+            cls._memory_managers[simulation_id] = manager
+            return manager
+
     @classmethod
     def create_updater(cls, simulation_id: str, graph_id: str) -> ZepGraphMemoryUpdater:
         """
@@ -523,6 +589,16 @@ class ZepGraphMemoryManager:
                 cls._updaters[simulation_id].stop()
                 del cls._updaters[simulation_id]
                 logger.info(f"已停止图谱记忆更新器: simulation_id={simulation_id}")
+            # Also release the Phase-2 MemoryManager so backend resources are freed.
+            manager = cls._memory_managers.pop(simulation_id, None)
+            if manager is not None:
+                try:
+                    manager.close()
+                except Exception as exc:
+                    logger.warning(
+                        "关闭 MemoryManager 失败: simulation_id=%s, error=%s",
+                        simulation_id, exc,
+                    )
     
     # 防止 stop_all 重复调用的标志
     _stop_all_done = False
