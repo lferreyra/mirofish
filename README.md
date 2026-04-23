@@ -93,6 +93,16 @@ Click the image to watch MiroFish's deep prediction of the lost ending based on 
 
 ## 🚀 Quick Start
 
+> 🆕 **MiroFish-Cloud (Phase 1–6)** — this fork extends upstream MiroFish with
+> pluggable LLM backends (Ollama / vLLM / OpenAI-compat), pluggable memory
+> (in-memory / Zep / Neo4j / Aura), structured personas with inertia +
+> credibility + bot/troll archetypes, ZeroMQ transport with WebSocket
+> streaming, checkpoint/restore, an evaluation harness with deterministic
+> CI, Prometheus / OpenTelemetry observability, API-key auth with quotas,
+> and a Helm chart. See [MIGRATION.md](MIGRATION.md) for the full diff from
+> upstream, [docs/architecture.md](docs/architecture.md) for the new
+> architecture, and [BENCHMARKS.md](BENCHMARKS.md) for performance numbers.
+
 ### Option 1: Source Code Deployment (Recommended)
 
 #### Prerequisites
@@ -150,6 +160,86 @@ npm run setup:backend
 # Start both frontend and backend (run from project root)
 npm run dev
 ```
+
+### Option 2: Cloud Quickstart (multi-provider + Neo4j Aura)
+
+For teams running the fork in production with per-role model routing,
+managed Neo4j, and observability:
+
+```bash
+cp .env.example .env
+# Minimal per-role Anthropic + OpenAI setup:
+cat >> .env <<'EOF'
+BACKEND_MODE=cloud
+
+# Route roles to the cheapest model that still works:
+LLM_ROLE_FAST_BACKEND=openai_compat
+LLM_ROLE_FAST_PROVIDER=anthropic
+LLM_ROLE_FAST_MODEL=claude-haiku-4-5-20251001
+LLM_ROLE_FAST_API_KEY=sk-ant-...
+LLM_ROLE_FAST_BASE_URL=https://api.anthropic.com/v1
+
+LLM_ROLE_HEAVY_BACKEND=openai_compat
+LLM_ROLE_HEAVY_PROVIDER=anthropic
+LLM_ROLE_HEAVY_MODEL=claude-opus-4-7
+LLM_ROLE_HEAVY_API_KEY=sk-ant-...
+LLM_ROLE_HEAVY_BASE_URL=https://api.anthropic.com/v1
+
+LLM_ROLE_EMBED_BACKEND=openai_compat
+LLM_ROLE_EMBED_PROVIDER=openai
+LLM_ROLE_EMBED_MODEL=text-embedding-3-large
+LLM_ROLE_EMBED_API_KEY=sk-...
+
+# Managed Neo4j AuraDB for agent memory:
+MEMORY_BACKEND=neo4j_aura
+NEO4J_URI=neo4j+s://xxxxxx.databases.neo4j.io
+NEO4J_PASSWORD=your_password
+
+# Observability:
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+ADMIN_TOKEN=change-me-or-pull-from-vault
+EOF
+
+npm run dev
+# Prometheus:  curl localhost:5000/metrics
+# Key issue:   curl -XPOST -H "X-MiroFish-Admin-Token: $ADMIN_TOKEN" \
+#                  -H "Content-Type: application/json" \
+#                  -d '{"owner":"alice","quota_usd":10.0}' \
+#                  localhost:5000/api/auth/keys
+# Pre-flight:  curl -XPOST -d '{"agent_count":100,"rounds":20}' \
+#                  -H "Content-Type: application/json" \
+#                  localhost:5000/api/simulation/estimate-cost
+```
+
+### Option 3: Local-Only Mode (no cloud creds)
+
+```bash
+# Install + run Ollama, pull the default models
+ollama pull qwen2.5:3b qwen2.5:7b qwen2.5:14b nomic-embed-text
+
+cat > .env <<'EOF'
+BACKEND_MODE=local
+MEMORY_BACKEND=in_memory
+IPC_TRANSPORT=zmq
+EOF
+
+npm run dev
+```
+
+### Option 4: Kubernetes via Helm
+
+```bash
+helm install mirofish ./deploy/helm/mirofish \
+  --set backend.image.tag=0.6.0 \
+  --set memory.neo4j.uri=neo4j+s://xxxxxx.databases.neo4j.io \
+  --set llm.backendMode=cloud
+
+# Populate the mirofish-secrets Secret out-of-band (sealed-secrets /
+# external-secrets / etc.) before the first simulation run.
+```
+
+See [deploy/helm/mirofish/README.md](deploy/helm/mirofish/README.md) for the
+full value reference.
 
 **Service URLs:**
 - Frontend: `http://localhost:3000`
