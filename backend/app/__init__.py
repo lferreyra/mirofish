@@ -65,11 +65,12 @@ def create_app(config_class=Config):
         return response
     
     # 注册蓝图
-    from .api import graph_bp, simulation_bp, report_bp, agents_bp
+    from .api import graph_bp, simulation_bp, report_bp, agents_bp, eval_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     app.register_blueprint(agents_bp, url_prefix='/api/agents')
+    app.register_blueprint(eval_bp, url_prefix='/api/eval')
 
     # Phase-3: WebSocket routes (/ws/simulation/<run_id>[, /interview]).
     # No-op when flask-sock isn't installed, so the HTTP API keeps working.

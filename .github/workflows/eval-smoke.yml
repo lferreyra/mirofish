@@ -1,0 +1,70 @@
+name: eval-smoke
+
+# Phase-5 CI regression guard.
+# Runs the eval harness against ONE small dataset case under the deterministic
+# mock-LLM path on every PR. Any change that shifts the scored output relative
+# to the checked-in reference fixture fails the job.
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  eval-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install minimal test deps
+        # Only the packages the eval + memory + personas + transport tests need.
+        # We skip the Zep / OASIS / Neo4j SDKs because they require API keys
+        # or a running database and aren't exercised by the deterministic path.
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest flask flask-cors openai pydantic python-dotenv \
+                      pyzmq flask-sock zstandard requests
+
+      - name: Run pytest (eval + dependent modules)
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -m pytest backend/tests/ -q --tb=short
+
+      - name: Run eval runner in deterministic mode (acceptance check)
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -m backend.eval.runner \
+            --case sample_policy_carbon_tax \
+            --deterministic --mock-llm \
+            --output-json > /tmp/run-1.json
+          python -m backend.eval.runner \
+            --case sample_policy_carbon_tax \
+            --deterministic --mock-llm \
+            --output-json > /tmp/run-2.json
+          # Byte-identical output under --deterministic --mock-llm is the
+          # Phase-5 acceptance criterion. Diff short-circuits on any drift.
+          diff -q /tmp/run-1.json /tmp/run-2.json
+
+      - name: Run ablation (smoke)
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -m backend.eval.ablation \
+            --case sample_policy_carbon_tax \
+            --deterministic --mock-llm
