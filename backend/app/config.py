@@ -79,6 +79,21 @@ class Config:
     MEMORY_ENABLE_REFLECTION = os.environ.get('MEMORY_ENABLE_REFLECTION', 'true').lower() == 'true'
     MEMORY_ENABLE_CONTRADICTION = os.environ.get('MEMORY_ENABLE_CONTRADICTION', 'true').lower() == 'true'
 
+    # ===== Phase 6: auth + observability =====
+    # Admin token for /api/auth/keys management endpoints. Unset -> those
+    # endpoints return 503 so a misconfigured deployment fails loudly.
+    ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN')
+    # `true` lets non-auth endpoints accept anonymous traffic; useful for
+    # demos, discouraged in prod. The auth middleware still records
+    # rejections metrics so dashboards see when anonymous is being relied on.
+    ALLOW_ANONYMOUS_API = os.environ.get('ALLOW_ANONYMOUS_API', 'false').lower() == 'true'
+    # API key SQLite location. Defaults to backend/data/auth.db.
+    AUTH_DB_PATH = os.environ.get('AUTH_DB_PATH')
+    QUOTA_DB_PATH = os.environ.get('QUOTA_DB_PATH')
+    # OpenTelemetry exporter endpoint (OTLP/HTTP). Empty -> tracing disabled.
+    OTEL_EXPORTER_OTLP_ENDPOINT = os.environ.get('OTEL_EXPORTER_OTLP_ENDPOINT')
+    OTEL_SERVICE_NAME = os.environ.get('OTEL_SERVICE_NAME', 'mirofish-backend')
+
     # ===== Phase 4: persona dynamics =====
     # Percentage of the agent population converted into adversarial archetypes.
     # DEFAULT IS ZERO. Enabling these changes simulation outcomes in measurable

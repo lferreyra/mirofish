@@ -17,4 +17,8 @@ from . import agents  # noqa: E402, F401
 from . import checkpoint as _checkpoint_routes  # noqa: E402, F401 — registers /api/simulation/<id>/checkpoint
 # Phase-5: eval dashboard
 from .eval import eval_bp  # noqa: E402, F401
+# Phase-6: observability + auth + cost estimator
+from .metrics import metrics_bp  # noqa: E402, F401
+from .auth import auth_bp  # noqa: E402, F401
+from . import cost as _cost_routes  # noqa: E402, F401 — registers /api/simulation/estimate-cost
 

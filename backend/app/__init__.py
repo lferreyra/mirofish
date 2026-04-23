@@ -64,13 +64,26 @@ def create_app(config_class=Config):
         logger.debug(f"响应: {response.status_code}")
         return response
     
+    # Phase-6: JSON-structured logging + OTel tracing. Both no-op when their
+    # underlying libraries aren't installed, so bare installs still work.
+    from .observability import configure_logging, configure_tracing
+    configure_logging()
+    configure_tracing(service_name=os.environ.get("OTEL_SERVICE_NAME", "mirofish-backend"))
+
     # 注册蓝图
-    from .api import graph_bp, simulation_bp, report_bp, agents_bp, eval_bp
+    from .api import (
+        graph_bp, simulation_bp, report_bp, agents_bp, eval_bp,
+        metrics_bp, auth_bp,
+    )
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     app.register_blueprint(agents_bp, url_prefix='/api/agents')
     app.register_blueprint(eval_bp, url_prefix='/api/eval')
+    # Phase-6: /metrics at root per Prometheus convention; /api/auth under the
+    # normal prefix since it's a regular REST surface.
+    app.register_blueprint(metrics_bp)
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
     # Phase-3: WebSocket routes (/ws/simulation/<run_id>[, /interview]).
     # No-op when flask-sock isn't installed, so the HTTP API keeps working.
