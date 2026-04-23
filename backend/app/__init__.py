@@ -9,15 +9,16 @@ import warnings
 # 需要在所有其他导入之前设置
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
-from flask_cors import CORS
-
 from .config import Config
 from .utils.logger import setup_logger, get_logger
 
 
 def create_app(config_class=Config):
     """Flask应用工厂函数"""
+    # Deferred so `import app.llm` works without Flask installed (e.g. unit tests).
+    from flask import Flask, request
+    from flask_cors import CORS
+
     app = Flask(__name__)
     app.config.from_object(config_class)
     
@@ -51,10 +52,11 @@ def create_app(config_class=Config):
     # 请求日志中间件
     @app.before_request
     def log_request():
+        from flask import request as _req
         logger = get_logger('mirofish.request')
-        logger.debug(f"请求: {request.method} {request.path}")
-        if request.content_type and 'json' in request.content_type:
-            logger.debug(f"请求体: {request.get_json(silent=True)}")
+        logger.debug(f"请求: {_req.method} {_req.path}")
+        if _req.content_type and 'json' in _req.content_type:
+            logger.debug(f"请求体: {_req.get_json(silent=True)}")
     
     @app.after_request
     def log_response(response):
