@@ -15,10 +15,11 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from openai import OpenAI
 from zep_cloud.client import Zep
 
 from ..config import Config
+from ..llm import Role
+from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 from ..utils.locale import get_language_instruction, get_locale, set_locale, t
 from .zep_entity_reader import EntityNode, ZepEntityReader
@@ -186,17 +187,19 @@ class OasisProfileGenerator:
         zep_api_key: Optional[str] = None,
         graph_id: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
-        self.model_name = model_name or Config.LLM_MODEL_NAME
-        
-        if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
-        
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
+        # Persona generation is creative but not heavy synthesis -> balanced.
+        # Legacy kwargs (api_key/base_url/model_name) are accepted for callers
+        # that still pass them but are ignored — the router resolves backend config.
+        self._llm = LLMClient(
+            api_key=api_key,
+            base_url=base_url,
+            model=model_name,
+            role=Role.BALANCED,
         )
+        # Exposed for logging / tests that read them.
+        self.api_key = self._llm.api_key
+        self.base_url = self._llm.base_url
+        self.model_name = self._llm.model
         
         # Zep客户端用于检索丰富上下文
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
@@ -527,21 +530,20 @@ class OasisProfileGenerator:
         
         for attempt in range(max_attempts):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
+                response = self._llm.chat_raw(
                     messages=[
                         {"role": "system", "content": self._get_system_prompt(is_individual)},
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
+                    temperature=0.7 - (attempt * 0.1),  # 每次重试降低温度
                     # 不设置max_tokens，让LLM自由发挥
+                    # Cache the system prompt across persona generations.
+                    cache_key="persona.individual" if is_individual else "persona.group",
                 )
-                
-                content = response.choices[0].message.content
-                
-                # 检查是否被截断（finish_reason不是'stop'）
-                finish_reason = response.choices[0].finish_reason
+
+                content = response.text
+                finish_reason = response.finish_reason
                 if finish_reason == 'length':
                     logger.warning(f"LLM输出被截断 (attempt {attempt+1}), 尝试修复...")
                     content = self._fix_truncated_json(content)
