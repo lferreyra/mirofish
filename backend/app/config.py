@@ -27,10 +27,27 @@ class Config:
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
     
-    # LLM配置（统一使用OpenAI格式）
+    # ===== Backend selection =====
+    # local  -> Ollama for every role (no cloud creds needed; sensible model defaults)
+    # cloud  -> per-role cloud config; legacy LLM_* keys act as defaults
+    # custom -> purely per-role config (LLM_ROLE_*_BACKEND etc.)
+    BACKEND_MODE = os.environ.get('BACKEND_MODE', 'cloud').lower()
+
+    # ===== Legacy single-endpoint LLM config =====
+    # Still consulted by openai_compat backends as a fallback when the
+    # per-role keys are not set. Keep these populated for back-compat.
     LLM_API_KEY = os.environ.get('LLM_API_KEY')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
+
+    # ===== Router behavior =====
+    # Maximum retry attempts per backend before falling through to the next
+    # entry in LLM_ROLE_<role>_FALLBACKS. Default 3 with exponential backoff + jitter.
+    LLM_MAX_RETRIES = int(os.environ.get('LLM_MAX_RETRIES', '3'))
+
+    # SQLite database for per-call token / latency / cost accounting.
+    # Default: backend/data/llm_calls.db
+    LLM_CALLS_DB = os.environ.get('LLM_CALLS_DB')
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
