@@ -1,0 +1,19 @@
+apiVersion: v2
+name: mirofish
+description: |
+  MiroFish-Cloud — a cloud-native social-simulation prediction engine.
+  Deploys the Flask backend, Redis run-state cache, optional frontend,
+  optional vLLM server. Neo4j AuraDB is expected to be managed externally;
+  configure via the `memory.neo4j.*` values.
+type: application
+version: 0.1.0
+appVersion: "0.6.0"
+kubeVersion: ">=1.24.0-0"
+keywords:
+  - simulation
+  - llm
+  - prediction
+maintainers:
+  - name: MiroFish Team
+sources:
+  - https://github.com/666ghj/MiroFish

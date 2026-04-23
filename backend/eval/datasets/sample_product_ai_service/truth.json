@@ -1,0 +1,6 @@
+{
+  "direction": "neutral",
+  "magnitude": 0.1,
+  "confidence": 0.55,
+  "notes": "Consumer AI launches with similar profile (ChatGPT Plus, Jasper) produced highly polarized sentiment that aggregates near neutral. Magnitude <0.2 with visible tails in both directions."
+}

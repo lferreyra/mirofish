@@ -9,15 +9,16 @@ import warnings
 # 需要在所有其他导入之前设置
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
-from flask_cors import CORS
-
 from .config import Config
 from .utils.logger import setup_logger, get_logger
 
 
 def create_app(config_class=Config):
     """Flask应用工厂函数"""
+    # Deferred so `import app.llm` works without Flask installed (e.g. unit tests).
+    from flask import Flask, request
+    from flask_cors import CORS
+
     app = Flask(__name__)
     app.config.from_object(config_class)
     
@@ -51,10 +52,11 @@ def create_app(config_class=Config):
     # 请求日志中间件
     @app.before_request
     def log_request():
+        from flask import request as _req
         logger = get_logger('mirofish.request')
-        logger.debug(f"请求: {request.method} {request.path}")
-        if request.content_type and 'json' in request.content_type:
-            logger.debug(f"请求体: {request.get_json(silent=True)}")
+        logger.debug(f"请求: {_req.method} {_req.path}")
+        if _req.content_type and 'json' in _req.content_type:
+            logger.debug(f"请求体: {_req.get_json(silent=True)}")
     
     @app.after_request
     def log_response(response):
@@ -62,11 +64,31 @@ def create_app(config_class=Config):
         logger.debug(f"响应: {response.status_code}")
         return response
     
+    # Phase-6: JSON-structured logging + OTel tracing. Both no-op when their
+    # underlying libraries aren't installed, so bare installs still work.
+    from .observability import configure_logging, configure_tracing
+    configure_logging()
+    configure_tracing(service_name=os.environ.get("OTEL_SERVICE_NAME", "mirofish-backend"))
+
     # 注册蓝图
-    from .api import graph_bp, simulation_bp, report_bp
+    from .api import (
+        graph_bp, simulation_bp, report_bp, agents_bp, eval_bp,
+        metrics_bp, auth_bp,
+    )
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    app.register_blueprint(agents_bp, url_prefix='/api/agents')
+    app.register_blueprint(eval_bp, url_prefix='/api/eval')
+    # Phase-6: /metrics at root per Prometheus convention; /api/auth under the
+    # normal prefix since it's a regular REST surface.
+    app.register_blueprint(metrics_bp)
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+
+    # Phase-3: WebSocket routes (/ws/simulation/<run_id>[, /interview]).
+    # No-op when flask-sock isn't installed, so the HTTP API keeps working.
+    from .ws.streaming import register_ws_routes
+    register_ws_routes(app)
     
     # 健康检查
     @app.route('/health')

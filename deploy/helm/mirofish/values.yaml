@@ -1,0 +1,118 @@
+# Default values for the MiroFish chart. Override per-environment via
+# `-f values-prod.yaml` or `--set` flags.
+
+backend:
+  image:
+    repository: ghcr.io/your-org/mirofish-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 5000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  # Readiness + liveness probes. `/health` is a cheap check; /metrics is
+  # intentionally NOT the probe target (scraper traffic is unrelated to
+  # whether the app is alive).
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 20
+      periodSeconds: 15
+    readiness:
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+
+frontend:
+  enabled: false         # not yet containerized in the upstream repo
+  image:
+    repository: ghcr.io/your-org/mirofish-frontend
+    tag: "latest"
+  replicaCount: 1
+  service:
+    port: 80
+
+redis:
+  enabled: true          # run-state cache
+  image:
+    repository: redis
+    tag: "7.2-alpine"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+vllm:
+  enabled: false         # bring your own vLLM server, or enable here
+  image:
+    repository: vllm/vllm-openai
+    tag: "latest"
+  model: ""              # e.g. meta-llama/Meta-Llama-3.1-8B-Instruct
+  speculativeModel: ""
+  speculativeTokens: 0
+  # vLLM needs GPU. Chart's template sets this on the pod; bring your own GPU operator.
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+memory:
+  # in_memory | zep_cloud | neo4j_local | neo4j_aura | auto
+  backend: auto
+  neo4j:
+    # External Aura connection. Leave empty to disable.
+    uri: ""
+    user: "neo4j"
+    # Password read from the secret below. Populate via --set-file or external-secrets.
+    passwordFromSecret: "mirofish-secrets"
+    passwordSecretKey: "neo4j-password"
+    database: "neo4j"
+
+llm:
+  # BACKEND_MODE: local | cloud | custom
+  backendMode: cloud
+  # Per-role model config. Leave empty to fall back to the legacy LLM_* keys
+  # (also read from the mirofish-secrets secret below).
+  roleProvider:
+    fast: ""
+    balanced: ""
+    heavy: ""
+    embed: ""
+  roleModel:
+    fast: ""
+    balanced: ""
+    heavy: ""
+    embed: ""
+  maxRetries: 3
+
+auth:
+  # `true` lets the frontend reach the API without a key — useful for demos;
+  # strongly discouraged for prod.
+  allowAnonymous: false
+  # Secret holding ADMIN_TOKEN + Zep/LLM API keys + ApiKey DB if externalized.
+  secretName: "mirofish-secrets"
+
+observability:
+  otel:
+    # Empty = tracing disabled. Point at an OTel collector (HTTP/OTLP).
+    endpoint: ""
+    sampler: "parentbased_traceidratio"
+    samplerArg: "0.1"
+  prometheus:
+    # Annotation for Prometheus Operator / scraper sidecars.
+    scrapeAnnotation: true
+
+ingress:
+  enabled: false
+  className: ""
+  host: mirofish.example.com
+  tls: false

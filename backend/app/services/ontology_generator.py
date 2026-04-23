@@ -180,7 +180,9 @@ class OntologyGenerator:
     """
     
     def __init__(self, llm_client: Optional[LLMClient] = None):
-        self.llm_client = llm_client or LLMClient()
+        # Ontology JSON generation is structured but small -> fast role.
+        from ..llm import Role
+        self.llm_client = llm_client or LLMClient(role=Role.FAST)
     
     def generate(
         self,

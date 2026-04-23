@@ -434,9 +434,10 @@ class ZepToolsService:
     
     @property
     def llm(self) -> LLMClient:
-        """延迟初始化LLM客户端"""
+        """延迟初始化LLM客户端 (sub-question generation -> fast role)"""
         if self._llm_client is None:
-            self._llm_client = LLMClient()
+            from ..llm import Role
+            self._llm_client = LLMClient(role=Role.FAST)
         return self._llm_client
     
     def _call_with_retry(self, func, operation_name: str, max_retries: int = None):
