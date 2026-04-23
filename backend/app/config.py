@@ -149,11 +149,28 @@ class Config:
     
     @classmethod
     def validate(cls):
-        """验证必要配置"""
+        """验证必要配置。
+
+        BACKEND_MODE=local uses Ollama + the in-memory/Neo4j backends; neither
+        cloud LLM nor Zep keys are required in that mode. When a per-role
+        backend is configured for every role, the legacy LLM_API_KEY is also
+        optional.
+        """
         errors = []
-        if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY 未配置")
-        if not cls.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY 未配置")
+
+        if cls.BACKEND_MODE != 'local':
+            # Cloud / custom mode needs either the legacy fallback key or a
+            # per-role API key for at least the balanced role (the main
+            # default used by every caller).
+            per_role_api = os.environ.get('LLM_ROLE_BALANCED_API_KEY')
+            if not cls.LLM_API_KEY and not per_role_api:
+                errors.append(
+                    "LLM_API_KEY (or LLM_ROLE_BALANCED_API_KEY) 未配置"
+                )
+            # Zep is still used by the pre-existing graph-builder path. Not
+            # required when MEMORY_BACKEND skips it entirely.
+            if not cls.ZEP_API_KEY and cls.MEMORY_BACKEND in ('auto', 'zep_cloud'):
+                errors.append("ZEP_API_KEY 未配置")
+
         return errors
 

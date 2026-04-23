@@ -32,6 +32,24 @@ dependencies = [
     # 工具库
     "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
+
+    # Phase 1 — HTTP client for the Ollama backend (no Ollama SDK dep)
+    "requests>=2.31.0",
+
+    # Phase 2 — Neo4j backend (activated by MEMORY_BACKEND=neo4j_*)
+    "neo4j>=5.0.0",
+
+    # Phase 3 — ZeroMQ transport + Flask WebSocket + checkpoint compression
+    "pyzmq>=26.0.0",
+    "flask-sock>=0.7.0",
+    "zstandard>=0.22.0",
+
+    # Phase 6 — observability (logging + Prometheus + OpenTelemetry)
+    "structlog>=24.0.0",
+    "prometheus_client>=0.20.0",
+    "opentelemetry-api>=1.25.0",
+    "opentelemetry-sdk>=1.25.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.25.0",
 ]
 
 [project.optional-dependencies]
