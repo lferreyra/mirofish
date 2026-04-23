@@ -378,6 +378,12 @@ class ModelRouter:
                     response = invoke(backend)
                 except BackendError as exc:
                     last_exc = exc
+                    # Phase-6: record the failed call in Prometheus too; status
+                    # is the BackendError code so dashboards can group by cause.
+                    _emit_metric(
+                        role.value, backend.config.provider, backend.config.model,
+                        status=exc.code, prompt=0, completion=0, cached=0,
+                    )
                     if not exc.retryable or attempt == self._max_retries - 1:
                         raise
                     # else fall through to backoff after the `with` exits (re-raised below)
@@ -388,9 +394,21 @@ class ModelRouter:
                         record.completion_tokens = response.completion_tokens
                         record.cached_tokens = response.cached_tokens
                         record.latency_ms = response.latency_ms
+                        _emit_metric(
+                            role.value, backend.config.provider, backend.config.model,
+                            status="ok",
+                            prompt=response.prompt_tokens,
+                            completion=response.completion_tokens,
+                            cached=response.cached_tokens,
+                        )
                     elif isinstance(response, EmbeddingResponse):
                         record.prompt_tokens = response.prompt_tokens
                         record.latency_ms = response.latency_ms
+                        _emit_metric(
+                            role.value, backend.config.provider, backend.config.model,
+                            status="ok",
+                            prompt=response.prompt_tokens, completion=0, cached=0,
+                        )
                     return response
 
             # If we got here, the call raised a retryable BackendError; back off and retry.
@@ -407,3 +425,18 @@ class ModelRouter:
         if last_exc is not None:
             raise last_exc
         raise BackendError("unknown", "retry loop exited unexpectedly", retryable=False)
+
+
+# Thin wrapper so the router doesn't hard-depend on the observability package
+# being importable (keeps unit-test startup fast and lets CI skip installing
+# prometheus_client).
+def _emit_metric(role, provider, model, *, status, prompt, completion, cached) -> None:
+    try:
+        from ..observability import observe_llm_call
+        observe_llm_call(
+            role=role, provider=provider, model=model, status=status,
+            prompt_tokens=prompt, completion_tokens=completion, cached_tokens=cached,
+        )
+    except Exception:
+        # Metrics should never interfere with the actual LLM path.
+        pass
