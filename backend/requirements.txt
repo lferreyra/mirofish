@@ -45,3 +45,13 @@ zstandard>=0.22.0
 # ============= Phase 2: Neo4j backend (optional) =============
 # Enable by setting MEMORY_BACKEND=neo4j_local or neo4j_aura
 neo4j>=5.0.0
+
+# ============= Phase 6: observability + auth =============
+# Structured JSON logging
+structlog>=24.0.0
+# Prometheus /metrics
+prometheus_client>=0.20.0
+# OpenTelemetry tracing (optional — graceful degrade when missing)
+opentelemetry-api>=1.25.0
+opentelemetry-sdk>=1.25.0
+opentelemetry-exporter-otlp-proto-http>=1.25.0

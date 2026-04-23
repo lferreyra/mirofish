@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mirofish.fullname" . }}-config
+  labels:
+    {{- include "mirofish.labels" . | nindent 4 }}
+data:
+  BACKEND_MODE: {{ .Values.llm.backendMode | quote }}
+  LLM_MAX_RETRIES: {{ .Values.llm.maxRetries | quote }}
+  MEMORY_BACKEND: {{ .Values.memory.backend | quote }}
+  {{- if .Values.memory.neo4j.uri }}
+  NEO4J_URI: {{ .Values.memory.neo4j.uri | quote }}
+  NEO4J_USER: {{ .Values.memory.neo4j.user | quote }}
+  NEO4J_DATABASE: {{ .Values.memory.neo4j.database | quote }}
+  {{- end }}
+  {{- if .Values.observability.otel.endpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.observability.otel.endpoint | quote }}
+  OTEL_TRACES_SAMPLER: {{ .Values.observability.otel.sampler | quote }}
+  OTEL_TRACES_SAMPLER_ARG: {{ .Values.observability.otel.samplerArg | quote }}
+  {{- end }}
+  ALLOW_ANONYMOUS_API: {{ .Values.auth.allowAnonymous | quote }}
+  {{- range $role, $provider := .Values.llm.roleProvider }}
+  {{- if $provider }}
+  LLM_ROLE_{{ upper $role }}_PROVIDER: {{ $provider | quote }}
+  {{- end }}
+  {{- end }}
+  {{- range $role, $model := .Values.llm.roleModel }}
+  {{- if $model }}
+  LLM_ROLE_{{ upper $role }}_MODEL: {{ $model | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.redis.enabled }}
+  REDIS_HOST: {{ include "mirofish.fullname" . }}-redis
+  REDIS_PORT: "6379"
+  {{- end }}
