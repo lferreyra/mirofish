@@ -212,9 +212,55 @@ class OasisProfileGenerator:
             except Exception as e:
                 logger.warning(f"Zep客户端初始化失败: {e}")
     
+    def generate_structured_persona_for_entity(
+        self,
+        entity: EntityNode,
+        user_id: int,
+        *,
+        archetype=None,
+        topic_summary: str = "",
+    ):
+        """Phase-4 path: produce a :class:`StructuredPersona` from an entity
+        instead of a prose paragraph. Callers that want the OASIS-shaped
+        profile can then splice the serialized persona into the profile's
+        `persona` field via :meth:`attach_structured_persona`.
+
+        Separates cleanly from `generate_profile_from_entity` so existing
+        callers keep working while new Phase-4-aware callers opt in."""
+        from ..personas import Archetype, PersonaGenerator, StanceVector
+
+        generator = PersonaGenerator(router=None)  # uses ModelRouter.default()
+        return generator.generate(
+            agent_id=user_id,
+            entity_name=entity.name,
+            entity_type=entity.get_entity_type() or "Entity",
+            topic_summary=topic_summary,
+            archetype=archetype or Archetype.NORMAL,
+        )
+
+    def attach_structured_persona(
+        self,
+        profile: OasisAgentProfile,
+        persona,  # StructuredPersona
+    ) -> OasisAgentProfile:
+        """Serialize a StructuredPersona into the OASIS profile's `persona`
+        field so downstream agent prompts consume the typed payload via
+        `persona_system_block`.
+
+        The human-readable paragraph was the agent's `persona` string in the
+        upstream MiroFish code; we now prepend the system block and append
+        the structured JSON, so any consumer can re-parse the fields.
+        """
+        from ..personas.prompts import persona_system_block
+        block = persona_system_block(persona)
+        profile.persona = f"{block}\n\n[STRUCTURED_PERSONA_JSON]{persona.to_json()}"
+        if not profile.bio and persona.background:
+            profile.bio = persona.background
+        return profile
+
     def generate_profile_from_entity(
-        self, 
-        entity: EntityNode, 
+        self,
+        entity: EntityNode,
         user_id: int,
         use_llm: bool = True
     ) -> OasisAgentProfile:

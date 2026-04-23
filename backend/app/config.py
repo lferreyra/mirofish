@@ -79,6 +79,22 @@ class Config:
     MEMORY_ENABLE_REFLECTION = os.environ.get('MEMORY_ENABLE_REFLECTION', 'true').lower() == 'true'
     MEMORY_ENABLE_CONTRADICTION = os.environ.get('MEMORY_ENABLE_CONTRADICTION', 'true').lower() == 'true'
 
+    # ===== Phase 4: persona dynamics =====
+    # Percentage of the agent population converted into adversarial archetypes.
+    # DEFAULT IS ZERO. Enabling these changes simulation outcomes in measurable
+    # ways — the spec calls this out explicitly.
+    BOT_POPULATION_PCT = float(os.environ.get('BOT_POPULATION_PCT', '0'))
+    TROLL_POPULATION_PCT = float(os.environ.get('TROLL_POPULATION_PCT', '0'))
+    # Institutional archetypes that get a default credibility boost. Safe to
+    # enable without affecting outcome integrity.
+    MEDIA_POPULATION_PCT = float(os.environ.get('MEDIA_POPULATION_PCT', '0'))
+    EXPERT_POPULATION_PCT = float(os.environ.get('EXPERT_POPULATION_PCT', '0'))
+    # Deterministic population-mix seed; set for reproducible experiments.
+    POPULATION_SEED = os.environ.get('POPULATION_SEED')
+    # Author-credibility weighting strength. 0.0 disables; 1.0 means high
+    # credibility ~1.5x score, low credibility ~0.5x score. See personas/credibility.py.
+    CREDIBILITY_WEIGHT = float(os.environ.get('CREDIBILITY_WEIGHT', '1.0'))
+
     # ===== Phase 3: transport =====
     # zmq  -> ZeroMQ REQ/REP (commands) + PUB/SUB (events). Default.
     # file -> legacy file-poll IPC. Preserved for back-compat; can't do events.

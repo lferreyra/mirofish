@@ -63,6 +63,7 @@ class MemoryManager:
         enable_importance: bool = True,
         enable_reflection: bool = True,
         enable_contradiction: bool = True,
+        credibility_weighter=None,  # app.personas.CredibilityWeighter | None
     ):
         self.simulation_id = simulation_id
         self._backend = backend
@@ -81,9 +82,17 @@ class MemoryManager:
         self._contradiction = (
             ContradictionDetector(backend, self._llm) if enable_contradiction else None
         )
+        # Phase-4: optional author-credibility reweighter applied after combined
+        # retrieval. When unset, retrieve_for_agent behaves exactly as Phase 2.
+        self._credibility = credibility_weighter
 
         self._agents_seen: Dict[int, bool] = {}
         self._agents_lock = threading.Lock()
+
+    def set_credibility_weighter(self, weighter) -> None:
+        """Install a CredibilityWeighter after construction — used when the
+        persona store is built lazily during simulation prep."""
+        self._credibility = weighter
 
     # ------------------------------------------------------------- factory
     @classmethod
@@ -196,11 +205,16 @@ class MemoryManager:
             )
             combined.extend(public_result.records)
 
-        # Re-sort the merged list by combined_score; tie-break by ts desc.
-        combined.sort(
-            key=lambda r: (r.combined_score or 0.0, r.ts),
-            reverse=True,
-        )
+        # Phase-4: apply credibility weighting if configured. Done BEFORE the
+        # final sort so boosts are reflected in ordering.
+        if self._credibility is not None:
+            combined = self._credibility.reweight(combined)
+        else:
+            # Re-sort the merged list by combined_score; tie-break by ts desc.
+            combined.sort(
+                key=lambda r: (r.combined_score or 0.0, r.ts),
+                reverse=True,
+            )
         return combined[:top_k]
 
     def list_reflections(self, agent_id: int, limit: int = 50) -> List[Reflection]:
